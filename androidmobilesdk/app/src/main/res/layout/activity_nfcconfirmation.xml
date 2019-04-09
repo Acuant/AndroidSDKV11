@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical"
+    tools:context=".NFCConfirmationActivity">
+
+    <RelativeLayout
+        android:id="@+id/relativeLayoutMRZ"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="5dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginTop="10dp">
+
+        <LinearLayout
+            android:id="@+id/mrzDocumentNumberLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp">
+            <EditText
+                android:id="@+id/mrzDocumentNumberLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/mrzMessageText"
+                android:layout_centerHorizontal="true"
+                android:background="@android:color/transparent"
+                android:editable="false"
+                android:text="Document Number : "
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/mrzDocumentNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:text=""
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/mrzDOBLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/mrzDocumentNumberLayout"
+            android:layout_marginTop="15dp">
+
+            <TextView
+                android:id="@+id/mrzDOBLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:background="@android:color/transparent"
+                android:text="Date of Birth(yy/MM/dd): "
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/mrzDOB"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:text=""
+                android:textSize="14sp"
+                android:textStyle="bold"
+                style="?android:editTextStyle"></TextView>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/mrzDOELayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/mrzDOBLayout"
+            android:layout_marginTop="15dp">
+
+            <TextView
+                android:id="@+id/mrzDOELabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:background="@android:color/transparent"
+                android:text="Date of Expiry(yy/MM/dd): "
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/mrzDOE"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:text=""
+                android:textSize="14sp"
+                android:textStyle="bold"
+                style="?android:editTextStyle"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/mrzInstructionLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/mrzDOBLayout"
+            android:layout_marginTop="15dp">
+            <TextView
+                android:id="@+id/mrzInstruction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="50sp"
+                android:text="Verify captured Data and press 'Start EChip'"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </RelativeLayout>
+    <LinearLayout
+        android:id="@+id/buttonLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="5dp">
+
+        <Button
+            android:id="@+id/eChipButton"
+            android:onClick="nfcPressed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start EChip"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</RelativeLayout>
