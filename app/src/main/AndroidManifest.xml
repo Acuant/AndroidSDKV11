@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.NFC" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
@@ -14,7 +14,7 @@
     <meta-data
         android:name="com.google.android.gms.vision.DEPENDENCIES"
         android:value="barcode,face"
-        tools:replace="android:value"/>
+        tools:replace="android:value" />
 
     <application
         android:name=".AppInstance"
@@ -35,15 +35,8 @@
         </activity>
         <activity android:name=".TestMainActivity" />
         <activity
-            android:name=".facialcamera.FacialLivelinessActivity"
-            android:label="@string/app_name"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.NoActionBar"></activity>
-        <activity
             android:name=".ConfirmationActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".documentcapturecamera.DocumentCaptureActivity"
-            android:screenOrientation="portrait"/>
         <activity
             android:name=".ResultActivity"
             android:screenOrientation="portrait" />
@@ -54,7 +47,10 @@
             android:name=".NFCConfirmationActivity"
             android:noHistory="true"
             android:screenOrientation="portrait" />
-        <activity android:name=".ClassificationFailureActivity"></activity>
+        <activity android:name=".ClassificationFailureActivity" />
+        <activity android:name=".FacialLivenessActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar"></activity>
     </application>
 
 </manifest>

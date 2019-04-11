@@ -35,7 +35,6 @@ import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
 import com.acuant.acuantfacematchsdk.model.FacialMatchResult
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
-import com.acuant.acuanthgliveliness.FacialLivelinessActivity
 import com.acuant.acuanthgliveliness.model.FaceCapturedImage
 import com.acuant.sampleapp.backgroundtasks.CroppingTask
 import com.acuant.sampleapp.backgroundtasks.CroppingTaskListener
@@ -177,6 +176,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         alert.setPositiveButton("OK") { dialog, whichButton ->
                             dialog.dismiss()
+                            progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
                             uploadBackImageOfDocument()
                             showFrontCamera()
                         }
@@ -238,7 +238,7 @@ class MainActivity : AppCompatActivity() {
         capturingSelfieImage = true;
         val cameraIntent = Intent(
                 this@MainActivity,
-                FacialLivelinessActivity::class.java
+                FacialLivenessActivity::class.java
         )
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_SELFIE)
     }
@@ -443,6 +443,7 @@ class MainActivity : AppCompatActivity() {
                     alert.setMessage("Capture Selfie Image")
                     alert.setPositiveButton("OK") { dialog, whichButton ->
                         dialog.dismiss()
+                        progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
                         showFrontCamera()
                         getData()
                     }

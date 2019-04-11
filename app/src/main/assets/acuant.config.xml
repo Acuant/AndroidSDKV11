@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <setting>
-<acuant_username>administrator</acuant_username>
-<acuant_password>p@ssw0rdConnect</acuant_password>
-<acuant_subscription>9EE7685E-DDD5-4356-B038-D01BA9DBB499</acuant_subscription>
-<frm_endpoint>https://test.frm.acuant-dev.net/api/v2</frm_endpoint>
-<med_endpoint>https://medicscan.acuant.net/api/v1</med_endpoint>
-<assureid_endpoint>https://test.services.acuant-dev.net</assureid_endpoint>
+<acuant_username>xxx</acuant_username>
+<acuant_password>xxx</acuant_password>
+<acuant_subscription>xxx</acuant_subscription>
+<frm_endpoint>xxx</frm_endpoint>
+<med_endpoint>xxx</med_endpoint>
+<assureid_endpoint>xxx</assureid_endpoint>
 </setting>
