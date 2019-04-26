@@ -14,7 +14,6 @@ class AcuantDocumentDetector(private val callback: AcuantDocumentDectectorHandle
 
         if(bitmap != null){
             val options = CroppingOptions()
-            options.imageMetricsRequired = false
             options.isHealthCard = false
 
             val data = CroppingData()

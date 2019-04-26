@@ -20,7 +20,7 @@ class TestLicenseKeyWithInvalidCloudAddress {
             TestMainActivity::class.java)
 
     /**
-     * Test With a valid license key and invalid url to expect return false
+     * Test With a valid license key and invalid apiEndpoint to expect return false
      */
     @Test
     fun test() {

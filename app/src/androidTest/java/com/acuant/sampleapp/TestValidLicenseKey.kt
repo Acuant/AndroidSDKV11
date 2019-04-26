@@ -23,7 +23,7 @@ class TestValidLicenseKey {
 
 
     /**
-     * Test With a valid license key and url to expect return true
+     * Test With a valid license key and apiEndpoint to expect return true
      */
     @Test
     fun test() {

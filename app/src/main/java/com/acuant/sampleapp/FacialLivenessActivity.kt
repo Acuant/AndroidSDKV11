@@ -11,11 +11,11 @@ import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
-import com.acuant.acuanthgliveliness.detector.LiveFaceDetector
-import com.acuant.acuanthgliveliness.detector.LiveFaceListener
-import com.acuant.acuanthgliveliness.detector.LiveFaceProcessor
-import com.acuant.acuanthgliveliness.model.FaceCapturedImage
-import com.acuant.acuanthgliveliness.model.LiveFaceDetails
+import com.acuant.acuanthgliveness.detector.LiveFaceDetector
+import com.acuant.acuanthgliveness.detector.LiveFaceListener
+import com.acuant.acuanthgliveness.detector.LiveFaceProcessor
+import com.acuant.acuanthgliveness.model.FaceCapturedImage
+import com.acuant.acuanthgliveness.model.LiveFaceDetails
 import com.acuant.sampleapp.facecapture.CameraSourcePreview
 import com.acuant.sampleapp.facecapture.FacialGraphic
 import com.acuant.sampleapp.facecapture.FacialGraphicOverlay

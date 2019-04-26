@@ -35,7 +35,12 @@ import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
 import com.acuant.acuantfacematchsdk.model.FacialMatchResult
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
-import com.acuant.acuanthgliveliness.model.FaceCapturedImage
+import com.acuant.acuantipliveness.AcuantIPLiveness
+import com.acuant.acuantipliveness.constant.FacialCaptureConstant
+import com.acuant.acuantipliveness.facialcapture.model.FacialCaptureResult
+import com.acuant.acuantipliveness.facialcapture.model.FacialSetupResult
+import com.acuant.acuantipliveness.facialcapture.service.FacialCaptureLisenter
+import com.acuant.acuantipliveness.facialcapture.service.FacialSetupLisenter
 import com.acuant.sampleapp.backgroundtasks.CroppingTask
 import com.acuant.sampleapp.backgroundtasks.CroppingTaskListener
 import com.acuant.sampleapp.utils.CommonUtils
@@ -122,7 +127,7 @@ class MainActivity : AppCompatActivity() {
             val bytes = readFromFile(data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL))
             capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
             progressDialog = DialogUtils.showProgessDialog(this, "Cropping...")
-            val croppingTask = CroppingTask(BitmapFactory.decodeByteArray(bytes, 0, bytes.size), isHealthCard, true, !frontCaptured, object : CroppingTaskListener {
+            val croppingTask = CroppingTask(BitmapFactory.decodeByteArray(bytes, 0, bytes.size), isHealthCard, !frontCaptured, object : CroppingTaskListener {
                 override fun croppingFinished(acuantImage: Image?, isFrontImage: Boolean) {
                     this@MainActivity.runOnUiThread {
                         DialogUtils.dismissDialog(progressDialog)
@@ -183,6 +188,7 @@ class MainActivity : AppCompatActivity() {
                         alert.setNegativeButton("CANCEL") { dialog, whichButton ->
                             progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
                             facialLivelinessResultString = "Facial Liveliness Failed"
+                            capturingSelfieImage = false
                             uploadBackImageOfDocument()
                             dialog.dismiss()
                         }
@@ -199,11 +205,69 @@ class MainActivity : AppCompatActivity() {
             isRetrying = true
             showDocumentCaptureCamera()
 
-        } else if (resultCode == Constants.REQUEST_CAMERA_SELFIE) {
-            //capturingSelfieImage = false
-            capturedSelfieImage = FaceCapturedImage.bitmapImage
-            processFacialMatch()
+        } else if (requestCode == Constants.REQUEST_CAMERA_SELFIE) {
+            if(resultCode == ErrorCodes.ERROR_CAPTURING_FACIAL){
+                val alert = AlertDialog.Builder(this@MainActivity)
+                alert.setTitle("Error Capturing Face")
+                alert.setMessage("Would you like to retry?")
+                alert.setPositiveButton("YES") { dialog, whichButton ->
+                    dialog.dismiss()
+                    showFrontCamera()
+                }
+                alert.setNegativeButton("NO") { dialog, which ->
+                    dialog.dismiss()
+                    capturingSelfieImage = false
+                    facialLivelinessResultString = "Facial Liveliness Failed"
+                }
+                alert.show()
+            }
+            else if (resultCode == ErrorCodes.USER_CANCELED_FACIAL){
+                if (progressDialog != null && progressDialog!!.isShowing) {
+                    DialogUtils.dismissDialog(progressDialog)
+                }
+                progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
+                capturingSelfieImage = false
+                facialLivelinessResultString = "Facial Liveliness Failed"
+            }
+            else{
+                val userId = data?.getStringExtra(FacialCaptureConstant.ACUANT_USERID_KEY)!!
+                val token = data?.getStringExtra(FacialCaptureConstant.ACUANT_TOKEN_KEY)!!
+                startFacialLivelinessRequest(token, userId)
+            }
         }
+    }
+
+    private fun startFacialLivelinessRequest(token: String, userId:String){
+        if (progressDialog != null && progressDialog!!.isShowing) {
+            DialogUtils.dismissDialog(progressDialog)
+        }
+        progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
+        AcuantIPLiveness.getFacialLiveness(
+                token,
+                userId,
+                object: FacialCaptureLisenter {
+                    override fun onDataReceived(result: FacialCaptureResult) {
+                        facialLivelinessResultString = "Facial Liveliness: " + result.isPassed
+                        val decodedString = Base64.decode(result.frame, Base64.DEFAULT)
+                        capturedSelfieImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+                        DialogUtils.dismissDialog(progressDialog)
+                        processFacialMatch()
+                    }
+
+                    override fun onError(errorCode:Int, errorDescription: String) {
+                        capturingSelfieImage = false
+                        DialogUtils.dismissDialog(progressDialog)
+                        facialLivelinessResultString = "Facial Liveliness Failed"
+                        val alert = AlertDialog.Builder(this@MainActivity)
+                        alert.setTitle("Error Retreiving Facial Data")
+                        alert.setMessage(errorDescription)
+                        alert.setPositiveButton("OK") { dialog, whichButton ->
+                            dialog.dismiss()
+                        }
+                        alert.show()
+                    }
+                }
+        )
     }
 
     // ID/Passport Clicked
@@ -234,13 +298,54 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
     }
 
+    //Show Front Camera to Capture Live Selfie
     fun showFrontCamera() {
-        capturingSelfieImage = true;
-        val cameraIntent = Intent(
-                this@MainActivity,
-                FacialLivenessActivity::class.java
-        )
-        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_SELFIE)
+        try{
+            capturingSelfieImage = true
+            if (progressDialog != null && progressDialog!!.isShowing) {
+                DialogUtils.dismissDialog(progressDialog)
+            }
+            progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Loading...")
+            AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
+                override fun onDataReceived(result: FacialSetupResult?) {
+                    DialogUtils.dismissDialog(progressDialog)
+                    if(result != null){
+                        val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
+                        startActivityForResult(facialIntent, Constants.REQUEST_CAMERA_SELFIE)
+                    }
+                    else{
+                        handleInternalError()
+                    }
+                }
+
+                override fun onError(errorCode: Int, description: String?) {
+                    DialogUtils.dismissDialog(progressDialog)
+                    handleInternalError()
+                }
+            })
+
+        }
+        catch(e: Exception){
+            e.printStackTrace()
+        }
+    }
+
+    fun handleInternalError(){
+        runOnUiThread{
+            val alert = AlertDialog.Builder(this@MainActivity)
+            alert.setTitle("Internal Error")
+            alert.setMessage("Would you like to retry?")
+            alert.setNegativeButton("Proceed") { dialog, whichButton ->
+                dialog.dismiss()
+                capturingSelfieImage = false
+                facialLivelinessResultString = "Facial Liveliness Failed"
+            }
+            alert.setPositiveButton("Retry") { dialog, which ->
+                dialog.dismiss()
+                showFrontCamera()
+            }
+            alert.show()
+        }
     }
 
     //process health card images
@@ -492,11 +597,7 @@ class MainActivity : AppCompatActivity() {
         idData.barcodeString = capturedBarcodeString
 
         AcuantDocumentProcessor.uploadImage(documentInstanceID, idData, idOptions) { error, classification ->
-            //                if (progressDialog != null && progressDialog!!.isShowing) {
-//                    DialogUtils.dismissDialog(progressDialog)
-//                }
             if (error == null) {
-//                    progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Processing...")
                 getData()
             }
         }
@@ -712,7 +813,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 this@MainActivity.runOnUiThread {
                     facialResultString = if(facialResultString == null) "Facial Match Failed" else facialResultString;
-                    ProcessedData.formattedString = facialResultString + System.lineSeparator() + resultString
+                    ProcessedData.formattedString = facialLivelinessResultString + System.lineSeparator() + facialResultString + System.lineSeparator() + resultString
                     val resultIntent = Intent(
                             this@MainActivity,
                             ResultActivity::class.java

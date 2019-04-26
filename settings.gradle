@@ -1,1 +1,1 @@
-include ':app', ':acuantcamera', ':acuantimagepreparation', ':acuanthgliveliness', ':acuantfacematch', ':acuantechipreader', ':acuantdocumentprocessing', ':acuantcommon'
+include ':app', ':acuantcamera', ':acuantimagepreparation', ':acuanthgliveliness', ':acuantfacematch', ':acuantechipreader', ':acuantdocumentprocessing', ':acuantcommon', ':acuanthgliveness', ':acuantipliveness'

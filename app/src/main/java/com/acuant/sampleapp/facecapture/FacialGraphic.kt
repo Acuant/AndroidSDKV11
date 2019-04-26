@@ -1,7 +1,7 @@
 package com.acuant.sampleapp.facecapture
 
 import android.graphics.*
-import com.acuant.acuanthgliveliness.model.LiveFaceDetails
+import com.acuant.acuanthgliveness.model.LiveFaceDetails
 import com.google.android.gms.vision.face.Face
 
 /**

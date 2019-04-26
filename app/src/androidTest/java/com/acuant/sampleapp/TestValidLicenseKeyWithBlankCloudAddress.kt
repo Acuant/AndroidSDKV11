@@ -20,7 +20,7 @@ class TestValidLicenseKeyWithBlankCloudAddress {
             TestMainActivity::class.java)
 
     /**
-     * Test With a valid license key and blank url to expect return true
+     * Test With a valid license key and blank apiEndpoint to expect return true
      * as the cloud address is by default set to cssnwebservices.com
      */
     @Test

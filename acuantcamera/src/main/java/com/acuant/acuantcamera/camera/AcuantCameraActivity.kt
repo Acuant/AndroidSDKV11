@@ -27,20 +27,22 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
         this@AcuantCameraActivity.finish()
     }
 
+    private fun hideTopMenu(){
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+        actionBar?.hide()
+        supportActionBar?.hide()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        hideTopMenu()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_acu_camera)
+        hideTopMenu()
 
-        //window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-        window.decorView.apply {
-            // Hide both the navigation bar and the status bar.
-            // SYSTEM_UI_FLAG_FULLSCREEN is only available on Android 4.1 and higher, but as
-            // a general rule, you should design your app to hide the status bar whenever you
-            // hide the navigation bar.
-            systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-        }
-        actionBar?.hide()
-        supportActionBar?.hide()
         if (null == savedInstanceState) {
             val cameraFragment =  AcuantCameraFragment.newInstance()
             cameraFragment.arguments = Bundle().apply {

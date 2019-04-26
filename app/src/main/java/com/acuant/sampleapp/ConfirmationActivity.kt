@@ -19,6 +19,9 @@ import com.acuant.acuantcommon.model.ErrorCodes
 
 class ConfirmationActivity : AppCompatActivity() {
 
+    val SHARPNESS_THRESHOLD = 50
+    val GLARE_THRESHOLD = 50
+
     var IsFrontImage: Boolean = true
     var IsBarcode: Boolean = false
     var isHealthCard: Boolean = false
@@ -47,22 +50,24 @@ class ConfirmationActivity : AppCompatActivity() {
             val cardTypeText = findViewById<TextView>(R.id.cardTypeText)
 
 
-            if (CapturedImage.acuantImage != null && CapturedImage.acuantImage!!.hasImageMetrics) {
+            if (CapturedImage.acuantImage != null) {
                 val sharpnessText = findViewById<TextView>(R.id.sharpnessText)
+                var isBlurry = CapturedImage.sharpnessScore < SHARPNESS_THRESHOLD
                 if (sharpnessText != null && CapturedImage.acuantImage!!.image != null) {
-                    if (CapturedImage.acuantImage!!.isBlurry) {
-                        sharpnessText.setText("It is a blurry image. Sharpness Garde : " + CapturedImage.acuantImage!!.sharpnessGrade)
+                    if (isBlurry) {
+                        sharpnessText.setText("It is a blurry image. Sharpness Garde : " + CapturedImage.sharpnessScore)
                     } else {
-                        sharpnessText.setText("It is a sharp image. Sharpness Garde : " + CapturedImage.acuantImage!!.sharpnessGrade)
+                        sharpnessText.setText("It is a sharp image. Sharpness Garde : " + CapturedImage.sharpnessScore)
                     }
                 }
 
                 val glareText = findViewById<TextView>(R.id.glareText)
+                var hasGlare = CapturedImage.glareScore < GLARE_THRESHOLD
                 if (glareText != null && CapturedImage.acuantImage!!.image != null) {
-                    if (CapturedImage.acuantImage!!.hasGlare) {
-                        glareText.setText("Image has glare. Glare Garde : " + CapturedImage.acuantImage!!.glareGrade)
+                    if (hasGlare) {
+                        glareText.setText("Image has glare. Glare Garde : " + CapturedImage.glareScore)
                     } else {
-                        glareText.setText("Image doesn't have glare. Glare Garde : " + CapturedImage.acuantImage!!.glareGrade)
+                        glareText.setText("Image doesn't have glare. Glare Garde : " + CapturedImage.glareScore)
                     }
                 }
             }

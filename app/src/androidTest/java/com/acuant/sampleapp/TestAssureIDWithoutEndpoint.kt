@@ -18,7 +18,7 @@ class TestAssureIDWithoutEndpoint {
             TestMainActivity::class.java)
 
     /**
-     * Test With a valid license key and null url to expect return true
+     * Test With a valid license key and null apiEndpoint to expect return true
      * as the cloud address is by default set to cssnwebservices.com
      */
     @Test

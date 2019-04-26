@@ -12,6 +12,8 @@ class CapturedImage {
         var bitmapImage: Bitmap? = null
         var acuantImage: Image? = null
         var barcodeString : String? = null
+        var sharpnessScore : Int = 0
+        var glareScore : Int = 0
 
         fun setImage(image:Bitmap?){
             bitmapImage = image

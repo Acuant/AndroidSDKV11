@@ -21,7 +21,7 @@ class TestInvalidLicenseKey {
             TestMainActivity::class.java)
 
     /**
-     * Test With an invalid license key and url to expect return false
+     * Test With an invalid license key and apiEndpoint to expect return false
      */
     @Test
     fun test() {
