@@ -62,7 +62,7 @@ The SDK includes the following modules:
 
 - Contains methods for e-Passport chip reading and authentication.  
 
-**Acuant IP Liveness Library :**
+**Acuant IP Liveness Library (AcuantIPLiveness):**
 
 - Uses library for face capture and liveness calculation.
 - Enhanced Face Liveness.
