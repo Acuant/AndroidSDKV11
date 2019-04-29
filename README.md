@@ -1,25 +1,17 @@
-# Acuant Android Mobile SDK v11
+# Acuant Android SDK v11.1
 
 
-**Last updated – February 28, 2019**
+**Last updated  April 2019**
 
-Copyright <sup>©</sup> 2003-2018 Acuant Inc. All rights reserved.
+*Copyright 2019 Acuant Inc. All rights reserved.*
 
-This document contains proprietary and confidential 
-information and creative works owned by Acuant and its respective
-licensors, if any. Any use, copying, publication, distribution, display,
-modification, or transmission of such technology in whole or in part in
-any form or by any means without the prior express written permission of
-Acuant is strictly prohibited. Except where expressly provided by Acuant
-in writing, possession of this information shall not be
-construed to confer any license or rights under any Acuant intellectual
-property rights, whether by estoppel, implication, or otherwise.
+This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
 
 AssureID and *i-D*entify are trademarks of Acuant Inc. Other Acuant product or service names or logos referenced this document are either trademarks or registered trademarks of Acuant.
 
 All 3M trademarks are trademarks of Gemalto Inc.
 
-Windows<sup>®</sup> is a registered trademark of Microsoft Corporation.
+Windows is a registered trademark of Microsoft Corporation.
 
 Certain product, service, or company designations for companies other
 than Acuant may be mentioned in this document for identification
@@ -29,7 +21,7 @@ designation appears in initial capital or all capital letters. However,
 you should contact the appropriate companies for more complete
 information regarding such designations and their registration status.
 
-**February 2019**
+**April 2019**
 
 <p>Acuant Inc.</p>
 <p>6080 Center Drive, Suite 850</p>
@@ -37,31 +29,80 @@ information regarding such designations and their registration status.
 <p>==================</p>
 
 
-**Step - 0 : Setup:**
+# Introduction #
 
-In the App manifest file, specify the permissions 
+This document provides detailed information about the Acuant Android SDK.
+
+## Modules ##
+
+The SDK includes the following modules:
+
+**Acuant Common Library (AcuantCommon) :**
+
+- Contains all shared internal models and supporting classes.
+
+**Acuant Camera Library (AcuantCamera) :**
+
+- Implemented using Camera 2 API with Google Vision for PDF417 barcode reading.
+- Uses AcuantImagePreparation for cropping.
+
+**Acuant Image Preparation Library (AcuantImagePreparation) :**
+
+- Contains all image processing such as cropping, calculation of sharpness and glare.	
+
+**Acuant Document Processing Library (AcuantDocumentProcessing) :**
+
+- Contains all the methods to upload the document images, process, and get results. 
+
+**Acuant Face Match Library (AcuantFaceMatch) :**    
+
+- Contains a method to match two facial images. 
+
+**Acuant EChip Reader Library (AcuantEChipReader):**
+
+- Contains methods for e-Passport chip reading and authentication.  
+
+**Acuant IP Liveness Library :**
+
+- Uses library for face capture and liveness calculation.
+- Enhanced Face Liveness.
+
+**Acuant HG Liveness Library (AcuantHGLiveness):**
+
+- Uses Camera 1 to capture facial liveness using a proprietary algorithm.
+
+
+
+### Setup ###
+
+
+
+1. Specify the permissions In the App manifest file:
 	
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.NFC" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+	    <uses-permission android:name="android.permission.INTERNET" />
+	    <uses-permission android:name="android.permission.CAMERA" />
+	    <uses-permission android:name="android.permission.NFC" />
+	    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+	
+		<uses-feature android:name="android.hardware.camera" />
+    	<uses-feature android:name="android.hardware.camera.autofocus" />
 
-    <uses-feature android:name="android.hardware.camera" />
-    <uses-feature android:name="android.hardware.camera.autofocus" />
-
-    <meta-data
-        android:name="com.google.android.gms.vision.DEPENDENCIES"
-        android:value="barcode,face"
-        tools:replace="android:value"/>
+	    <meta-data
+    	    android:name="com.google.android.gms.vision.DEPENDENCIES"
+    	    android:value="barcode,face"
+    	    tools:replace="android:value"/>
     
-Add the Acuant SDK dependency in build.gradle
-	
-	repositories {
-		//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveliness
-   		maven { url 'https://maven.google.com' }
-	}
 
-    dependencies {
+
+1. Add the Acuant SDK dependency in build.gradle:
+	
+		repositories {
+			//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveness
+			maven { url 'https://maven.google.com' }
+			maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
+		}
+
+    	dependencies {
       	//if possible, use v7:28.0.0 for android support version
       	//implementation 'com.android.support:appcompat-v7:28'
     	//implementation 'com.android.support:support-v4:28.0.0'
@@ -102,48 +143,22 @@ Add the Acuant SDK dependency in build.gradle
 	    
 	    //for reading epassport chips
 	    implementation project(path: ':acuantechipreader')
+
+    	 //face capture and liveliness
+	    implementation project(path: ':acuantipliveness')
+	    implementation('com.iproov.sdk:iproov:4.3.0@aar') {
+	        transitive = true
+	    }
 	    
 	    //face capture and liveliness
-	    implementation project(path: ':acuanthgliveliness')
+	    implementation project(path: ':acuanthgliveness')
 	    
 	    //image processing (cropping, glare, sharpness)
 	    implementation project(path: ':acuantimagepreparation')
-    }
-**Acuant Common Library :**
+  		}
+ 
 
-- Contains all shared internal models and services for Acuant.
-
-**Acuant Camera Library :**
-
-- Implemented in Camera 1 API with Google Vision for barcode reading
-- Uses AcuantImageProcessor for cropping
-
-**Acuant Document Processing Library :**
-
-- Contains all the services to connect to AssureID for document parsing, classifcation, and verfication.
-- Contains all the services to use face match feature. It makes a web service call to Acuant FRM endpoint.
-- Will match two images and return a match score from 0-100.
-
-**Acuant EChip Reader Library :**
-
-- Contains passport Echip reading feature.
-- Can parse Echip on passports.
-
-**Acuant HG Liveliness Library :**
-
-- Uses Google vision for face recognizition.
-- Uses Camera 1 to capture face.
-- Uses internal detection to calculate liveliness.
-
-**Acuant Image Preparation Library :**
-
-- Contains all image processing.
-- Cropping documents, caculating sharpness and glare.	
-Please refer to the sample Sample App to check how to set up the permissions and dependencies correctly    
-    
-**Step - 1 : Setup Acuant SDK :**
-
-1. 	Create an xml file with the following tags.
+1. 	Create an xml file with the following tags:
 
 		<?xml version="1.0" encoding="UTF-8" ?>
 		<setting>
@@ -155,11 +170,39 @@ Please refer to the sample Sample App to check how to set up the permissions and
 		    <assureid_endpoint></assureid_endpoint>
 		</setting>
 
-1.	Save file in application assets directory
+1.	Save the file in the application assets directory:
 
 		{PROJECT_ROOT_DIRECTORY} => app => src => main => assets => PATH/TO/CONFIG/FILENAME.XML
 
-1.	Initialize SDK in Application Instance.
+			
+### Capture an Image using AcuantCamera ###
+
+1. Start camera activity:
+
+        val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
+		cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, boolean)//default is true
+
+        startActivityForResult(cameraIntent, REQUEST_CODE) 
+        
+1. Get activity result:
+	
+		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        	super.onActivityResult(requestCode, resultCode, data)
+        	
+        	if (requestCode == REQUEST_CODE && AcuCameraActivity.RESULT_SUCCESS_CODE) 
+        	{
+            	val capturedImageUrl = data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL)
+            	val capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+        	}
+        }
+
+	**Note:**   **AcuantCamera** is depdendent on **AcuantImagePreparation** and  **AcuantCommon**.
+
+		 
+### AcuantImagePreparation ###
+
+
+- **Initialization**
 
 		class AppInstance : Application() {
 		
@@ -172,155 +215,146 @@ Please refer to the sample Sample App to check how to set up the permissions and
        			AcuantInitializer.intialize("PATH/TO/CONFIG/FILENAME.XML", this, listOf(ImageProcessorInitializer()))
 		    }
 		}
-			
-**Step - 2 : Capture an Image :**
 
-1. Start camera activity.
+- **Crop** 
 
-        val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
-		cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, boolean)//default is true
+	After an image is captured, it is sent to the cropping library for cropping.
 
-        startActivityForResult(cameraIntent, REQUEST_CODE) 
-        
-1. Get activity result.
+
+		//CroppingOptions, and CroppingData & Image are part of AcuantCommon.
+		
+		// Sample
+		 val options = CroppingOptions()
+   		 options.isHealthCard = false // Set to true if health insurance card
 	
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        	super.onActivityResult(requestCode, resultCode, data)
-        	
-        	if (requestCode == REQUEST_CODE && AcuCameraActivity.RESULT_SUCCESS_CODE) 
-        	{
-            	val capturedImageUrl = data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL)
-            	val capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
-        	}
-        }
-
-		 
-**Step - 3 : Cropping Image :**
-
-Once image is captured, its sent to the cropping library for cropping.
-
-1. Setting cropping options.
-
-	Set whether the captured images is an Health Insurance card or not and whether Image metrics (Sharpness and Glare) are required or not.
-	
-		class CroppingOptions (
-			val imageMetricsRequired: Boolean = false, 
-			val isHealthCard: Boolean = false)
-		
-1.	Setting the Image to be cropped
-		
-		class CroppingData (val image: Bitmap)
-		
-1. Crop.
-
-		@JvmStatic fun crop(options: CroppingOptions, data: CroppingData)
+  	  	val data = CroppingData()
+   	 	data.image = image
+   	 	acuantImage = AcuantImagePreparation.crop(options,data)
  		
- 		val acuantImage : Image = AcuantImagePreparation.crop(options, data);
- 		
-1. Image result.
+- **Sharpness**
 
-		class Image (
-			val image: Bitmap, 
-			val hasImageMetrics: Boolean,
-			val isSharp: Boolean,
-			val hasGlare: Boolean,
-			val sharpnessGrade: Float,
-			val glareGrade: Float,
-			val dpi: Int,
-			val aspectRatio: Float,
-			val isCorrectAspectRatio: Boolean,
-			val error: Error)
-		
-		
-		
-**Step 4 : Process captured images (Web Service call) :**
+	This method returns the sharpness value of an image. If the sharpness value is greater than 50, then the image is considered sharp.
 
-
-1. Create Instance
+		public static Integer sharpness(Bitmap image)
 		
-		class IdOptions (
-			//data to be returned from processing
-			//set to ProcessingMode.Authentication for document valdiation
-			val processingMode: ProcessingMode = ProcessingMode.Default,
-			
-			//front or back side of document
-			val cardSide: CardSide = CardSide.Front,
-			
-			//if we need to reupload image
-			val isRetrying: Boolean = false,
-			
-			//if is health card
-			val isHealthCard: Boolean = false)
+- **Glare**
 
-		AcuantDocumentProcessor.createInstance(idOptions) 
-		{ instanceId, error ->
-			if(error != null){
-				//handle error
-			}
-			else{
-				//save instanceId for future use
-			}
+	This method returns the glare value of an image. If glare value is greater than 50, then the image does not have glare.
+
+		public static Integer glare(Bitmap image)
+		
+### AcuantDocumentProcessing ###
+
+After a document image is captured, it can be processed using the following steps.
+
+**Note:**  If an upload fails with an error, retry the image upload using a better image.
+
+1. Create an instance:
+		
+		public static void createInstance(IdOptions options, CreateInstanceListener listener)
+		
+		public interface CreateInstanceListener {
+    		void instanceCreated(String instanceId, Error error);
 		}
 		
-1. Upload Image and classify.
+1. Upload an image:
 
-		class IdData (val image: Bitmap, val barcodString: String?)
-
-		AcuantDocumentProcessor.uploadImage(instanceId, idData, idOptions) 
-		{ error, classification ->
-            if (error == null) {
-                // Successfully uploaded
-                if(classification.presentationChanged){
-                	//back image was uploaded, now upload front image
-                }
-                else if(isBackSideRequired(classification)) {
-                  	//upload back image
-                }else{
-                    //get data
-                }
-
-            } else {
-                //handle error  
-            }
-        }
-        
-        fun isBackSideRequired(classification : Classification?):Boolean{
-	        var isBackSideScanRequired = false
-	        if (classification?.type != null && classification.type.supportedImages != null) {
-	            val list = classification.type.supportedImages as ArrayList<HashMap<*, *>>
-	            for (i in list.indices) {
-	                val map = list[i]
-	                if (map["Light"] == 0) {
-	                    if (map["Side"] == 1) {
-	                        isBackSideScanRequired = true
-	                    }
-	                }
-	            }
-	       }
-        	return isBackSideScanRequired
-    	}
-
-1. Upload another image (If needed).
-
-1. Get Data.
+		public static void uploadImage(String instanceID, IdData idData, 
+		IdOptions options, UploadImageListener listener)
 		
-		AcuantDocumentProcessor.getData(instanceId, isHealthCard) 
-		{ result ->
-            if (result == null || result.error != null) {
-                //handle error
-            } 
-            else {
-                //success!! use result
-            }
-        }
+		public interface UploadImageListener {
+    		void imageUploaded(Error error, Classification classification);
+		}
+		
+1. Get the data:
+		
+		public static void getData(String instanceID,boolean isHealthCard, GetDataListener listener)
+		
+		public interface GetDataListener {
+    		void processingResultReceived(ProcessingResult result);
+		}
         
-**Step 5: Face Capture with AcuantHGLiveliness:**
+1. Delete the instance:
+
+
+		public static void deleteInstance(String instanceId, DeleteType type, DeleteListener listener)
+		
+		public interface DeleteListener {
+    		public void instanceDeleted(boolean success);
+		}
+		
+		
+### AcuantIPLiveness ###
+1. Get setup from controller and start activity.
+
+		AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
+            override fun onDataReceived(result: FacialSetupResult?) {
+                if(result != null){
+                	//start face capture activity
+                    val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
+                    startActivityForResult(facialIntent, REQUEST_CODE)
+                }
+                else{
+                	//handle error
+                }
+            }
+
+            override fun onError(errorCode: Int, description: String?) {
+                //handle error
+            }
+        })
+        
+1. Get Activity result.
+
+		
+		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+		    super.onActivityResult(requestCode, resultCode, data)
+		
+		    if (requestCode == REQUEST_CODE) {
+	            if(resultCode == ErrorCodes.ERROR_CAPTURING_FACIAL){
+	                //handle capture error
+	            }
+	            else if (resultCode == ErrorCodes.USER_CANCELED_FACIAL){
+	                //user canceled activity
+	            }
+	            else{
+	        	   	//success capturing. now get the result with parameters.
+	                val userId = data?.getStringExtra(FacialCaptureConstant.ACUANT_USERID_KEY)!!
+	                val token = data?.getStringExtra(FacialCaptureConstant.ACUANT_TOKEN_KEY)!!
+	            }
+        	}
+		}
+		
+1. Get Capture Result.
+		
+		//isPassed = true if face is live. false if face is not live.
+		//frame contains the base64 encoded image
+		data class FacialCaptureResult (isPassed: Boolean, frame: String) 
+
+		AcuantIPLiveness.getFacialLiveness(
+            token,
+            userId,
+            object: FacialCaptureLisenter {
+                override fun onDataReceived(result: FacialCaptureResult) {
+                    //use result
+                }
+
+                override fun onError(errorCode:Int, errorDescription: String) {
+                    //handle error
+                }
+            }
+        )	
+
+		
+### AcuantHGLiveness ###
+
+This module checks for liveness (whether the subject is a live person) by using blink detection. 
 
 1. Start Activity
 
 		val cameraIntent = Intent(
                 this@MainActivity,
-                FacialLivelinessActivity::class.java
+                FacialLivenessActivity::class.java
         )
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
         
@@ -339,30 +373,53 @@ Once image is captured, its sent to the cropping library for cropping.
 	            }
         	}
 		}
-		
- 
-**Step 6: Face Match :**
 
-1. Set face match data.
-		 
-		 class FacialMatchData (faceImageOne: Bitmap, faceImageTwo:Bitmap)
-
-2. Start face match request with controller. Use result.
-
-		class FacialMatchResult (isMatch: Boolean, score: Int, transactionId: String, error:Error)
-
-		AcuantFaceMatch.processFacialMatch(facialMatchData, object : FacialMatchListener {
-	        override fun facialMatchFinished(result: FacialMatchResult?) {
-        			//use result
-	            }
-	        }
-        })
-
-
-
-**Extra Classes :**
 	
-1. ErrorCodes 
+### AcuantFaceMatch ###
+
+This module is used to match two facial images:
+
+	fun processFacialMatch(facialData: FacialMatchData, listener: FacialMatchListener?)
+	
+	public interface FacialMatchListener {
+    	public void facialMatchFinished(FacialMatchResult result);
+	}
+
+### AcuantEChipReader ###
+
+
+1. Check that the permission is provided in the manifest file:
+
+		<uses-permission android:name="android.permission.NFC" />
+
+1. Make sure that the NFC sensor on the device is turned on.
+
+1. Initialize the Android NFC Adapter:
+
+		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+
+1. Use the SDK API to listen to NFC tags available in an e-Passport:
+
+		public static void listenNFC(Activity activity,
+		 NfcAdapter nfcAdapterParam, NFCTagReadingListener listener)
+		 
+		 public interface NFCTagReadingListener {
+    		public void tagReadSucceeded(final NFCData nfcData, 
+    		final Bitmap face_image, final Bitmap sign_image);
+    	
+    		public void tagReadFailed(final String tag_read_error_message);
+		}
+		
+	If an NFC tag is discovered, then the control will return to the method of the Activity that was previously overridden:
+
+		override fun onNewIntent(intent: Intent) {
+        	super.onNewIntent(intent)
+        
+        	// Read the information from the tag as below
+        	AcuantEchipReader.readNFCTag(this, intent, docNumber, dateOfBirth, dateOfExpiry)
+    	}
+
+### Error codes ###
 
 		public class ErrorCodes
 		{
@@ -393,7 +450,7 @@ Once image is captured, its sent to the cropping library for cropping.
 		
 		}
 		
-1. Error Description 
+### Error descriptions ###
 
 		public class ErrorDescriptions {
 		    public final static String ERROR_DESC_InvalidCredentials = "Invalid credentials";
@@ -417,7 +474,15 @@ Once image is captured, its sent to the cropping library for cropping.
 		    public final static String ERROR_DESC_NETWORK_FACIAL_IPROOV = "Failed to connect to IProov";
 		}
 
+### Image ###
 
+	public class Image {
+    	public Bitmap image;
+    	public int dpi;
+    	public boolean isCorrectAspectRatio;
+    	public float aspectRatio;
+    	public Error error;
+	}
 
 
         
