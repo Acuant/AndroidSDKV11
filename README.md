@@ -39,37 +39,37 @@ The SDK includes the following modules:
 
 **Acuant Common Library (AcuantCommon) :**
 
-- Contains all shared internal models and supporting classes.
+- Contains all shared internal models and supporting classes
 
 **Acuant Camera Library (AcuantCamera) :**
 
-- Implemented using Camera 2 API with Google Vision for PDF417 barcode reading.
+- Implemented using Camera 2 API with Google Vision for reading PDF417 barcodes
 - Uses AcuantImagePreparation for cropping.
 
 **Acuant Image Preparation Library (AcuantImagePreparation) :**
 
-- Contains all image processing such as cropping, calculation of sharpness and glare.	
+- Contains all image processing including cropping and calculation of sharpness and glare
 
 **Acuant Document Processing Library (AcuantDocumentProcessing) :**
 
-- Contains all the methods to upload the document images, process, and get results. 
+- Contains all the methods to upload the document images, process, and get results
 
 **Acuant Face Match Library (AcuantFaceMatch) :**    
 
-- Contains a method to match two facial images. 
+- Contains a method to match two facial images 
 
 **Acuant EChip Reader Library (AcuantEChipReader):**
 
-- Contains methods for e-Passport chip reading and authentication.  
+- Contains methods for e-Passport chip reading and authentication 
 
 **Acuant IP Liveness Library (AcuantIPLiveness):**
 
-- Uses library for face capture and liveness calculation.
-- Enhanced Face Liveness.
+- Uses library for capturing a facial image and calculating liveness
+- Enhanced Face Liveness
 
 **Acuant HG Liveness Library (AcuantHGLiveness):**
 
-- Uses Camera 1 to capture facial liveness using a proprietary algorithm.
+- Uses Camera 1 to capture facial liveness using a proprietary algorithm
 
 
 
@@ -77,7 +77,7 @@ The SDK includes the following modules:
 
 
 
-1. Specify the permissions In the App manifest file:
+1. Specify the permissions in the App manifest file:
 	
 	    <uses-permission android:name="android.permission.INTERNET" />
 	    <uses-permission android:name="android.permission.CAMERA" />
@@ -92,8 +92,6 @@ The SDK includes the following modules:
     	    android:value="barcode,face"
     	    tools:replace="android:value"/>
     
-
-
 1. Add the Acuant SDK dependency in build.gradle:
 	
 		repositories {
@@ -156,7 +154,28 @@ The SDK includes the following modules:
 	    //image processing (cropping, glare, sharpness)
 	    implementation project(path: ':acuantimagepreparation')
   		}
- 
+  		
+1. Add the Acuant SDK dependency in build.gradle if using Maven
+
+	- Add the following Maven URL
+	
+			maven {url  "https://dl.bintray.com/acuant/Acuant"}
+        	maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
+        	
+    - Add the pfollowing depedencies
+
+    		implementation 'com.acuant:acuantcommon:11.2'
+    		implementation 'com.acuant:acuantcamera:11.2'
+    		implementation 'com.acuant:acuantimagepreparation:11.2'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.2'
+    		implementation 'com.acuant:acuantechipreader:11.2'
+    		implementation 'com.acuant:acuantfacematch:11.1'
+    		implementation 'com.acuant:acuanthgliveness:11.1'
+    		implementation 'com.acuant:acuantipliveness:11.1'
+    		implementation('com.iproov.sdk:iproov:4.3.0@aar') {
+        		transitive = true
+    		}
+
 
 1. 	Create an xml file with the following tags:
 
@@ -245,7 +264,7 @@ The SDK includes the following modules:
 		
 ### AcuantDocumentProcessing ###
 
-After a document image is captured, it can be processed using the following steps.
+After you capture a document image is captured, use the following steps to process the image.
 
 **Note:**  If an upload fails with an error, retry the image upload using a better image.
 
@@ -285,7 +304,7 @@ After a document image is captured, it can be processed using the following step
 		
 		
 ### AcuantIPLiveness ###
-1. Get setup from controller and start activity.
+1. Get the setup from the controller and begin Activity:
 
 		AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
             override fun onDataReceived(result: FacialSetupResult?) {
@@ -304,8 +323,7 @@ After a document image is captured, it can be processed using the following step
             }
         })
         
-1. Get Activity result.
-
+1. Get the Activity result:
 		
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		    super.onActivityResult(requestCode, resultCode, data)
@@ -325,7 +343,7 @@ After a document image is captured, it can be processed using the following step
         	}
 		}
 		
-1. Get Capture Result.
+1. Get the facial capture result:
 		
 		//isPassed = true if face is live. false if face is not live.
 		//frame contains the base64 encoded image
@@ -350,7 +368,7 @@ After a document image is captured, it can be processed using the following step
 
 This module checks for liveness (whether the subject is a live person) by using blink detection. 
 
-1. Start Activity
+1. Begin Activity:
 
 		val cameraIntent = Intent(
                 this@MainActivity,
@@ -358,7 +376,7 @@ This module checks for liveness (whether the subject is a live person) by using 
         )
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
         
-1. Get Activity result.
+1. Get the Activity result:
 
 		
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
