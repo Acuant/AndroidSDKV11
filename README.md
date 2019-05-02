@@ -162,7 +162,7 @@ The SDK includes the following modules:
 			maven {url  "https://dl.bintray.com/acuant/Acuant"}
         	maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
-    - Add the following depedencies
+    - Add the pfollowing depedencies
 
     		implementation 'com.acuant:acuantcommon:11.2'
     		implementation 'com.acuant:acuantcamera:11.2'
@@ -171,7 +171,8 @@ The SDK includes the following modules:
     		implementation 'com.acuant:acuantechipreader:11.2'
     		implementation 'com.acuant:acuantfacematch:11.1'
     		implementation 'com.acuant:acuanthgliveness:11.1'
-    		implementation ('com.acuant:acuantipliveness:11.1'){
+    		implementation 'com.acuant:acuantipliveness:11.1'
+    		implementation('com.iproov.sdk:iproov:4.3.0@aar') {
         		transitive = true
     		}
 

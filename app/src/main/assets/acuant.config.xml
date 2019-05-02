@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <setting>
-<acuant_username>*****</acuant_username>
-<acuant_password>*****</acuant_password>
-<acuant_subscription>*****</acuant_subscription>
-<frm_endpoint>*****</frm_endpoint>
-<med_endpoint>*****</med_endpoint>
-<assureid_endpoint>*****</assureid_endpoint>
+    <acuant_username>XXX</acuant_username>
+    <acuant_password>XXX</acuant_password>
+    <acuant_subscription>XXX</acuant_subscription>
+    <frm_endpoint>XXX</frm_endpoint>
+    <med_endpoint>XXX</med_endpoint>
+    <assureid_endpoint>XXX</assureid_endpoint>
 </setting>
