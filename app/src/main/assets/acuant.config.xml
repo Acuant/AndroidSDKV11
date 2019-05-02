@@ -3,7 +3,7 @@
     <acuant_username>XXX</acuant_username>
     <acuant_password>XXX</acuant_password>
     <acuant_subscription>XXX</acuant_subscription>
-    <frm_endpoint>XXX</frm_endpoint>
-    <med_endpoint>XXX</med_endpoint>
-    <assureid_endpoint>XXX</assureid_endpoint>
+    <frm_endpoint>https://frm.acuant.net</frm_endpoint>
+    <med_endpoint>https://medicscan.acuant.net</med_endpoint>
+    <assureid_endpoint>https://services.assureid.net</assureid_endpoint>
 </setting>
