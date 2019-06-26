@@ -1,11 +1,11 @@
 package com.acuant.acuantcamera.detector.document
 
 import android.graphics.Bitmap
+import android.util.Size
 import com.acuant.acuantcamera.detector.IAcuantDetector
 import com.acuant.acuantcommon.model.Image
 import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.acuant.acuantimagepreparation.model.CroppingData
-import com.acuant.acuantimagepreparation.model.CroppingOptions
 
 class AcuantDocumentDetector(private val callback: AcuantDocumentDectectorHandler): IAcuantDetector {
     override fun detect(bitmap: Bitmap?){
@@ -13,14 +13,11 @@ class AcuantDocumentDetector(private val callback: AcuantDocumentDectectorHandle
         var croppedImage: Image? = null
 
         if(bitmap != null){
-            val options = CroppingOptions()
-            options.isHealthCard = false
-
             val data = CroppingData()
             data.image = bitmap
 
             try{
-                croppedImage = AcuantImagePreparation.crop(options, data)
+                croppedImage = AcuantImagePreparation.crop(data)
             }
             catch(e: Exception){
                 e.printStackTrace()

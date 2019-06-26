@@ -21,6 +21,7 @@ import android.util.SparseIntArray
 import android.view.*
 import android.widget.TextView
 import com.acuant.acuantcamera.R
+import com.acuant.acuantcamera.constant.ACUANT_EXTRA_BORDER_ENABLED
 import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IS_AUTO_CAPTURE
 import com.acuant.acuantcamera.constant.MINIMUM_DPI
 import com.acuant.acuantcamera.helper.AutoFitTextureView
@@ -37,6 +38,7 @@ import com.acuant.acuantcamera.detector.document.AcuantDocumentDectectorHandler
 import com.acuant.acuantcamera.detector.document.AcuantDocumentDetector
 import com.acuant.acuantcamera.helper.ImageSaveHandler
 import com.acuant.acuantcamera.overlay.AcuantOrientationListener
+import com.acuant.acuantcamera.overlay.RectangleView
 import com.acuant.acuantcommon.helper.CardDetectorHelper
 import java.io.File
 import java.lang.Exception
@@ -148,25 +150,48 @@ class AcuantCameraFragment : Fragment(),
             targetSmallDocDpi
         }
     }
+    private var rectangleView: RectangleView? = null
+
+    private fun drawBorder(points: Array<Point>?){
+        if(points != null){
+            val scaledPointY = textureView.height.toFloat()/previewSize.width.toFloat();
+            val scaledPointX = textureView.width.toFloat()/previewSize.height.toFloat();
+            rectangleView!!.setWidth(textureView.width.toFloat())
+
+            points.apply {
+                this.forEach {
+                    it.x = (it.x * scaledPointY).toInt()
+                    it.y = (it.y * scaledPointX).toInt()
+                }
+            }
+            rectangleView!!.setAndDrawPoints(points)
+        }
+        else{
+            rectangleView!!.setAndDrawPoints(null)
+        }
+    }
 
     override fun onDetected(croppedImage: com.acuant.acuantcommon.model.Image?, cropDuration: Long) {
         activity?.runOnUiThread {
             when {
                 croppedImage?.image == null || croppedImage.dpi < MINIMUM_DPI -> {
                     unlockFocus()
-                    textView.setBackgroundColor(Color.GRAY)
+                    rectangleView!!.setColor(Color.RED)
+                    textView.setBackgroundColor(gray_transparent)
                     textView.text = "ALIGN"
                     detectedCount = 0
                 }
                 croppedImage.dpi < getTargetDpi(croppedImage.aspectRatio) -> {
                     unlockFocus()
-                    textView.setBackgroundColor(Color.GRAY)
+                    rectangleView!!.setColor(Color.RED)
+                    textView.setBackgroundColor(gray_transparent)
                     textView.text = "MOVE CLOSER"
                     detectedCount = 0
                 }
                 !croppedImage.isCorrectAspectRatio -> {
                     unlockFocus()
-                    textView.setBackgroundColor(Color.GRAY)
+                    rectangleView!!.setColor(Color.RED)
+                    textView.setBackgroundColor(gray_transparent)
                     textView.text = "MOVE CLOSER"
                     detectedCount = 0
                 }
@@ -176,18 +201,25 @@ class AcuantCameraFragment : Fragment(),
                     when {
                         detectedCount < threshold -> {
                             detectedCount++
-                            textView.setBackgroundColor(Color.RED)
+                            textView.setBackgroundColor(red_transparent)
                             textView.text = "HOLD STEADY"
+                            rectangleView!!.setColor(Color.RED)
+
                         }
                         else -> {
                             this.isCapturing = true
-                            textView.setBackgroundColor(Color.GREEN)
+                            textView.setBackgroundColor(green_transparent)
                             textView.text = "CAPTURING"
+                            rectangleView!!.setColor(Color.GREEN)
                             lockFocus()
                         }
                     }
                 }
             }
+            if(isBorderEnabled){
+                drawBorder(croppedImage?.points)
+            }
+
             this.isProcessing = false
         }
     }
@@ -305,7 +337,8 @@ class AcuantCameraFragment : Fragment(),
                     val aeState = result.get(CaptureResult.CONTROL_AE_STATE)
                     if (aeState == null ||
                             aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
-                            aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED) {
+                            aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED ||
+                            aeState == CaptureRequest.CONTROL_AE_STATE_CONVERGED) {
                         state = STATE_WAITING_NON_PRECAPTURE
                     }
                 }
@@ -320,21 +353,21 @@ class AcuantCameraFragment : Fragment(),
             }
         }
 
+        private var focusStateCounter = 0
         private fun capturePicture(result: CaptureResult) {
             val afState = result.get(CaptureResult.CONTROL_AF_STATE)
             if (afState == null) {
-                state = STATE_PICTURE_TAKEN
-                captureStillPicture()
+                if(focusStateCounter < 3){
+                    focusStateCounter++
+                }
+                else{
+                    state = STATE_PICTURE_TAKEN
+                    captureStillPicture()
+                }
             } else if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED
                     || afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
                 // CONTROL_AE_STATE can be null on some devices
-                val aeState = result.get(CaptureResult.CONTROL_AE_STATE)
-                if (aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
-                    state = STATE_PICTURE_TAKEN
-                    captureStillPicture()
-                } else {
-                    runPrecaptureSequence()
-                }
+                runPrecaptureSequence()
             }
         }
 
@@ -357,11 +390,13 @@ class AcuantCameraFragment : Fragment(),
     private var isCapturing = false
     private var isProcessing = false
     private var isAutoCapture = true
+    private var isBorderEnabled = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         detectors = listOf(AcuantDocumentDetector(this), AcuantBarcodeDetector(context!!,this))
         isAutoCapture = arguments?.getBoolean(ACUANT_EXTRA_IS_AUTO_CAPTURE) ?: true
+        isBorderEnabled = arguments?.getBoolean(ACUANT_EXTRA_BORDER_ENABLED) ?: true
     }
 
     override fun onDestroy() {
@@ -380,8 +415,21 @@ class AcuantCameraFragment : Fragment(),
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         textureView = view.findViewById(R.id.texture)
         textView = view.findViewById(R.id.acu_display_text)
+        rectangleView = view.findViewById(R.id.acu_rectangle)
         orientationListener = AcuantOrientationListener(context!!, textView)
+
+        red_transparent = getColorWithAlpha(Color.RED, .50f)
+        gray_transparent = getColorWithAlpha(Color.BLACK, .50f)
+        green_transparent = getColorWithAlpha(Color.GREEN, .50f)
+
     }
+    private fun getColorWithAlpha(color: Int, ratio: Float): Int {
+        return Color.argb(Math.round(Color.alpha(color) * ratio), Color.red(color), Color.green(color), Color.blue(color))
+    }
+    private var red_transparent: Int = 0
+    private var gray_transparent: Int = 0
+    private var green_transparent: Int = 0
+
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
@@ -436,7 +484,7 @@ class AcuantCameraFragment : Fragment(),
             textureView.setOnClickListener{
                 activity?.runOnUiThread{
                     this.isCapturing = true
-                    textView.setBackgroundColor(Color.GREEN)
+                    textView.setBackgroundColor(green_transparent)
                     textView.text = "CAPTURING"
                     lockFocus()
                 }
@@ -502,7 +550,7 @@ class AcuantCameraFragment : Fragment(),
                 targetSmallDocDpi = (previewSize.width * SMALL_DOC_DPI_SCALE_VALUE).toInt()
                 targetLargeDocDpi = (previewSize.width * LARGE_DOC_DPI_SCALE_VALUE).toInt()
 
-                imageReader = ImageReader.newInstance(previewSize.width , previewSize.width * maxPreviewHeight / maxPreviewWidth,
+                imageReader = ImageReader.newInstance(previewSize.width , previewSize.height,
                         ImageFormat.YUV_420_888, /*maxImages*/ 3).apply {
                     setOnImageAvailableListener(onFrameImageAvailableListener, backgroundHandler)
                 }
@@ -678,8 +726,11 @@ class AcuantCameraFragment : Fragment(),
                                 // Auto focus should be continuous for camera preview.
                                 previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                                // Flash is automatically enabled when necessary.
-                                setAutoFlash(previewRequestBuilder)
+
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+                                previewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
+                                previewRequestBuilder.set(CaptureRequest.JPEG_QUALITY, 100)
 
                                 // Finally, we start displaying the camera preview.
                                 previewRequest = previewRequestBuilder.build()
@@ -751,6 +802,7 @@ class AcuantCameraFragment : Fragment(),
             // This is how to tell the camera to lock focus.
             previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_START)
+
             // Tell #captureCallback to wait for the lock.
             state = STATE_WAITING_LOCK
             captureSession?.capture(previewRequestBuilder.build(), captureCallback,
@@ -798,6 +850,10 @@ class AcuantCameraFragment : Fragment(),
             val captureBuilder = cameraDevice!!.createCaptureRequest(
                     CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
                 addTarget(captureImageReader!!.surface)
+                set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+                set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+                set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
+                set(CaptureRequest.JPEG_QUALITY, 100)
 
                 // Sensor orientation is 90 for most devices, or 270 for some devices (eg. Nexus 5X)
                 // We have to take that into account and rotate JPEG properly.
@@ -809,7 +865,7 @@ class AcuantCameraFragment : Fragment(),
                 // Use the same AE and AF modes as the preview.
                 set(CaptureRequest.CONTROL_AF_MODE,
                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-            }.also { setAutoFlash(it) }
+            }.also { }
 
             val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
@@ -846,7 +902,7 @@ class AcuantCameraFragment : Fragment(),
             // Reset the auto-focus trigger
             previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL)
-            setAutoFlash(previewRequestBuilder)
+
             captureSession?.capture(previewRequestBuilder.build(), captureCallback,
                     backgroundHandler)
         }
@@ -857,13 +913,6 @@ class AcuantCameraFragment : Fragment(),
             e.printStackTrace()
         }
 
-    }
-
-    private fun setAutoFlash(requestBuilder: CaptureRequest.Builder) {
-        if (flashSupported) {
-            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
-                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
-        }
     }
 
     companion object {
@@ -917,6 +966,7 @@ class AcuantCameraFragment : Fragment(),
         private const val MEDIUM_DETECTION_THRESHOLD = 2
         private const val FAST_DETECTION_THRESHOLD = 4
 
+        private const val CROP_BORDER_VISIBILITY_THRESHOLD = 500
         /**
          * Target DPI for preview size 1920x1080 = 350
          * SMALL_DOC_DPI_SCALE_VALUE = target_dpi/preview_size_width

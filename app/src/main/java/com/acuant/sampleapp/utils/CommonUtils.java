@@ -95,6 +95,7 @@ public class CommonUtils {
             String file_path = Environment.getExternalStorageDirectory().getAbsolutePath() +
                     "/sdcard/"+fileName+".png";
             File file = new File(file_path);
+            file.getParentFile().mkdirs();
             if(file.exists()==false) {
                 file.createNewFile();
             }

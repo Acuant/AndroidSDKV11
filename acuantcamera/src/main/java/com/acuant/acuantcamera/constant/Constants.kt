@@ -7,5 +7,6 @@ package com.acuant.acuantcamera.constant
 @JvmField val ACUANT_EXTRA_IMAGE_URL = "imageUrl"
 @JvmField val ACUANT_EXTRA_PDF417_BARCODE = "barCodeString"
 @JvmField val ACUANT_EXTRA_IS_AUTO_CAPTURE = "isAutoCapture"
+@JvmField val ACUANT_EXTRA_BORDER_ENABLED = "borderEnabled"
 @JvmField val MINIMUM_DPI = 20
 @JvmField val MINIMUM_REQUIRED_DPI = 160

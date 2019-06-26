@@ -10,6 +10,12 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.*
+import kotlin.experimental.xor
+import android.R.attr.left
+import android.graphics.ImageFormat
+import android.graphics.YuvImage
+
+
 
 /**
  * Saves a JPEG [Image] into the specified [File].
@@ -63,62 +69,71 @@ internal class ImageSaver(
         private val TAG = "ImageSaver"
 
         @JvmStatic fun imageToByteArray(image: Image, quality: Int = 50): ByteArray {
-            val ib = convertYUV420ToN21(image, false)
+            return NV21toJPEG(YUV420toNV21(image), image.getWidth(), image.getHeight(), 100)
+        }
 
-            val yuvImage =  YuvImage(ib!!.array(), ImageFormat.NV21, image.width, image.height, null)
+        private fun NV21toJPEG(nv21: ByteArray, width: Int, height: Int, quality: Int): ByteArray {
             val out = ByteArrayOutputStream()
-            yuvImage.compressToJpeg(Rect(0, 0, image.width, image.height), quality, out)
+            val yuv = YuvImage(nv21, ImageFormat.NV21, width, height, null)
+            yuv.compressToJpeg(Rect(0, 0, width, height), quality, out)
             return out.toByteArray()
         }
 
-        private fun getRawCopy(buff: ByteBuffer) : ByteArray {
-            val rawCopy = ByteBuffer.allocate(buff.capacity())
-            rawCopy.put(buff)
-            return rawCopy.array()
-        }
+        private fun YUV420toNV21(image: Image): ByteArray {
+            val crop = image.cropRect
+            val format = image.format
+            val width = crop.width()
+            val height = crop.height()
+            val planes = image.planes
+            val data = ByteArray(width * height * ImageFormat.getBitsPerPixel(format) / 8)
+            val rowData = ByteArray(planes[0].rowStride)
 
-        private fun convertYUV420ToN21(imgYUV420: Image, grayscale: Boolean): ByteBuffer? {
-
-            val yPlane = imgYUV420.planes[0]
-            val yData = getRawCopy(yPlane.buffer)
-
-            val uPlane = imgYUV420.planes[1]
-            val uData = getRawCopy(uPlane.buffer)
-
-            val vPlane = imgYUV420.planes[2]
-            val vData = getRawCopy(vPlane.buffer)
-
-            // NV21 stores a full frame luma (y) and half frame chroma (u,v), so total size is
-            // size(y) + size(y) / 2 + size(y) / 2 = size(y) + size(y) / 2 * 2 = size(y) + size(y) = 2 * size(y)
-            val npix = imgYUV420.width * imgYUV420.height
-            val nv21Image = ByteArray(npix * 2)
-            Arrays.fill(nv21Image, 127.toByte()) // 127 -> 0 chroma (luma will be overwritten in either case)
-
-            try{
-                val nv21Buffer = ByteBuffer.wrap(nv21Image)
-                for(i in 0 until imgYUV420.height) {
-                    nv21Buffer.put(yData, i * yPlane.rowStride, imgYUV420.width);
-                }
-                // Copy the u and v planes interlaced
-                if(!grayscale) {
-                    for (row in 0 until (imgYUV420.height / 2)) {
-                        var upix = 0
-                        var vpix = 0
-                        for(cnt in 0 until imgYUV420.width / 2){
-                            nv21Buffer.put(uData[row * uPlane.rowStride + upix])
-                            nv21Buffer.put(vData[row * vPlane.rowStride + vpix])
-                            upix += uPlane.pixelStride
-                            vpix += vPlane.pixelStride
-                        }
+            var channelOffset = 0
+            var outputStride = 1
+            for (i in planes.indices) {
+                when (i) {
+                    0 -> {
+                        channelOffset = 0
+                        outputStride = 1
+                    }
+                    1 -> {
+                        channelOffset = width * height + 1
+                        outputStride = 2
+                    }
+                    2 -> {
+                        channelOffset = width * height
+                        outputStride = 2
                     }
                 }
 
-                return nv21Buffer;
+                val buffer = planes[i].buffer
+                val rowStride = planes[i].rowStride
+                val pixelStride = planes[i].pixelStride
+
+                val shift = if (i == 0) 0 else 1
+                val w = width shr shift
+                val h = height shr shift
+                buffer.position(rowStride * (crop.top shr shift) + pixelStride * (crop.left shr shift))
+                for (row in 0 until h) {
+                    val length: Int
+                    if (pixelStride == 1 && outputStride == 1) {
+                        length = w
+                        buffer.get(data, channelOffset, length)
+                        channelOffset += length
+                    } else {
+                        length = (w - 1) * pixelStride + 1
+                        buffer.get(rowData, 0, length)
+                        for (col in 0 until w) {
+                            data[channelOffset] = rowData[col * pixelStride]
+                            channelOffset += outputStride
+                        }
+                    }
+                    if (row < h - 1) {
+                        buffer.position(buffer.position() + rowStride - length)
+                    }
+                }
             }
-            catch(e:Exception){
-                e.printStackTrace()
-            }
-            return null
+            return data
         }
     }
 }

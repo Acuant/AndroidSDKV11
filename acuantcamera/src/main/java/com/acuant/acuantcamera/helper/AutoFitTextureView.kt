@@ -52,11 +52,11 @@ class AutoFitTextureView @JvmOverloads constructor(
             setMeasuredDimension(width, height)
         }
         else {
-            if((height * ratioWidth / ratioHeight) < maxWidth ){
-                setMeasuredDimension(width, width *  ratioHeight/ratioWidth)
+            if((height * ratioWidth / ratioHeight) <= maxWidth ){
+                setMeasuredDimension(width, (width *  ratioHeight/ratioWidth.toFloat()).toInt())
             }
             else{
-                setMeasuredDimension(height * ratioWidth / ratioHeight, height)
+                setMeasuredDimension((height * ratioWidth / ratioHeight.toFloat()).toInt(), height)
             }
         }
     }

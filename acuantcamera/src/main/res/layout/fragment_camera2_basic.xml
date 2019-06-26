@@ -40,7 +40,7 @@
         android:id="@+id/acu_display_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/gray"
+        android:background="@color/gray_transparent"
         android:gravity="center"
         android:paddingHorizontal="60dp"
         android:paddingVertical="15dp"
@@ -48,5 +48,15 @@
         android:text="ALIGN"
         android:textColor="@color/white"
         android:textSize="33sp" />
+    </RelativeLayout>
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center">
+
+        <com.acuant.acuantcamera.overlay.RectangleView
+            android:id="@+id/acu_rectangle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
     </RelativeLayout>
 </RelativeLayout>

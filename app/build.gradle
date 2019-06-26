@@ -72,19 +72,19 @@ dependencies {
 
     implementation group: 'com.github.mhshams', name: 'jnbis', version: '1.0.4'//echip
 
-    implementation('org.jmrtd:jmrtd:0.5.13') {
+    implementation('org.jmrtd:jmrtd:0.7.11') {
         transitive = true;
     }
-    implementation('org.ejbca.cvc:cert-cvc:1.4.3') {
+    implementation('org.ejbca.cvc:cert-cvc:1.4.6') {
         transitive = true;
     }
-    implementation('com.madgag.spongycastle:prov:1.54.0.0') {
+    implementation('org.bouncycastle:bcprov-jdk15on:1.61') {
         transitive = true;
     }
-    implementation('net.sf.scuba:scuba-sc-android:0.0.9') {
+    implementation('net.sf.scuba:scuba-sc-android:0.0.18') {
         transitive = true;
     }
-    implementation('com.iproov.sdk:iproov:4.3.0@aar') {
+    implementation('com.iproov.sdk:iproov:4.4.0@aar') {
         transitive = true
     }
     implementation project(path: ':acuantcommon')

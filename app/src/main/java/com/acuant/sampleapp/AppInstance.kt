@@ -24,7 +24,6 @@ class AppInstance : Application() {
         mDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler(mCaughtExceptionHandler);
 
-        AcuantInitializer.intialize("acuant.config.xml", this, listOf(ImageProcessorInitializer()))
     }
 
     override fun onTerminate() {
