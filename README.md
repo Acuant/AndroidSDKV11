@@ -135,7 +135,7 @@ The SDK includes the following modules:
 	    //internal common library
 	    implementation project(path: ':acuantcommon')
 	    
-	    //camera with autocapture - Uses camera 1 API
+	    //camera with autocapture - Uses camera 2 API
 	    implementation project(path: ':acuantcamera')
 	    
 	    //document parse, classifcation, authentication
@@ -149,7 +149,7 @@ The SDK includes the following modules:
 
     	 //face capture and liveliness
 	    implementation project(path: ':acuantipliveness')
-	    implementation('com.iproov.sdk:iproov:4.3.0@aar') {
+	    implementation('com.iproov.sdk:iproov:4.4.0@aar') {
 	        transitive = true
 	    }
 	    
