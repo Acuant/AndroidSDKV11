@@ -244,7 +244,7 @@ The SDK includes the following modules:
 							override fun onInitializeSuccess() {
 								//success
 							}
-
+							
 							override fun onInitializeFailed(error: List<Error>) {
 								//error
 							}
@@ -263,9 +263,9 @@ The SDK includes the following modules:
 
 		//CroppingData & Image are part of AcuantCommon
 	
-  	  	val data = CroppingData()
-   	 	data.image = image
-   	 	acuantImage = AcuantImagePreparation.crop(data)
+		val data = CroppingData()
+		data.image = image
+		acuantImage = AcuantImagePreparation.crop(data)
  		
 - **Sharpness**
 
@@ -295,8 +295,7 @@ After you capture a document image is captured, use the following steps to proce
 		
 1. Upload an image:
 
-		public static void uploadImage(String instanceID, IdData idData, 
-		IdOptions options, UploadImageListener listener)
+		public static void uploadImage(String instanceID, IdData idData, IdOptions options, UploadImageListener listener)
 		
 		public interface UploadImageListener {
     		void imageUploaded(Error error, Classification classification);
@@ -399,14 +398,15 @@ This module checks for liveness (whether the subject is a live person) by using 
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		    super.onActivityResult(requestCode, resultCode, data)
 		
-		    if (requestCode == REQUEST_CODE) {
-	            if(resultCode == 2){
-            		val faceImage = FaceCapturedImage.bitmapImage
-	            }
-	            else{
-            		//handle error
-	            }
-        	}
+
+			if (requestCode == REQUEST_CODE) {
+				if(resultCode == 2){
+					val faceImage = FaceCapturedImage.bitmapImage
+				}
+				else{
+					//handle error
+				}
+			}
 		}
 
 	
@@ -517,7 +517,7 @@ This module is used to match two facial images:
     	public boolean isCorrectAspectRatio;
     	public float aspectRatio;
     	public Error error;
-	    public Point[] points;
+    	public Point[] points;
 	}
 
 
