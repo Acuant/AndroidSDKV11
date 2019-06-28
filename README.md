@@ -1,37 +1,9 @@
 # Acuant Android SDK v11.2.1
-
-
-**Last updated  June 2019**
-
-*Copyright 2019 Acuant Inc. All rights reserved.*
-
-This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
-
-AssureID and *i-D*entify are trademarks of Acuant Inc. Other Acuant product or service names or logos referenced this document are either trademarks or registered trademarks of Acuant.
-
-All 3M trademarks are trademarks of Gemalto Inc.
-
-Windows is a registered trademark of Microsoft Corporation.
-
-Certain product, service, or company designations for companies other
-than Acuant may be mentioned in this document for identification
-purposes only. Such designations are often claimed as trademarks or
-service marks. In all instances where Acuant is aware of a claim, the
-designation appears in initial capital or all capital letters. However,
-you should contact the appropriate companies for more complete
-information regarding such designations and their registration status.
-
 **June 2019**
 
-<p>Acuant Inc.</p>
-<p>6080 Center Drive, Suite 850</p>
-<p>Los Angeles, CA 90045</p>
-<p>==================</p>
+## Introduction ##
 
-
-# Introduction #
-
-This document provides detailed information about the Acuant Android SDK. The Acuant-recommended workflow is described below.
+This document provides detailed information about the Acuant Android SDK. The Acuant recommended workflow is described below.
 
 ![](https://i.imgur.com/KR0J94S.png)
 
@@ -97,7 +69,7 @@ The SDK includes the following modules:
     	    android:value="barcode,face"
     	    tools:replace="android:value"/>
     
-1. Add the Acuant SDK dependency in build.gradle:
+1. Add the Acuant SDK dependency in **build.gradle**:
 	
 		repositories {
 			//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveness
@@ -135,7 +107,7 @@ The SDK includes the following modules:
 	    //internal common library
 	    implementation project(path: ':acuantcommon')
 	    
-	    //camera with autocapture - Uses camera 2 API
+	    //camera with autocapture - Uses camera 1 API
 	    implementation project(path: ':acuantcamera')
 	    
 	    //document parse, classifcation, authentication
@@ -149,7 +121,7 @@ The SDK includes the following modules:
 
     	 //face capture and liveliness
 	    implementation project(path: ':acuantipliveness')
-	    implementation('com.iproov.sdk:iproov:4.4.0@aar') {
+	    implementation('com.iproov.sdk:iproov:4.3.0@aar') {
 	        transitive = true
 	    }
 	    
@@ -160,7 +132,7 @@ The SDK includes the following modules:
 	    implementation project(path: ':acuantimagepreparation')
   		}
   		
-1. Add the Acuant SDK dependency in build.gradle if using Maven
+1. Add the Acuant SDK dependency in **build.gradle** if using Maven
 
 	- Add the following Maven URL
 	
@@ -169,14 +141,14 @@ The SDK includes the following modules:
         	
     - Add the pfollowing depedencies
 
-    		implementation 'com.acuant:acuantcommon:11.2'
-    		implementation 'com.acuant:acuantcamera:11.2'
-    		implementation 'com.acuant:acuantimagepreparation:11.2'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.2'
-    		implementation 'com.acuant:acuantechipreader:11.2'
-    		implementation 'com.acuant:acuantfacematch:11.2'
-    		implementation 'com.acuant:acuanthgliveness:11.2'
-    		implementation ('com.acuant:acuantipliveness:11.2'){
+    		implementation 'com.acuant:acuantcommon:11.2.1'
+    		implementation 'com.acuant:acuantcamera:11.2.1'
+    		implementation 'com.acuant:acuantimagepreparation:11.2.1'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.2.1'
+    		implementation 'com.acuant:acuantechipreader:11.2.1'
+    		implementation 'com.acuant:acuantfacematch:11.2.1'
+    		implementation 'com.acuant:acuanthgliveness:11.2.1'
+    		implementation ('com.acuant:acuantipliveness:11.2.1'){
         		transitive = true
     		}
 
@@ -228,31 +200,15 @@ The SDK includes the following modules:
 
 - **Initialization**
 
-		class MainActivity : Activity() {
+		class AppInstance : Application() {
 		
 		    override fun onCreate() {
 		        super.onCreate()
 		        
-		        //Specify the path to the previously created XML file, using “assets” as root
-		        //Pass in Context from Application
-		        //List the packages to intitialize; only ImageProcessor is required
-
-				try{
-					AcuantInitializer.intialize("PATH/TO/CONFIG/FILENAME.XML", this, 
-						listOf(ImageProcessorInitializer()), 
-						object: IAcuantPackageCallback{
-							override fun onInitializeSuccess() {
-								//success
-							}
-							
-							override fun onInitializeFailed(error: List<Error>) {
-								//error
-							}
-						})
-				}
-				catch(e: AcuantException){
-					Log.e("Acuant Error", e.toString())
-				}
+		        //give path to xml file created above, path will start from "assets" as root
+		        //pass in Context from Application
+		        //list of packages to initialize. Only need to initialize ImageProcessor
+       			AcuantInitializer.intialize("PATH/TO/CONFIG/FILENAME.XML", this, listOf(ImageProcessorInitializer()))
 		    }
 		}
 
@@ -263,9 +219,9 @@ The SDK includes the following modules:
 
 		//CroppingData & Image are part of AcuantCommon
 	
-		val data = CroppingData()
-		data.image = image
-		acuantImage = AcuantImagePreparation.crop(data)
+  	  	val data = CroppingData()
+   	 	data.image = image
+   	 	acuantImage = AcuantImagePreparation.crop(data)
  		
 - **Sharpness**
 
@@ -295,7 +251,8 @@ After you capture a document image is captured, use the following steps to proce
 		
 1. Upload an image:
 
-		public static void uploadImage(String instanceID, IdData idData, IdOptions options, UploadImageListener listener)
+		public static void uploadImage(String instanceID, IdData idData, 
+		IdOptions options, UploadImageListener listener)
 		
 		public interface UploadImageListener {
     		void imageUploaded(Error error, Classification classification);
@@ -398,15 +355,14 @@ This module checks for liveness (whether the subject is a live person) by using 
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		    super.onActivityResult(requestCode, resultCode, data)
 		
-
-			if (requestCode == REQUEST_CODE) {
-				if(resultCode == 2){
-					val faceImage = FaceCapturedImage.bitmapImage
-				}
-				else{
-					//handle error
-				}
-			}
+		    if (requestCode == REQUEST_CODE) {
+	            if(resultCode == 2){
+            		val faceImage = FaceCapturedImage.bitmapImage
+	            }
+	            else{
+            		//handle error
+	            }
+        	}
 		}
 
 	
@@ -517,8 +473,31 @@ This module is used to match two facial images:
     	public boolean isCorrectAspectRatio;
     	public float aspectRatio;
     	public Error error;
-    	public Point[] points;
+	    public Point[] points;
 	}
 
+Copyright 2019 Acuant Inc. All rights reserved.
 
+This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
+
+AssureID and *i-D*entify are trademarks of Acuant Inc. Other Acuant product or service names or logos referenced this document are either trademarks or registered trademarks of Acuant.
+
+All 3M trademarks are trademarks of Gemalto Inc.
+
+Windows is a registered trademark of Microsoft Corporation.
+
+Certain product, service, or company designations for companies other
+than Acuant may be mentioned in this document for identification
+purposes only. Such designations are often claimed as trademarks or
+service marks. In all instances where Acuant is aware of a claim, the
+designation appears in initial capital or all capital letters. However,
+you should contact the appropriate companies for more complete
+information regarding such designations and their registration status.
+
+June 2019
+
+<p>Acuant Inc.</p>
+<p>6080 Center Drive, Suite 850</p>
+<p>Los Angeles, CA 90045</p>
+<p>==================</p>
         
