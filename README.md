@@ -107,7 +107,7 @@ The SDK includes the following modules:
 	    //internal common library
 	    implementation project(path: ':acuantcommon')
 	    
-	    //camera with autocapture - Uses camera 1 API
+	    //camera with autocapture - Uses camera 2 API
 	    implementation project(path: ':acuantcamera')
 	    
 	    //document parse, classifcation, authentication
@@ -121,7 +121,7 @@ The SDK includes the following modules:
 
     	 //face capture and liveliness
 	    implementation project(path: ':acuantipliveness')
-	    implementation('com.iproov.sdk:iproov:4.3.0@aar') {
+	    implementation('com.iproov.sdk:iproov:4.4.0@aar') {
 	        transitive = true
 	    }
 	    
@@ -200,15 +200,31 @@ The SDK includes the following modules:
 
 - **Initialization**
 
-		class AppInstance : Application() {
+		class MainActivity : Activity() {
 		
 		    override fun onCreate() {
 		        super.onCreate()
 		        
-		        //give path to xml file created above, path will start from "assets" as root
-		        //pass in Context from Application
-		        //list of packages to initialize. Only need to initialize ImageProcessor
-       			AcuantInitializer.intialize("PATH/TO/CONFIG/FILENAME.XML", this, listOf(ImageProcessorInitializer()))
+		        //Specify the path to the previously created XML file, using “assets” as root
+		        //Pass in Context from Application
+		        //List the packages to intitialize; only ImageProcessor is required
+
+				try{
+					AcuantInitializer.intialize("PATH/TO/CONFIG/FILENAME.XML", this, 
+						listOf(ImageProcessorInitializer()), 
+						object: IAcuantPackageCallback{
+							override fun onInitializeSuccess() {
+								//success
+							}
+							
+							override fun onInitializeFailed(error: List<Error>) {
+								//error
+							}
+						})
+				}
+				catch(e: AcuantException){
+					Log.e("Acuant Error", e.toString())
+				}
 		    }
 		}
 
@@ -219,9 +235,9 @@ The SDK includes the following modules:
 
 		//CroppingData & Image are part of AcuantCommon
 	
-  	  	val data = CroppingData()
-   	 	data.image = image
-   	 	acuantImage = AcuantImagePreparation.crop(data)
+		val data = CroppingData()
+		data.image = image
+		acuantImage = AcuantImagePreparation.crop(data)
  		
 - **Sharpness**
 
@@ -251,8 +267,7 @@ After you capture a document image is captured, use the following steps to proce
 		
 1. Upload an image:
 
-		public static void uploadImage(String instanceID, IdData idData, 
-		IdOptions options, UploadImageListener listener)
+		public static void uploadImage(String instanceID, IdData idData, IdOptions options, UploadImageListener listener)
 		
 		public interface UploadImageListener {
     		void imageUploaded(Error error, Classification classification);
@@ -355,14 +370,15 @@ This module checks for liveness (whether the subject is a live person) by using 
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		    super.onActivityResult(requestCode, resultCode, data)
 		
-		    if (requestCode == REQUEST_CODE) {
-	            if(resultCode == 2){
-            		val faceImage = FaceCapturedImage.bitmapImage
-	            }
-	            else{
-            		//handle error
-	            }
-        	}
+
+			if (requestCode == REQUEST_CODE) {
+				if(resultCode == 2){
+					val faceImage = FaceCapturedImage.bitmapImage
+				}
+				else{
+					//handle error
+				}
+			}
 		}
 
 	
@@ -473,7 +489,7 @@ This module is used to match two facial images:
     	public boolean isCorrectAspectRatio;
     	public float aspectRatio;
     	public Error error;
-	    public Point[] points;
+    	public Point[] points;
 	}
 
 Copyright 2019 Acuant Inc. All rights reserved.
