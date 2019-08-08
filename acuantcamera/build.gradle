@@ -38,4 +38,5 @@ dependencies {
     implementation 'com.google.android.gms:play-services-vision:17.0.2'
     implementation project(path: ':acuantcommon')
     implementation project(path: ':acuantimagepreparation')
+
 }

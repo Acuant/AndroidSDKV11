@@ -42,6 +42,7 @@ import com.acuant.acuantcamera.overlay.RectangleView
 import com.acuant.acuantcommon.helper.CardDetectorHelper
 import java.io.File
 import java.lang.Exception
+import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -150,13 +151,13 @@ class AcuantCameraFragment : Fragment(),
             targetSmallDocDpi
         }
     }
-    private var rectangleView: RectangleView? = null
+    private lateinit var rectangleView: RectangleView
 
     private fun drawBorder(points: Array<Point>?){
         if(points != null){
             val scaledPointY = textureView.height.toFloat()/previewSize.width.toFloat();
             val scaledPointX = textureView.width.toFloat()/previewSize.height.toFloat();
-            rectangleView!!.setWidth(textureView.width.toFloat())
+            rectangleView.setWidth(textureView.width.toFloat())
 
             points.apply {
                 this.forEach {
@@ -164,35 +165,35 @@ class AcuantCameraFragment : Fragment(),
                     it.y = (it.y * scaledPointX).toInt()
                 }
             }
-            rectangleView!!.setAndDrawPoints(points)
+            rectangleView.setAndDrawPoints(points)
         }
         else{
-            rectangleView!!.setAndDrawPoints(null)
+            rectangleView.setAndDrawPoints(null)
         }
     }
 
     override fun onDetected(croppedImage: com.acuant.acuantcommon.model.Image?, cropDuration: Long) {
         activity?.runOnUiThread {
             when {
-                croppedImage?.image == null || croppedImage.dpi < MINIMUM_DPI -> {
+                croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
                     unlockFocus()
-                    rectangleView!!.setColor(Color.RED)
+                    rectangleView.setColor(Color.RED)
                     textView.setBackgroundColor(gray_transparent)
-                    textView.text = "ALIGN"
+                    textView.text = getString(R.string.acuant_camera_align)
                     detectedCount = 0
                 }
                 croppedImage.dpi < getTargetDpi(croppedImage.aspectRatio) -> {
                     unlockFocus()
-                    rectangleView!!.setColor(Color.RED)
+                    rectangleView.setColor(Color.RED)
                     textView.setBackgroundColor(gray_transparent)
-                    textView.text = "MOVE CLOSER"
+                    textView.text = getString(R.string.acuant_camera_move_closer)
                     detectedCount = 0
                 }
                 !croppedImage.isCorrectAspectRatio -> {
                     unlockFocus()
-                    rectangleView!!.setColor(Color.RED)
+                    rectangleView.setColor(Color.RED)
                     textView.setBackgroundColor(gray_transparent)
-                    textView.text = "MOVE CLOSER"
+                    textView.text = getString(R.string.acuant_camera_move_closer)
                     detectedCount = 0
                 }
                 else -> {
@@ -202,15 +203,15 @@ class AcuantCameraFragment : Fragment(),
                         detectedCount < threshold -> {
                             detectedCount++
                             textView.setBackgroundColor(red_transparent)
-                            textView.text = "HOLD STEADY"
-                            rectangleView!!.setColor(Color.RED)
+                            textView.text = getString(R.string.acuant_camera_hold_steady)
+                            rectangleView.setColor(Color.RED)
 
                         }
                         else -> {
                             this.isCapturing = true
                             textView.setBackgroundColor(green_transparent)
-                            textView.text = "CAPTURING"
-                            rectangleView!!.setColor(Color.GREEN)
+                            textView.text = getString(R.string.acuant_camera_capturing)
+                            rectangleView.setColor(Color.GREEN)
                             lockFocus()
                         }
                     }
@@ -394,17 +395,16 @@ class AcuantCameraFragment : Fragment(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        detectors = listOf(AcuantDocumentDetector(this), AcuantBarcodeDetector(context!!,this))
+        detectors = listOf(AcuantDocumentDetector(this), AcuantBarcodeDetector(this.activity!!.applicationContext, this))
         isAutoCapture = arguments?.getBoolean(ACUANT_EXTRA_IS_AUTO_CAPTURE) ?: true
         isBorderEnabled = arguments?.getBoolean(ACUANT_EXTRA_BORDER_ENABLED) ?: true
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        orientationListener.disable()
         detectors.forEach{
             it.clean()
         }
+        super.onDestroy()
     }
 
     override fun onCreateView(inflater: LayoutInflater,
@@ -416,13 +416,14 @@ class AcuantCameraFragment : Fragment(),
         textureView = view.findViewById(R.id.texture)
         textView = view.findViewById(R.id.acu_display_text)
         rectangleView = view.findViewById(R.id.acu_rectangle)
-        orientationListener = AcuantOrientationListener(context!!, textView)
+        orientationListener = AcuantOrientationListener(activity!!.applicationContext, WeakReference(textView))
 
         red_transparent = getColorWithAlpha(Color.RED, .50f)
         gray_transparent = getColorWithAlpha(Color.BLACK, .50f)
         green_transparent = getColorWithAlpha(Color.GREEN, .50f)
 
     }
+
     private fun getColorWithAlpha(color: Int, ratio: Float): Int {
         return Color.argb(Math.round(Color.alpha(color) * ratio), Color.red(color), Color.green(color), Color.blue(color))
     }
@@ -520,7 +521,7 @@ class AcuantCameraFragment : Fragment(),
                 // coordinate.
                 val displayRotation = activity!!.windowManager.defaultDisplay.rotation
 
-                sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+                sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
                 val swappedDimensions = areDimensionsSwapped(displayRotation)
 
                 val displaySize = Point()
@@ -584,7 +585,7 @@ class AcuantCameraFragment : Fragment(),
         } catch (e: NullPointerException) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
-            ErrorDialog.newInstance(getString(R.string.camera_error))
+            ErrorDialog.newInstance(getString(R.string.acuant_camera_error))
                     .show(childFragmentManager, FRAGMENT_DIALOG)
         }
 

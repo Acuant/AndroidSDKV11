@@ -1,0 +1,65 @@
+<resources>
+    <string name="app_name">SampleApp</string>
+    <string name="picture">Imagen</string>
+    <string name="description_info">Informacion</string>
+    <string name="request_permission">Esta muestra necesita permiso de la cámara.</string>
+    <string name="acuant_camera_error">Este dispositivo no es compatible con la API de Camera2.</string>
+
+    <string name="acuant_camera_align">ALINEAR</string>
+    <string name="acuant_camera_move_closer">MUÉVETE MAS CERCA</string>
+    <string name="acuant_camera_hold_steady">MANTENER ESTABLE</string>
+    <string name="acuant_camera_capturing">CAPTURA</string>
+
+    <string name="ok">OK</string>
+    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
+    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
+    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
+    <string name="classification_error">Could not classify the document</string>
+
+    <string name="scan_back_side_id">Escanear el reverso del documento.</string>
+    <string name="scan_back_side_health_insurance_card">Capture el reverso de la tarjeta de seguro de salud.</string>
+
+    <string name="iproov__ok">OK</string>
+    <string name="iproov__error">Error</string>
+    <string name="iproov__prompt_hold_still">Pon tu cara en el óvalo</string>
+    <string name="iproov__prompt_loading">por favor espera…</string>
+    <string name="iproov__prompt_loading_slow">Conectando, la red es lenta…</string>
+    <string name="iproov__prompt_connecting">Conectando…</string>
+    <string name="iproov__prompt_connecting_slow">Conectando, la red es lenta…</string>
+    <string name="iproov__prompt_tap_to_begin">Toca la pantalla para comenzar</string>
+    <string name="iproov__prompt_move_closer">Muévete mas cerca</string>
+    <string name="iproov__prompt_too_bright">Ve a un lugar más sombrío</string>
+    <string name="iproov__prompt_too_backlit">Estás retroiluminado, gira ligeramente</string>
+    <string name="iproov__prompt_too_backlit_short">Estás retroiluminado, gira ligeramente</string>
+    <string name="iproov__prompt_beginning_in">Comenzando en…"</string>
+    <string name="iproov__too_many_faces">Demasiadas caras</string>
+    <string name="iproov__open_your_eyes">Abre tus ojos</string>
+    <string name="iproov__connected">Conectada</string>
+    <string name="iproov__empty_string"></string>
+    <string name="iproov__face_camera">Mira a la cámara directamente</string>
+    <string name="iproov__streamer_finished">Terminada</string>
+    <string name="iproov__hold_still">Quédate quieto</string>
+    <string name="iproov__progress_streaming">Transmisión…</string>
+    <string name="iproov__progress_streaming_slow">Streaming, la red es lenta…</string>
+    <string name="iproov__progress_processing">Tratamiento…</string>
+    <string name="iproov__dialog_instructions_title">Instrucciones iProov</string>
+    <string name="iproov__dialog_instructions_message">â€¢ Llena el óvalo con tu cara\n\nâ€¢ Toca o espera la cuenta regresiva\n\nâ€¢ Permanece quieto durante el parpadeo</string>
+    <string name="iproov__dialog_instructions_skip">No muestres esto otra vez</string>
+    <string name="iproov__agree">De acuerdo</string>
+    <string name="iproov__disagree">Discrepar</string>
+    <string name="iproov__dialog_privacy_disagree_title">Lo siento</string>
+    <string name="iproov__dialog_privacy_disagree_message">Debe aceptar la política de privacidad para usar iProov</string>
+    <string name="iproov__iproov_success">Has iProoved con éxito</string>
+    <string name="iproov__scanning">Exploración…</string>
+    <string name="iproov__network_problem_cant_connect">Problema de red, no se puede conectar</string>
+    <string name="iproov__lost_internet_link">Perdió la conexión a Internet, intente nuevamente</string>
+    <string name="iproov__cannot_stream_video">No se puede transmitir video, por favor intente nuevamente</string>
+    <string name="iproov__device_not_supported">Lo sentimos, tu dispositivo no es compatible actualmente</string>
+    <string name="iproov__username_already_enrolled">Este nombre de usuario ya ha sido inscrito</string>
+    <string name="iproov__unknown_identity">Este nombre de usuario no está inscrito, regístrese primero</string>
+    <string name="iproov__camera_permission_denied">Permiso de cámara denegado</string>
+    <string name="iproov__unknown_error">Error desconocido</string>
+    <string name="iproov__starting_detector">Detector de arranque…</string>
+    <string name="iproov__ssl_exception">Excepción SSL</string>
+    <string name="iproov__too_close">Demasiado cerca</string>
+</resources>

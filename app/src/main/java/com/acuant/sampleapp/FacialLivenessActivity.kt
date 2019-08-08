@@ -33,8 +33,6 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
     private var mFacialGraphic: FacialGraphic? = null
     private var selfieCaptured = false
     private var liveFaceDetector : LiveFaceDetector? = null
-    private val REQUEST_CAMERA_SELFIE = 2;
-
     //==============================================================================================
     // Activity Methods
     //==============================================================================================
@@ -239,7 +237,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
                     thread() {
                         FaceCapturedImage.setImage(liveFaceDetails.image)
                         val result = Intent()
-                        this@FacialLivenessActivity.setResult(REQUEST_CAMERA_SELFIE, result)
+                        this@FacialLivenessActivity.setResult(RESPONSE_SUCCESS_CODE, result)
                         this@FacialLivenessActivity.finish()
                     }
                 }
@@ -256,5 +254,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
 
         // permission request codes need to be < 256
         private val RC_HANDLE_CAMERA_PERM = 2
+
+        val RESPONSE_SUCCESS_CODE = 2
     }
 }

@@ -17,7 +17,7 @@ class AcuantDocumentDetector(private val callback: AcuantDocumentDectectorHandle
             data.image = bitmap
 
             try{
-                croppedImage = AcuantImagePreparation.crop(data)
+                croppedImage = AcuantImagePreparation.detect(data)
             }
             catch(e: Exception){
                 e.printStackTrace()

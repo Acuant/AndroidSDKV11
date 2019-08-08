@@ -1,0 +1,65 @@
+<resources>
+    <string name="app_name">SampleApp</string>
+    <string name="picture">Picture</string>
+    <string name="description_info">Info</string>
+    <string name="request_permission">This sample needs camera permission.</string>
+    <string name="acuant_camera_error">This device does not support Camera2 API.</string>
+
+    <string name="acuant_camera_align">ITAPAT SA ID</string>
+    <string name="acuant_camera_move_closer">ILAPIT ANG CAMERA</string>
+    <string name="acuant_camera_hold_steady">HUWAG IGALAW</string>
+    <string name="acuant_camera_capturing">KINUKUHA</string>
+
+    <string name="ok">OK</string>
+    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
+    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
+    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
+    <string name="classification_error">Could not classify the document</string>
+
+    <string name="scan_back_side_id">Kuhanan ng larawan ang likod ng ID</string>
+    <string name="scan_back_side_health_insurance_card">Kuhanan ng larawan ang likod ng health insurance ID</string>
+
+    <string name="iproov__ok">OK</string>
+    <string name="iproov__error">Error</string>
+    <string name="iproov__prompt_hold_still">Itapat ang mukha sa oblong</string>
+    <string name="iproov__prompt_loading">Please wait…</string>
+    <string name="iproov__prompt_loading_slow">Connecting, mabagal ang network…</string>
+    <string name="iproov__prompt_connecting">Connecting…</string>
+    <string name="iproov__prompt_connecting_slow">Connecting, mabagal ang network…</string>
+    <string name="iproov__prompt_tap_to_begin">I-tap ang screen para magsimula</string>
+    <string name="iproov__prompt_move_closer">Ilapit ang mukha sa screen</string>
+    <string name="iproov__prompt_too_bright">Masyadong maliwanag</string>
+    <string name="iproov__prompt_too_backlit">You\'re backlit, turn slightly</string>
+    <string name="iproov__prompt_too_backlit_short">You\'re backlit, turn slightly</string>
+    <string name="iproov__prompt_beginning_in">Magsisimula sa…</string>
+    <string name="iproov__too_many_faces">Masyadong maraming mukha</string>
+    <string name="iproov__open_your_eyes">Ibukas ang iyong mga mata</string>
+    <string name="iproov__connected">Konektado</string>
+    <string name="iproov__empty_string"></string>
+    <string name="iproov__face_camera">Direktang humarap sa camera</string>
+    <string name="iproov__streamer_finished">Tapos na</string>
+    <string name="iproov__hold_still">Huwag gumalaw</string>
+    <string name="iproov__progress_streaming">Nagsimula na ang streaming…</string>
+    <string name="iproov__progress_streaming_slow">Streaming, mabagal ang network…</string>
+    <string name="iproov__progress_processing">Pinoproseso…</string>
+    <string name="iproov__dialog_instructions_title">iProov Instructions</string>
+    <string name="iproov__dialog_instructions_message">â€¢ Itapat ang mukha sa oblong\n\nâ€¢ I-tap o maghintay ng countdown\n\nâ€¢ Huwag gumalaw habang kumikislap ang screen</string>
+    <string name="iproov__dialog_instructions_skip">Huwag itong ipakita muli</string>
+    <string name="iproov__agree">Sumasang-ayon ako</string>
+    <string name="iproov__disagree">Hindi ako sumasang-ayon</string>
+    <string name="iproov__dialog_privacy_disagree_title">Sorry</string>
+    <string name="iproov__dialog_privacy_disagree_message">Kinakailangang pumayag sa privacy policy upang magamit ang iProov</string>
+    <string name="iproov__iproov_success">Tapos na ang iProov</string>
+    <string name="iproov__scanning">Scanning…</string>
+    <string name="iproov__network_problem_cant_connect">Network problem, can\'t connect</string>
+    <string name="iproov__lost_internet_link">Lost internet connection, please try again</string>
+    <string name="iproov__cannot_stream_video">Cannot stream video, please try again</string>
+    <string name="iproov__device_not_supported">Sorry, your device is currently not supported</string>
+    <string name="iproov__username_already_enrolled">This username has already been enrolled</string>
+    <string name="iproov__unknown_identity">This username is not enrolled, register first</string>
+    <string name="iproov__camera_permission_denied">Camera permission denied</string>
+    <string name="iproov__unknown_error">Unknown Error</string>
+    <string name="iproov__starting_detector">Magsisimula ang detector…</string>
+    <string name="iproov__ssl_exception">SSL Exception</string>
+    <string name="iproov__too_close">Masyadong malapit</string>
+</resources>

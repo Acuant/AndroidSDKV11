@@ -37,4 +37,15 @@
         android:checked="true"
         app:layout_constraintTop_toBottomOf="@id/main_health_card"
         />
+
+    <Switch
+        android:layout_margin="30dp"
+        android:id="@+id/isIPLivenessEnabled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="IP Liveness Enabled"
+        android:visibility="invisible"
+        android:checked="true"
+        app:layout_constraintTop_toBottomOf="@id/autoCaptureSwitch"
+        />
 </android.support.constraint.ConstraintLayout>

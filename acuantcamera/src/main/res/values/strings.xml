@@ -17,5 +17,10 @@
     <string name="picture">Picture</string>
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission.</string>
-    <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+    <string name="acuant_camera_error">This device doesn\'t support Camera2 API.</string>
+
+    <string name="acuant_camera_align">ALIGN</string>
+    <string name="acuant_camera_move_closer">MOVE CLOSER</string>
+    <string name="acuant_camera_hold_steady">HOLD STEADY</string>
+    <string name="acuant_camera_capturing">CAPTURING</string>
 </resources>

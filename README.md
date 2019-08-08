@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.2.1
-**June 2019**
+# Acuant Android SDK v11.2.2
+**July 2019**
 
 ## Introduction ##
 
@@ -139,7 +139,7 @@ The SDK includes the following modules:
 			maven {url  "https://dl.bintray.com/acuant/Acuant"}
         	maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
-    - Add the pfollowing depedencies
+    - Add the following depedencies
 
     		implementation 'com.acuant:acuantcommon:11.2.1'
     		implementation 'com.acuant:acuantcamera:11.2.1'
@@ -170,7 +170,7 @@ The SDK includes the following modules:
 		{PROJECT_ROOT_DIRECTORY} => app => src => main => assets => PATH/TO/CONFIG/FILENAME.XML
 
 			
-### Capture an Image using AcuantCamera ###
+### Capture an image using AcuantCamera ###
 
 1. Start camera activity:
 
@@ -195,8 +195,10 @@ The SDK includes the following modules:
 	**Note:**   **AcuantCamera** is depdendent on **AcuantImagePreparation** and  **AcuantCommon**.
 
 		 
-### AcuantImagePreparation ###
+####AcuantImagePreparation####
 
+This section describes how to use **AcuantImagePreparation**. 
+  
 
 - **Initialization**
 
@@ -227,6 +229,37 @@ The SDK includes the following modules:
 				}
 		    }
 		}
+		
+		
+
+	**Note:** If you are *not* using a configuration file for initialization, then use the following statement (providing appropriate credentials for *username*, *password*, and *subscription ID*):
+	
+		Credential.init("xxxxxxx",
+		"xxxxxxxx",
+		"xxxxxxxxxx",
+		"https://frm.acuant.net",
+		"https://services.assureid.net",
+		"https://medicscan.acuant.net")
+		AcuantInitializer.intialize("", this, listOf(ImageProcessorInitializer()), callback)
+		
+#### Initialization without a Subscription ID ####
+
+**AcuantImagePreparation** may be initialized by providing only a username and a password. However, without providing a Subscription ID, the application can *only* capture an image and get the image. Without a Subscription ID:
+
+1. Only the **AcuantCamera**, **AcuantImagePreparation**, and **AcuantHGLiveness** modules may be used.
+1. The SDK can be used to capture the identity documents.
+1. The captured images can be exported from the SDK. See the **onActivityResult** in the **MainActivity** of the sample application.
+
+		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        	if (requestCode == Constants.REQUEST_CAMERA_PHOTO && 
+        		resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
+            		val bytes = readFromFile(data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL))
+            		val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size);
+            		capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+        	}
+        	...
+        }
 
 - **Crop** 
 
@@ -362,7 +395,7 @@ This module checks for liveness (whether the subject is a live person) by using 
                 this@MainActivity,
                 FacialLivenessActivity::class.java
         )
-        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
+        startActivityForResult(cameraIntent, YOUR_REQUEST_CODE)
         
 1. Get the Activity result:
 
@@ -371,8 +404,8 @@ This module checks for liveness (whether the subject is a live person) by using 
 		    super.onActivityResult(requestCode, resultCode, data)
 		
 
-			if (requestCode == REQUEST_CODE) {
-				if(resultCode == 2){
+			if (requestCode == YOUR_REQUEST_CODE) {
+				if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
 					val faceImage = FaceCapturedImage.bitmapImage
 				}
 				else{
@@ -492,7 +525,16 @@ This module is used to match two facial images:
     	public Point[] points;
 	}
 
-Copyright 2019 Acuant Inc. All rights reserved.
+
+## Frequently Asked Questions ##
+
+####How do I obfuscate my Android application?
+
+Acuant does not provide obfuscation tools. See the Android developer documentation about obfuscation at: [https://developer.android.com/studio/build/shrink-code](https://developer.android.com/studio/build/shrink-code). Then open proguard-rules.pro for your project and set the obfuscation rules. 
+
+-------------------------------------
+
+**Copyright 2019 Acuant Inc. All rights reserved.**
 
 This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
 
@@ -510,10 +552,11 @@ designation appears in initial capital or all capital letters. However,
 you should contact the appropriate companies for more complete
 information regarding such designations and their registration status.
 
-June 2019
 
-<p>Acuant Inc.</p>
-<p>6080 Center Drive, Suite 850</p>
-<p>Los Angeles, CA 90045</p>
-<p>==================</p>
+
+[https://support.acuant.com](http://support.acuant.com)
+
+**Acuant Inc.**  **6080 Center Drive, Suite 850,** **Los Angeles, CA 90045**
+
+----------------------------------------------------
         

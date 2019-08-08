@@ -1,16 +1,15 @@
 package com.acuant.acuantcamera.camera
 
 import android.content.Intent
-import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.view.View
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.constant.ACUANT_EXTRA_BORDER_ENABLED
 import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IMAGE_URL
 import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IS_AUTO_CAPTURE
 import com.acuant.acuantcamera.constant.ACUANT_EXTRA_PDF417_BARCODE
+
 
 interface ICameraActivityFinish{
     fun onActivityFinish(imageUrl: String, barCodeString: String?)
@@ -20,6 +19,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
     companion object {
         const val RESULT_SUCCESS_CODE = 1
     }
+
     override fun onActivityFinish(imageUrl: String, barCodeString: String?) {
         val intent = Intent()
         intent.putExtra(ACUANT_EXTRA_IMAGE_URL, imageUrl)
@@ -41,6 +41,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_acu_camera)
         hideTopMenu()
 
@@ -55,5 +56,9 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
                     .replace(R.id.container, cameraFragment)
                     .commit()
         }
+    }
+
+    override fun onBackPressed() {
+        this@AcuantCameraActivity.finish()
     }
 }

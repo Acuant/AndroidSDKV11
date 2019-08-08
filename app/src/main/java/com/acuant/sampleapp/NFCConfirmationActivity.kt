@@ -108,7 +108,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
         }
 
         if (nfcAdapter == null) {
-            nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+            nfcAdapter = NfcAdapter.getDefaultAdapter(this.applicationContext)
         }
 
     }
@@ -123,7 +123,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
     fun nfcPressed(v: View) {
         if (nfcAdapter != null) {
             ensureSensorIsOn()
-            AcuantEchipReader.listenNFC(this, nfcAdapter, this)
+            AcuantEchipReader.listenNFC(this, nfcAdapter)
             if (alertDialog != null && alertDialog!!.isShowing) {
                 DialogUtils.dismissDialog(alertDialog)
 
@@ -175,7 +175,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
         val dateOfBirth = getFromattedStringFromDateString(mrzDOB!!.text.toString().trim { it <= ' ' })
         val dateOfExpiry = getFromattedStringFromDateString(mrzDOE!!.text.toString().trim { it <= ' ' })
         if (docNumber != null && docNumber.trim { it <= ' ' } != "" && dateOfBirth != null && dateOfBirth.length == 6 && dateOfExpiry != null && dateOfExpiry.length == 6) {
-            AcuantEchipReader.readNFCTag(this, intent, docNumber, dateOfBirth, dateOfExpiry)
+            AcuantEchipReader.readNFCTag(this, intent, docNumber, dateOfBirth, dateOfExpiry, this)
         }
 
 
@@ -186,7 +186,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
         if (alertDialog != null && alertDialog!!.isShowing) {
             DialogUtils.dismissDialog(alertDialog)
         }
-        val intent = Intent(baseContext, NFCResultActivity::class.java)
+        val intent = Intent(this, NFCResultActivity::class.java)
         NFCStore.image = image
         NFCStore.signature_image = sign_image
         NFCStore.cardDetails = cardDetails

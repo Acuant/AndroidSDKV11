@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -41,11 +40,13 @@ import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
 import com.acuant.acuantfacematchsdk.model.FacialMatchResult
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
+import com.acuant.acuanthgliveness.model.FaceCapturedImage
 import com.acuant.acuantimagepreparation.initializer.ImageProcessorInitializer
 import com.acuant.acuantipliveness.AcuantIPLiveness
 import com.acuant.acuantipliveness.constant.FacialCaptureConstant
 import com.acuant.acuantipliveness.facialcapture.model.FacialCaptureResult
 import com.acuant.acuantipliveness.facialcapture.model.FacialSetupResult
+import com.acuant.acuantipliveness.facialcapture.service.FacialCaptureCredentialListener
 import com.acuant.acuantipliveness.facialcapture.service.FacialCaptureLisenter
 import com.acuant.acuantipliveness.facialcapture.service.FacialSetupLisenter
 import com.acuant.sampleapp.backgroundtasks.CroppingTask
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     private var autoCaptureEnabled: Boolean = true
     private var numerOfClassificationAttempts: Int = 0
     private var isInitialized = false
+    private var isIPLivenessEnabled = false
 
     fun cleanUpTransaction() {
         facialResultString = null
@@ -137,11 +139,72 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeAcuantSdk(callback:IAcuantPackageCallback){
         try{
-            AcuantInitializer.intialize("acuant.config.xml", this, listOf(ImageProcessorInitializer()), callback)
+           AcuantInitializer.intialize("acuant.config.xml", this, listOf(ImageProcessorInitializer()),
+                    object: IAcuantPackageCallback{
+                        override fun onInitializeSuccess() {
+                            getFacialLivenessCredentials(callback)
+                        }
+
+                        override fun onInitializeFailed(error: List<Error>) {
+                            callback.onInitializeFailed(error)
+                        }
+
+                    })
+
+            // Or, if required to initialize without a config file , then can be done the following way
+            /*Credential.init("xxxx",
+                    "xxxx",
+                    "xxxx",
+                    "https://frm.acuant.net",
+                    "https://services.assureid.net",
+                    "https://medicscan.acuant.net")
+
+            AcuantInitializer.intialize(null, this.applicationContext, listOf(ImageProcessorInitializer()),
+                    object: IAcuantPackageCallback {
+                        override fun onInitializeSuccess() {
+                            getFacialLivenessCredentials(callback)
+                        }
+
+                        override fun onInitializeFailed(error: List<Error>) {
+                            callback.onInitializeFailed(error)
+                        }
+                    })*/
+
         }
         catch(e: AcuantException){
             Log.e("Acuant Error", e.toString())
+            DialogUtils.dismissDialog(progressDialog)
+            val alert = AlertDialog.Builder(this@MainActivity)
+            alert.setTitle("Error")
+            alert.setMessage(e.toString())
+            alert.setPositiveButton("OK") { dialog, whichButton ->
+                dialog.dismiss()
+            }
+            alert.show()
+
         }
+    }
+
+    private fun getFacialLivenessCredentials(callback: IAcuantPackageCallback){
+        AcuantIPLiveness.getFacialCaptureCredential(object:FacialCaptureCredentialListener{
+            override fun onDataReceived(result: Boolean) {
+                if(result){
+                    runOnUiThread{
+                        val isIPEnabledSwitch = findViewById<Switch>(R.id.isIPLivenessEnabled)
+                        isIPEnabledSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+                            isIPLivenessEnabled = isChecked
+                        }
+                        isIPEnabledSwitch.visibility = View.VISIBLE
+                    }
+                }
+                isIPLivenessEnabled = result
+                callback.onInitializeSuccess()
+            }
+
+            override fun onError(errorCode: Int, description: String) {
+                callback.onInitializeFailed(listOf())
+            }
+        })
     }
 
     private fun readFromFile(fileUri: String?): ByteArray{
@@ -193,7 +256,8 @@ class MainActivity : AppCompatActivity() {
                         frontCaptured = true
                         val alert = AlertDialog.Builder(this@MainActivity)
                         alert.setTitle("Message")
-                        alert.setMessage("Capture back side of Health insurance card")
+                        //alert.setMessage("Capture back side of Health insurance card")
+                        alert.setMessage(R.string.scan_back_side_health_insurance_card)
                         alert.setPositiveButton("OK") { dialog, whichButton ->
                             dialog.dismiss()
                             showDocumentCaptureCamera()
@@ -248,21 +312,9 @@ class MainActivity : AppCompatActivity() {
             isRetrying = true
             showDocumentCaptureCamera()
 
-        } else if (requestCode == Constants.REQUEST_CAMERA_SELFIE) {
+        } else if (requestCode == Constants.REQUEST_CAMERA_IP_SELFIE) {
             if(resultCode == ErrorCodes.ERROR_CAPTURING_FACIAL){
-                val alert = AlertDialog.Builder(this@MainActivity)
-                alert.setTitle("Error Capturing Face")
-                alert.setMessage("Would you like to retry?")
-                alert.setPositiveButton("YES") { dialog, whichButton ->
-                    dialog.dismiss()
-                    showFrontCamera()
-                }
-                alert.setNegativeButton("NO") { dialog, which ->
-                    dialog.dismiss()
-                    capturingSelfieImage = false
-                    facialLivelinessResultString = "Facial Liveliness Failed"
-                }
-                alert.show()
+                showFaceCaptureError()
             }
             else if (resultCode == ErrorCodes.USER_CANCELED_FACIAL){
                 if (progressDialog != null && progressDialog!!.isShowing) {
@@ -277,7 +329,32 @@ class MainActivity : AppCompatActivity() {
                 val token = data?.getStringExtra(FacialCaptureConstant.ACUANT_TOKEN_KEY)!!
                 startFacialLivelinessRequest(token, userId)
             }
+        } else if (requestCode == Constants.REQUEST_CAMERA_HG_SELFIE){
+            if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
+                capturedSelfieImage = FaceCapturedImage.bitmapImage
+                facialLivelinessResultString = "Facial Liveliness: true"
+                processFacialMatch()
+            }
+            else{
+                showFaceCaptureError()
+            }
         }
+    }
+
+    private fun showFaceCaptureError(){
+        val alert = AlertDialog.Builder(this@MainActivity)
+        alert.setTitle("Error Capturing Face")
+        alert.setMessage("Would you like to retry?")
+        alert.setPositiveButton("YES") { dialog, whichButton ->
+            dialog.dismiss()
+            showFrontCamera()
+        }
+        alert.setNegativeButton("NO") { dialog, which ->
+            dialog.dismiss()
+            capturingSelfieImage = false
+            facialLivelinessResultString = "Facial Liveliness Failed"
+        }
+        alert.show()
     }
 
     private fun startFacialLivelinessRequest(token: String, userId:String){
@@ -438,32 +515,49 @@ class MainActivity : AppCompatActivity() {
     fun showFrontCamera() {
         try{
             capturingSelfieImage = true
-            if (progressDialog != null && progressDialog!!.isShowing) {
-                DialogUtils.dismissDialog(progressDialog)
-            }
-            progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Loading...")
-            AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
-                override fun onDataReceived(result: FacialSetupResult?) {
-                    DialogUtils.dismissDialog(progressDialog)
-                    if(result != null){
-                        val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
-                        startActivityForResult(facialIntent, Constants.REQUEST_CAMERA_SELFIE)
-                    }
-                    else{
-                        handleInternalError()
-                    }
-                }
 
-                override fun onError(errorCode: Int, description: String?) {
-                    DialogUtils.dismissDialog(progressDialog)
-                    handleInternalError()
-                }
-            })
+            if(isIPLivenessEnabled){
+                showIPLiveness()
+            }
+            else{
+                showHGLiveness()
+            }
 
         }
         catch(e: Exception){
             e.printStackTrace()
         }
+    }
+
+    private fun showIPLiveness(){
+        if (progressDialog != null && progressDialog!!.isShowing) {
+            DialogUtils.dismissDialog(progressDialog)
+        }
+        progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Loading...")
+        AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
+            override fun onDataReceived(result: FacialSetupResult?) {
+                DialogUtils.dismissDialog(progressDialog)
+                if(result != null){
+                    val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
+                    startActivityForResult(facialIntent, Constants.REQUEST_CAMERA_IP_SELFIE)
+                }
+                else{
+                    handleInternalError()
+                }
+            }
+
+            override fun onError(errorCode: Int, description: String?) {
+                DialogUtils.dismissDialog(progressDialog)
+                handleInternalError()
+            }
+        })
+    }
+    private fun showHGLiveness(){
+        val cameraIntent = Intent(
+                this@MainActivity,
+                FacialLivenessActivity::class.java
+        )
+        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_HG_SELFIE)
     }
 
     fun handleInternalError(){
@@ -668,7 +762,8 @@ class MainActivity : AppCompatActivity() {
                             this@MainActivity.runOnUiThread {
                                 val alert = AlertDialog.Builder(this@MainActivity)
                                 alert.setTitle("Message")
-                                alert.setMessage("Scan back side of document.")
+                                //alert.setMessage("Scan back side of document.")
+                                alert.setMessage(R.string.scan_back_side_id)
                                 alert.setPositiveButton("OK") { dialog, whichButton ->
                                     dialog.dismiss()
                                     captureWaitTime = 2
