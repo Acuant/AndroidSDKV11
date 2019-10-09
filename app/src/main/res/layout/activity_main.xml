@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.acuant.sampleapp.MainActivity">
+    tools:context="com.acuant.sampleapp.MainActivity"
+    android:id="@+id/main_layout">
 
     <Button
         android:id="@+id/main_id_passport"
@@ -17,13 +18,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="idPassPortClicked"
-        android:text="ID/Passport"></Button>
+        android:text="@string/id_passport_button_text"/>
     <Button
         android:id="@+id/main_health_card"
         android:layout_margin="30dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Health Insurance Card"
+        android:text="@string/health_insurance_button_text"
         android:onClick="healthInsuranceClicked"
         app:layout_constraintTop_toBottomOf="@id/main_id_passport">
     </Button>
@@ -33,7 +34,7 @@
         android:id="@+id/autoCaptureSwitch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Auto Capture"
+        android:text="@string/auto_capture"
         android:checked="true"
         app:layout_constraintTop_toBottomOf="@id/main_health_card"
         />
@@ -43,9 +44,35 @@
         android:id="@+id/isIPLivenessEnabled"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="IP Liveness Enabled"
+        android:text="@string/ip_liveness_enabled"
         android:visibility="invisible"
         android:checked="true"
         app:layout_constraintTop_toBottomOf="@id/autoCaptureSwitch"
         />
+
+    <LinearLayout
+        android:id="@+id/main_progress_layout"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:background="#CCFFFFFF"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:translationZ="2dp">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/pbText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="8dp"/>
+
+    </LinearLayout>
+
 </android.support.constraint.ConstraintLayout>

@@ -6,6 +6,7 @@
     <string name="acuant_camera_error">This device does not support Camera2 API.</string>
 
     <string name="acuant_camera_align">ITAPAT SA ID</string>
+    <string name="acuant_camera_align_and_tap">ITAPAT AT I-TAP</string>
     <string name="acuant_camera_move_closer">ILAPIT ANG CAMERA</string>
     <string name="acuant_camera_hold_steady">HUWAG IGALAW</string>
     <string name="acuant_camera_capturing">KINUKUHA</string>

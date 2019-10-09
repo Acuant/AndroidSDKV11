@@ -3,8 +3,6 @@ package com.acuant.sampleapp.utils
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
-import android.app.ProgressDialog
-import android.content.Context
 import android.content.DialogInterface
 import android.util.Log
 
@@ -75,21 +73,6 @@ object DialogUtils {
         alertDialog.show()
 
         return alertDialog
-    }
-
-    /**
-     * @param context
-     * @param message
-     * @return
-     */
-    fun showProgessDialog(context: Activity, message: String): ProgressDialog {
-        val progressDialog = ProgressDialog(context)
-        progressDialog.setMessage(message)
-        progressDialog.isIndeterminate = true
-        progressDialog.setCancelable(false)
-        progressDialog.show()
-
-        return progressDialog
     }
 
 }

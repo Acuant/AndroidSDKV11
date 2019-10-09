@@ -8,16 +8,16 @@ import android.widget.TextView
 import java.lang.ref.WeakReference
 
 class AcuantOrientationListener(context: Context, private val textView: WeakReference<TextView>) : OrientationEventListener(context, SensorManager.SENSOR_DELAY_UI){
-    private var previousAngle = 0
+    var previousAngle = 270
     override fun onOrientationChanged(orientation: Int) {
         val textView = textView.get()
         if(textView != null){
-            if(orientation in 0..180 && previousAngle !in 0..180){
+            if(orientation in 30..150 && previousAngle !in 30..150){
                 previousAngle = orientation
                 rotateView(textView, 90f, 270f)
 
             }
-            else if(orientation in 181..360 && previousAngle !in 181..360){
+            else if(orientation in 210..330 && previousAngle !in 210..330){
                 previousAngle = orientation
                 rotateView(textView, 270f, 90f)
             }

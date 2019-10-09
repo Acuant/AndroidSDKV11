@@ -1,7 +1,6 @@
 package com.acuant.sampleapp
 
 import android.app.AlertDialog
-import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -12,19 +11,15 @@ import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Base64
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Surface
 import android.view.View
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.Switch
+import android.widget.*
 import com.acuant.acuantcamera.CapturedImage
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_BORDER_ENABLED
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IMAGE_URL
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IS_AUTO_CAPTURE
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_PDF417_BARCODE
+import com.acuant.acuantcamera.camera.AcuantCameraOptions
+import com.acuant.acuantcamera.constant.*
 import com.acuant.acuantcommon.exception.AcuantException
 import com.acuant.acuantcommon.initializer.AcuantInitializer
 import com.acuant.acuantcommon.initializer.IAcuantPackageCallback
@@ -38,7 +33,6 @@ import com.acuant.acuantdocumentprocessing.service.listener.GetDataListener
 import com.acuant.acuantdocumentprocessing.service.listener.UploadImageListener
 import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
-import com.acuant.acuantfacematchsdk.model.FacialMatchResult
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
 import com.acuant.acuanthgliveness.model.FaceCapturedImage
 import com.acuant.acuantimagepreparation.initializer.ImageProcessorInitializer
@@ -52,7 +46,6 @@ import com.acuant.acuantipliveness.facialcapture.service.FacialSetupLisenter
 import com.acuant.sampleapp.backgroundtasks.CroppingTask
 import com.acuant.sampleapp.backgroundtasks.CroppingTaskListener
 import com.acuant.sampleapp.utils.CommonUtils
-import com.acuant.sampleapp.utils.DialogUtils
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
@@ -61,7 +54,9 @@ import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
-    private var progressDialog: ProgressDialog? = null
+    //TODO: Swap away from deprecated method of showing progress
+    private var progressDialog: LinearLayout? = null
+    private var progressText: TextView? = null
     private var capturedFrontImage: Image? = null
     private var capturedBackImage: Image? = null
     private var capturedSelfieImage: Bitmap? = null
@@ -107,27 +102,30 @@ class MainActivity : AppCompatActivity() {
         idButton = findViewById(R.id.main_id_passport)
 
         val autoCaptureSwitch = findViewById<Switch>(R.id.autoCaptureSwitch)
-        autoCaptureSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+        autoCaptureSwitch.setOnCheckedChangeListener { _, isChecked ->
             autoCaptureEnabled = isChecked
         }
 
-        progressDialog = DialogUtils.showProgessDialog(this, "Initializing...")
+        progressDialog = findViewById(R.id.main_progress_layout)
+        progressText = findViewById(R.id.pbText)
+
+        setProgress(true, "Initializing...")
 
         initializeAcuantSdk(object: IAcuantPackageCallback{
             override fun onInitializeSuccess() {
                 this@MainActivity.runOnUiThread {
                     isInitialized = true
-                    DialogUtils.dismissDialog(progressDialog)
+                    setProgress(false)
                 }
             }
 
             override fun onInitializeFailed(error: List<Error>) {
                 this@MainActivity.runOnUiThread {
-                    DialogUtils.dismissDialog(progressDialog)
+                    setProgress(false)
                     val alert = AlertDialog.Builder(this@MainActivity)
                     alert.setTitle("Error")
                     alert.setMessage("Could not initialize")
-                    alert.setPositiveButton("OK") { dialog, whichButton ->
+                    alert.setPositiveButton("OK") { dialog, _ ->
                         dialog.dismiss()
                     }
                     alert.show()
@@ -135,6 +133,18 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
+    }
+
+    private fun setProgress(visible : Boolean, text : String = "") {
+        if(visible) {
+            progressDialog?.visibility = View.VISIBLE
+            window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        } else {
+            progressDialog?.visibility = View.GONE
+            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        }
+        progressText?.text = text
     }
 
     private fun initializeAcuantSdk(callback:IAcuantPackageCallback){
@@ -173,11 +183,11 @@ class MainActivity : AppCompatActivity() {
         }
         catch(e: AcuantException){
             Log.e("Acuant Error", e.toString())
-            DialogUtils.dismissDialog(progressDialog)
+            setProgress(false)
             val alert = AlertDialog.Builder(this@MainActivity)
             alert.setTitle("Error")
             alert.setMessage(e.toString())
-            alert.setPositiveButton("OK") { dialog, whichButton ->
+            alert.setPositiveButton("OK") { dialog, _ ->
                 dialog.dismiss()
             }
             alert.show()
@@ -191,7 +201,7 @@ class MainActivity : AppCompatActivity() {
                 if(result){
                     runOnUiThread{
                         val isIPEnabledSwitch = findViewById<Switch>(R.id.isIPLivenessEnabled)
-                        isIPEnabledSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+                        isIPEnabledSwitch.setOnCheckedChangeListener { _, isChecked ->
                             isIPLivenessEnabled = isChecked
                         }
                         isIPEnabledSwitch.visibility = View.VISIBLE
@@ -215,10 +225,8 @@ class MainActivity : AppCompatActivity() {
             buf.read(bytes, 0, bytes.size)
             buf.close()
         } catch (e: FileNotFoundException) {
-            // TODO Auto-generated catch block
             e.printStackTrace()
         } catch (e: IOException) {
-            // TODO Auto-generated catch block
             e.printStackTrace()
         } catch (e: Exception){
             e.printStackTrace()
@@ -231,12 +239,12 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == Constants.REQUEST_CAMERA_PHOTO && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
             val bytes = readFromFile(data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL))
             capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
-            progressDialog = DialogUtils.showProgessDialog(this, "Cropping...")
+            setProgress(true, "Cropping...")
 
             val croppingTask = CroppingTask(BitmapFactory.decodeByteArray(bytes, 0, bytes.size), !frontCaptured, object : CroppingTaskListener {
                 override fun croppingFinished(acuantImage: Image?, isFrontImage: Boolean) {
                     this@MainActivity.runOnUiThread {
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                     }
                     CapturedImage.acuantImage = correctBitmapOrientation(acuantImage)
                     showConfirmation(isFrontImage, false)
@@ -247,8 +255,7 @@ class MainActivity : AppCompatActivity() {
         }
         else if (resultCode == Constants.REQUEST_CONFIRMATION) {
             val isFront = data!!.getBooleanExtra("IsFrontImage", true)
-            val isConfirmed = data!!.getBooleanExtra("Confirmed", true)
-            val isBarcode = data!!.getBooleanExtra("IsBarcode", false)
+            val isConfirmed = data.getBooleanExtra("Confirmed", true)
             if (isConfirmed) {
                 if (isFront) {
                     capturedFrontImage = CapturedImage.acuantImage
@@ -258,11 +265,11 @@ class MainActivity : AppCompatActivity() {
                         alert.setTitle("Message")
                         //alert.setMessage("Capture back side of Health insurance card")
                         alert.setMessage(R.string.scan_back_side_health_insurance_card)
-                        alert.setPositiveButton("OK") { dialog, whichButton ->
+                        alert.setPositiveButton("OK") { dialog, _ ->
                             dialog.dismiss()
                             showDocumentCaptureCamera()
                         }
-                        alert.setNegativeButton("SKIP") { dialog, whichButton ->
+                        alert.setNegativeButton("SKIP") { dialog, _ ->
                             dialog.dismiss()
                             uploadHealthCard()
                         }
@@ -276,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                     if (!isHealthCard) {
                         val alert = AlertDialog.Builder(this@MainActivity)
                         alert.setTitle("Message")
-                        if (capturedBarcodeString != null && capturedBarcodeString!!.trim()!!.length > 0) {
+                        if (capturedBarcodeString != null && capturedBarcodeString!!.trim().isNotEmpty()) {
                             alert.setMessage("Following barcode is captured.\n\n"
                                     + "Barcode String :\n\n"
                                     + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt())
@@ -286,14 +293,14 @@ class MainActivity : AppCompatActivity() {
                         else{
                             alert.setMessage("Capture Selfie Image now.")
                         }
-                        alert.setPositiveButton("OK") { dialog, whichButton ->
+                        alert.setPositiveButton("OK") { dialog, _ ->
                             dialog.dismiss()
-                            progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
+                            setProgress(true, "Getting Data...")
                             uploadBackImageOfDocument()
                             showFrontCamera()
                         }
-                        alert.setNegativeButton("CANCEL") { dialog, whichButton ->
-                            progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
+                        alert.setNegativeButton("CANCEL") { dialog, _ ->
+                            setProgress(true, "Getting Data...")
                             facialLivelinessResultString = "Facial Liveliness Failed"
                             capturingSelfieImage = false
                             uploadBackImageOfDocument()
@@ -313,21 +320,18 @@ class MainActivity : AppCompatActivity() {
             showDocumentCaptureCamera()
 
         } else if (requestCode == Constants.REQUEST_CAMERA_IP_SELFIE) {
-            if(resultCode == ErrorCodes.ERROR_CAPTURING_FACIAL){
-                showFaceCaptureError()
-            }
-            else if (resultCode == ErrorCodes.USER_CANCELED_FACIAL){
-                if (progressDialog != null && progressDialog!!.isShowing) {
-                    DialogUtils.dismissDialog(progressDialog)
+            when (resultCode) {
+                ErrorCodes.ERROR_CAPTURING_FACIAL -> showFaceCaptureError()
+                ErrorCodes.USER_CANCELED_FACIAL -> {
+                    setProgress(true, "Getting Data...")
+                    capturingSelfieImage = false
+                    facialLivelinessResultString = "Facial Liveliness Failed"
                 }
-                progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
-                capturingSelfieImage = false
-                facialLivelinessResultString = "Facial Liveliness Failed"
-            }
-            else{
-                val userId = data?.getStringExtra(FacialCaptureConstant.ACUANT_USERID_KEY)!!
-                val token = data?.getStringExtra(FacialCaptureConstant.ACUANT_TOKEN_KEY)!!
-                startFacialLivelinessRequest(token, userId)
+                else -> {
+                    val userId = data?.getStringExtra(FacialCaptureConstant.ACUANT_USERID_KEY)!!
+                    val token = data.getStringExtra(FacialCaptureConstant.ACUANT_TOKEN_KEY)!!
+                    startFacialLivelinessRequest(token, userId)
+                }
             }
         } else if (requestCode == Constants.REQUEST_CAMERA_HG_SELFIE){
             if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
@@ -345,11 +349,11 @@ class MainActivity : AppCompatActivity() {
         val alert = AlertDialog.Builder(this@MainActivity)
         alert.setTitle("Error Capturing Face")
         alert.setMessage("Would you like to retry?")
-        alert.setPositiveButton("YES") { dialog, whichButton ->
+        alert.setPositiveButton("YES") { dialog, _ ->
             dialog.dismiss()
             showFrontCamera()
         }
-        alert.setNegativeButton("NO") { dialog, which ->
+        alert.setNegativeButton("NO") { dialog, _ ->
             dialog.dismiss()
             capturingSelfieImage = false
             facialLivelinessResultString = "Facial Liveliness Failed"
@@ -358,10 +362,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startFacialLivelinessRequest(token: String, userId:String){
-        if (progressDialog != null && progressDialog!!.isShowing) {
-            DialogUtils.dismissDialog(progressDialog)
-        }
-        progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
+        setProgress(true, "Getting Data...")
         AcuantIPLiveness.getFacialLiveness(
                 token,
                 userId,
@@ -370,18 +371,18 @@ class MainActivity : AppCompatActivity() {
                         facialLivelinessResultString = "Facial Liveliness: " + result.isPassed
                         val decodedString = Base64.decode(result.frame, Base64.DEFAULT)
                         capturedSelfieImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                         processFacialMatch()
                     }
 
                     override fun onError(errorCode:Int, errorDescription: String) {
                         capturingSelfieImage = false
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                         facialLivelinessResultString = "Facial Liveliness Failed"
                         val alert = AlertDialog.Builder(this@MainActivity)
                         alert.setTitle("Error Retreiving Facial Data")
                         alert.setMessage(errorDescription)
-                        alert.setPositiveButton("OK") { dialog, whichButton ->
+                        alert.setPositiveButton("OK") { dialog, _ ->
                             dialog.dismiss()
                         }
                         alert.show()
@@ -397,12 +398,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ID/Passport Clicked
-    fun idPassPortClicked(view: View) {
+    fun idPassPortClicked(@Suppress("UNUSED_PARAMETER") view: View) {
         if(!hasInternetConnection()){
             val alert = AlertDialog.Builder(this@MainActivity)
             alert.setTitle("Error")
             alert.setMessage("No internet connection available.")
-            alert.setPositiveButton("OK") { dialog, whichButton ->
+            alert.setPositiveButton("OK") { dialog, _ ->
                 dialog.dismiss()
             }
             alert.show()
@@ -415,12 +416,12 @@ class MainActivity : AppCompatActivity() {
                 showDocumentCaptureCamera()
             }
             else{
-                progressDialog = DialogUtils.showProgessDialog(this, "Initializing...")
+                setProgress(true, "Initializing...")
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
                         this@MainActivity.runOnUiThread {
                             isInitialized = true
-                            DialogUtils.dismissDialog(progressDialog)
+                            setProgress(false)
                             frontCaptured = false
                             cleanUpTransaction()
                             captureWaitTime = 0
@@ -430,11 +431,11 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onInitializeFailed(error: List<Error>) {
                         this@MainActivity.runOnUiThread {
-                            DialogUtils.dismissDialog(progressDialog)
+                            setProgress(false)
                             val alert = AlertDialog.Builder(this@MainActivity)
                             alert.setTitle("Error")
                             alert.setMessage("Could not initialize")
-                            alert.setPositiveButton("OK") { dialog, whichButton ->
+                            alert.setPositiveButton("OK") { dialog, _ ->
                                 dialog.dismiss()
                             }
                             alert.show()
@@ -447,12 +448,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Health Insurance Clicked
-    fun healthInsuranceClicked(view: View) {
+    fun healthInsuranceClicked(@Suppress("UNUSED_PARAMETER") view: View) {
         if(!hasInternetConnection()){
             val alert = AlertDialog.Builder(this@MainActivity)
             alert.setTitle("Error")
             alert.setMessage("No internet connection available.")
-            alert.setPositiveButton("OK") { dialog, whichButton ->
+            alert.setPositiveButton("OK") { dialog, _ ->
                 dialog.dismiss()
             }
             alert.show()
@@ -466,7 +467,7 @@ class MainActivity : AppCompatActivity() {
                 showDocumentCaptureCamera()
             }
             else{
-                progressDialog = DialogUtils.showProgessDialog(this, "Initializing...")
+                setProgress(true, "Initializing...")
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
                         this@MainActivity.runOnUiThread {
@@ -476,17 +477,17 @@ class MainActivity : AppCompatActivity() {
                             isHealthCard = true
                             captureWaitTime = 0
                             showDocumentCaptureCamera()
-                            DialogUtils.dismissDialog(progressDialog)
+                            setProgress(false)
                         }
                     }
 
                     override fun onInitializeFailed(error: List<Error>) {
                         this@MainActivity.runOnUiThread {
-                            DialogUtils.dismissDialog(progressDialog)
+                            setProgress(false)
                             val alert = AlertDialog.Builder(this@MainActivity)
                             alert.setTitle("Error")
                             alert.setMessage("Could not initialize")
-                            alert.setPositiveButton("OK") { dialog, whichButton ->
+                            alert.setPositiveButton("OK") { dialog, _ ->
                                 dialog.dismiss()
                             }
                             alert.show()
@@ -506,8 +507,9 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity,
                 AcuantCameraActivity::class.java
         )
-        cameraIntent.putExtra(ACUANT_EXTRA_BORDER_ENABLED, true)
-        cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, autoCaptureEnabled)
+        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
+                AcuantCameraOptions(allowBox = true, autoCapture = autoCaptureEnabled)
+        )
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
     }
 
@@ -530,13 +532,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showIPLiveness(){
-        if (progressDialog != null && progressDialog!!.isShowing) {
-            DialogUtils.dismissDialog(progressDialog)
-        }
-        progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Loading...")
+        setProgress(true, "Loading...")
         AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
             override fun onDataReceived(result: FacialSetupResult?) {
-                DialogUtils.dismissDialog(progressDialog)
+                setProgress(false)
                 if(result != null){
                     val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
                     startActivityForResult(facialIntent, Constants.REQUEST_CAMERA_IP_SELFIE)
@@ -547,7 +546,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onError(errorCode: Int, description: String?) {
-                DialogUtils.dismissDialog(progressDialog)
+                setProgress(false)
                 handleInternalError()
             }
         })
@@ -565,12 +564,12 @@ class MainActivity : AppCompatActivity() {
             val alert = AlertDialog.Builder(this@MainActivity)
             alert.setTitle("Internal Error")
             alert.setMessage("Would you like to retry?")
-            alert.setNegativeButton("Proceed") { dialog, whichButton ->
+            alert.setNegativeButton("Proceed") { dialog, _ ->
                 dialog.dismiss()
                 capturingSelfieImage = false
                 facialLivelinessResultString = "Facial Liveliness Failed"
             }
-            alert.setPositiveButton("Retry") { dialog, which ->
+            alert.setPositiveButton("Retry") { dialog, _ ->
                 dialog.dismiss()
                 showFrontCamera()
             }
@@ -579,9 +578,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     //process health card images
-    fun uploadHealthCard() {
+    private fun uploadHealthCard() {
         this@MainActivity.runOnUiThread {
-            progressDialog = DialogUtils.showProgessDialog(this, "Processing ...")
+            setProgress(true, "Processing...")
         }
         val idOptions = IdOptions()
         idOptions.cardSide = CardSide.Front
@@ -608,11 +607,11 @@ class MainActivity : AppCompatActivity() {
                                             if (error == null) {
                                                 getHealthCardData()
                                             } else {
-                                                DialogUtils.dismissDialog(progressDialog)
+                                                setProgress(false)
                                                 val alert = AlertDialog.Builder(this@MainActivity)
                                                 alert.setTitle("Error")
                                                 alert.setMessage(error.errorDescription)
-                                                alert.setPositiveButton("OK") { dialog, whichButton ->
+                                                alert.setPositiveButton("OK") { dialog, _ ->
                                                     dialog.dismiss()
                                                 }
                                                 alert.show()
@@ -624,11 +623,11 @@ class MainActivity : AppCompatActivity() {
                                     getHealthCardData()
                                 }
                             }else {
-                                DialogUtils.dismissDialog(progressDialog)
+                                setProgress(false)
                                 val alert = AlertDialog.Builder(this@MainActivity)
                                 alert.setTitle("Error")
-                                alert.setMessage(error!!.errorDescription)
-                                alert.setPositiveButton("OK") { dialog, whichButton ->
+                                alert.setMessage(error.errorDescription)
+                                alert.setPositiveButton("OK") { dialog, _ ->
                                     dialog.dismiss()
                                 }
                                 alert.show()
@@ -641,11 +640,11 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     // Failure
                     this@MainActivity.runOnUiThread {
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                         val alert = AlertDialog.Builder(this@MainActivity)
                         alert.setTitle("Error")
                         alert.setMessage(error.errorDescription)
-                        alert.setPositiveButton("OK") { dialog, whichButton ->
+                        alert.setPositiveButton("OK") { dialog, _ ->
                             dialog.dismiss()
                         }
                         alert.show()
@@ -664,7 +663,7 @@ class MainActivity : AppCompatActivity() {
         AcuantDocumentProcessor.getData(documentInstanceID, true, object: GetDataListener {
             override fun processingResultReceived(result: ProcessingResult?) {
                 this@MainActivity.runOnUiThread {
-                    DialogUtils.dismissDialog(progressDialog)
+                    setProgress(false)
                 }
                 if (result == null || result.error != null) {
                     val alert = AlertDialog.Builder(this@MainActivity)
@@ -674,7 +673,7 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         alert.setMessage(ErrorDescriptions.ERROR_DESC_CouldNotGetHealthCardData)
                     }
-                    alert.setPositiveButton("OK") { dialog, whichButton ->
+                    alert.setPositiveButton("OK") { dialog, _ ->
                         dialog.dismiss()
                     }
                     alert.show()
@@ -686,9 +685,7 @@ class MainActivity : AppCompatActivity() {
                     AcuantDocumentProcessor.deleteInstance(healthCardResult.instanceID, DeleteType.MedicalCard, object : DeleteListener
                     {
                         override fun instanceDeleted(success: Boolean) {
-                            if (!success) {
-                                // Handle error
-                            } else {
+                            if (success) {
                                 Log.d("DELETE", "Medical Card Instance Deleted successfully")
                             }
                         }
@@ -703,9 +700,9 @@ class MainActivity : AppCompatActivity() {
 
 
     // Process Front image
-    fun processFrontOfDocument() {
+    private fun processFrontOfDocument() {
         this@MainActivity.runOnUiThread {
-            progressDialog = DialogUtils.showProgessDialog(this, "Uploading  & Classifying...")
+            setProgress(true, "Uploading  & Classifying...")
         }
 
         val idOptions = IdOptions()
@@ -731,32 +728,32 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         // Failure
                         this@MainActivity.runOnUiThread {
-                            DialogUtils.dismissDialog(progressDialog)
+                            setProgress(false)
                             val alert = AlertDialog.Builder(this@MainActivity)
                             alert.setTitle("Error")
                             alert.setMessage(error.errorDescription)
-                            alert.setPositiveButton("OK") { dialog, whichButton ->
+                            alert.setPositiveButton("OK") { dialog, _ ->
                                 dialog.dismiss()
                             }
                             alert.show()
                         }
 
-                    }                }
-
+                    }
+                }
             })
         }
     }
 
     // Upload front Image of Driving License
     fun uploadFrontImageOfDocument(instanceId: String, idData: IdData, idOptions: IdOptions) {
-        numerOfClassificationAttempts = numerOfClassificationAttempts + 1
+        numerOfClassificationAttempts += 1
         // Upload front Image of DL
         Log.d("InstanceId:",instanceId)
         AcuantDocumentProcessor.uploadImage(instanceId, idData, idOptions, object:UploadImageListener{
                 override fun imageUploaded(error: Error?, classification: Classification?) {
-                    if (error == null || (error.errorCode == ErrorCodes.ERROR_CouldNotClassifyDocument && numerOfClassificationAttempts > 1)) {
+                    if (error == null) {
                         // Successfully uploaded
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                         frontCaptured = true
                         if (isBackSideRequired(classification)) {
                             this@MainActivity.runOnUiThread {
@@ -764,12 +761,12 @@ class MainActivity : AppCompatActivity() {
                                 alert.setTitle("Message")
                                 //alert.setMessage("Scan back side of document.")
                                 alert.setMessage(R.string.scan_back_side_id)
-                                alert.setPositiveButton("OK") { dialog, whichButton ->
+                                alert.setPositiveButton("OK") { dialog, _ ->
                                     dialog.dismiss()
                                     captureWaitTime = 2
                                     showDocumentCaptureCamera()
                                 }
-                                alert.setNegativeButton("CANCEL") { dialog, whichButton ->
+                                alert.setNegativeButton("CANCEL") { dialog, _ ->
                                     dialog.dismiss()
                                 }
                                 alert.show()
@@ -778,15 +775,15 @@ class MainActivity : AppCompatActivity() {
                             val alert = AlertDialog.Builder(this@MainActivity)
                             alert.setTitle("Message")
                             alert.setMessage("Capture Selfie Image")
-                            alert.setPositiveButton("OK") { dialog, whichButton ->
+                            alert.setPositiveButton("OK") { dialog, _ ->
                                 dialog.dismiss()
-                                progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
+                                setProgress(true, "Getting Data...")
                                 showFrontCamera()
                                 getData()
                             }
-                            alert.setNegativeButton("CANCEL") { dialog, whichButton ->
+                            alert.setNegativeButton("CANCEL") { dialog, _ ->
                                 facialLivelinessResultString = "Facial Liveliness Failed"
-                                progressDialog = DialogUtils.showProgessDialog(this@MainActivity, "Getting Data...")
+                                setProgress(true, "Getting Data...")
                                 getData()
                                 dialog.dismiss()
                             }
@@ -796,15 +793,15 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         // Failure
                         this@MainActivity.runOnUiThread {
-                            DialogUtils.dismissDialog(progressDialog)
+                            setProgress(false)
                             if (error.errorCode == ErrorCodes.ERROR_CouldNotClassifyDocument) {
                                 showClassificationError()
                             } else {
-                                DialogUtils.dismissDialog(progressDialog)
+                                setProgress(false)
                                 val alert = AlertDialog.Builder(this@MainActivity)
                                 alert.setTitle("Error")
                                 alert.setMessage(error.errorDescription)
-                                alert.setPositiveButton("OK") { dialog, whichButton ->
+                                alert.setPositiveButton("OK") { dialog, _ ->
                                     dialog.dismiss()
                                 }
                                 alert.show()
@@ -818,7 +815,7 @@ class MainActivity : AppCompatActivity() {
 
 
     //Upload Back side of Driving License
-    fun uploadBackImageOfDocument() {
+    private fun uploadBackImageOfDocument() {
 
         val idOptions = IdOptions()
         idOptions.cardSide = CardSide.Back
@@ -842,9 +839,9 @@ class MainActivity : AppCompatActivity() {
     fun getData() {
         AcuantDocumentProcessor.getData(documentInstanceID,false, object : GetDataListener {
             override fun processingResultReceived(result: ProcessingResult?) {
-                if (result == null || result!!.error != null) {
+                if (result == null || result.error != null) {
                     this@MainActivity.runOnUiThread {
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                     }
                     val alert = AlertDialog.Builder(this@MainActivity)
                     alert.setTitle("Error")
@@ -853,47 +850,46 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         alert.setMessage(ErrorDescriptions.ERROR_DESC_CouldNotGetConnectData)
                     }
-                    alert.setPositiveButton("OK") { dialog, whichButton ->
+                    alert.setPositiveButton("OK") { dialog, _ ->
                         dialog.dismiss()
                     }
                     alert.show()
                     return
-                } else if ((result as IDResult).fields == null || (result as IDResult).fields.dataFieldReferences == null) {
+                } else if ((result as IDResult).fields == null || result.fields.dataFieldReferences == null) {
                     this@MainActivity.runOnUiThread {
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                     }
                     val alert = AlertDialog.Builder(this@MainActivity)
                     alert.setTitle("Error")
                     alert.setMessage("Unknown error happened.Could not extract data")
-                    alert.setPositiveButton("OK") { dialog, whichButton ->
+                    alert.setPositiveButton("OK") { dialog, _ ->
                         dialog.dismiss()
                     }
                     alert.show()
                     return
 
                 }
-                var instanceID = result.instanceID
                 var docNumber = ""
-                var cardType: String = "ID1"
+                var cardType = "ID1"
                 var frontImageUri: String? = null
                 var backImageUri: String? = null
                 var signImageUri: String? = null
                 var faceImageUri: String? = null
                 var resultString: String? = ""
-                var fieldReferences = result.fields.dataFieldReferences
+                val fieldReferences = result.fields.dataFieldReferences
                 for (reference in fieldReferences) {
-                    if (reference.key.equals("Document Class Name") && reference.type.equals("string")) {
-                        if (reference.value.equals("Driver License")) {
+                    if (reference.key == "Document Class Name" && reference.type == "string") {
+                        if (reference.value == "Driver License") {
                             cardType = "ID1"
-                        } else if (reference.value.equals("Passport")) {
+                        } else if (reference.value == "Passport") {
                             cardType = "ID3"
                         }
-                    } else if (reference.key.equals("Document Number") && reference.type.equals("string")) {
-                        docNumber = reference.value;
-                    } else if (reference.key.equals("Photo") && reference.type.equals("uri")) {
-                        faceImageUri = reference.value;
-                    } else if (reference.key.equals("Signature") && reference.type.equals("uri")) {
-                        signImageUri = reference.value;
+                    } else if (reference.key == "Document Number" && reference.type == "string") {
+                        docNumber = reference.value
+                    } else if (reference.key == "Photo" && reference.type == "uri") {
+                        faceImageUri = reference.value
+                    } else if (reference.key == "Signature" && reference.type == "uri") {
+                        signImageUri = reference.value
                     }
                 }
 
@@ -906,7 +902,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 for (reference in fieldReferences) {
-                    if (reference.type.equals("string")) {
+                    if (reference.type == "string") {
                         resultString = resultString + reference.key + ":" + reference.value + System.lineSeparator()
                     }
                 }
@@ -915,7 +911,7 @@ class MainActivity : AppCompatActivity() {
                         AuthenticationResult.getString(Integer.parseInt(result.result)) +
                         System.lineSeparator() +
                         System.lineSeparator() +
-                        resultString;
+                        resultString
 
                 thread {
                     val frontImage = loadAssureIDImage(frontImageUri, Credential.get())
@@ -928,18 +924,8 @@ class MainActivity : AppCompatActivity() {
                         Thread.sleep(100)
                     }
                     this@MainActivity.runOnUiThread {
-                        DialogUtils.dismissDialog(progressDialog)
+                        setProgress(false)
                         showResults(result.biographic.birthDate, result.biographic.expirationDate, docNumber, frontImage, backImage, faceImage, signImage, resultString, cardType)
-                        /*Controller.deleteInstance(instanceID, DeleteType.ID, object : DeleteListener {
-                                override fun instanceDeleted(success: Boolean) {
-                                    if (!success) {
-                                        // Handle error
-                                    } else {
-                                        Log.d("DELETE", "Instance Deleted successfully")
-                                    }
-                                }
-
-                            })*/
                     }
                 }
             }
@@ -950,7 +936,7 @@ class MainActivity : AppCompatActivity() {
     fun processFacialMatch() {
         //MainActivity@ capturingFacialMatch = true
         thread {
-            while (MainActivity@ capturingImageData) {
+            while (capturingImageData) {
                 Thread.sleep(100)
             }
             this@MainActivity.runOnUiThread {
@@ -959,30 +945,25 @@ class MainActivity : AppCompatActivity() {
                 facialMatchData.faceImageTwo = capturedSelfieImage
 
                 if(facialMatchData.faceImageOne != null && facialMatchData.faceImageTwo != null){
-                    if (progressDialog != null && progressDialog!!.isShowing) {
-                        DialogUtils.dismissDialog(progressDialog)
-                    }
-                    progressDialog = DialogUtils.showProgessDialog(this, "Matching selfie ...")
-                    AcuantFaceMatch.processFacialMatch(facialMatchData, object : FacialMatchListener {
-                        override fun facialMatchFinished(result: FacialMatchResult?) {
-                            this@MainActivity.runOnUiThread {
-                                DialogUtils.dismissDialog(progressDialog)
-                                if (result!!.error == null) {
-                                    val resultStr = CommonUtils.stringFromFacialMatchResult(result)
-                                    facialResultString = resultStr
-                                } else {
-                                    val alert = AlertDialog.Builder(this@MainActivity)
-                                    alert.setTitle("Error")
-                                    alert.setMessage(result!!.error.errorDescription)
-                                    alert.setPositiveButton("OK") { dialog, whichButton ->
-                                        dialog.dismiss()
-                                    }
-                                    alert.show()
+                    setProgress(true, "Matching selfie...")
+                    AcuantFaceMatch.processFacialMatch(facialMatchData, FacialMatchListener { result ->
+                        this@MainActivity.runOnUiThread {
+                            setProgress(false)
+                            if (result!!.error == null) {
+                                val resultStr = CommonUtils.stringFromFacialMatchResult(result)
+                                facialResultString = resultStr
+                            } else {
+                                val alert = AlertDialog.Builder(this@MainActivity)
+                                alert.setTitle("Error")
+                                alert.setMessage(result.error.errorDescription)
+                                alert.setPositiveButton("OK") { dialog, _ ->
+                                    dialog.dismiss()
                                 }
+                                alert.show()
                             }
-                            capturingSelfieImage = false
-                            //capturingFacialMatch = false
                         }
+                        capturingSelfieImage = false
+                        //capturingFacialMatch = false
                     })
                 }
                 else{
@@ -1049,15 +1030,13 @@ class MainActivity : AppCompatActivity() {
                     Thread.sleep(100)
                 }
                 this@MainActivity.runOnUiThread {
-                    facialResultString = if(facialResultString == null) "Facial Match Failed" else facialResultString;
+                    facialResultString = if(facialResultString == null) "Facial Match Failed" else facialResultString
                     ProcessedData.formattedString = facialLivelinessResultString + System.lineSeparator() + facialResultString + System.lineSeparator() + resultString
                     val resultIntent = Intent(
                             this@MainActivity,
                             ResultActivity::class.java
                     )
-                    if (progressDialog != null && progressDialog!!.isShowing) {
-                        DialogUtils.dismissDialog(progressDialog)
-                    }
+                    setProgress(false)
                     startActivity(resultIntent)
                 }
 
@@ -1069,38 +1048,30 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity,
                 ResultActivity::class.java
         )
-        if (progressDialog != null && progressDialog!!.isShowing) {
-            DialogUtils.dismissDialog(progressDialog)
-        }
+        setProgress(false)
         startActivity(resultIntent)
     }
 
     //Correct orientation
     fun correctBitmapOrientation(image: Image?): Image? {
-        if (image != null && image.image != null && image.image.getHeight() > image.image.getWidth()) {
+        if (image?.image != null && image.image.height > image.image.width) {
             val mWindowManager = getSystemService(WINDOW_SERVICE) as WindowManager
             val display = mWindowManager.defaultDisplay
-            var angle = 0
-            when (display.rotation) {
+            val angle = when (display.rotation) {
                 Surface.ROTATION_0 // This is display orientation
-                -> angle = 270 // This is camera orientation
-                Surface.ROTATION_90 -> angle = 180
-                Surface.ROTATION_180 -> angle = 90
-                Surface.ROTATION_270 -> angle = 0
-                else -> angle = 180
+                -> 270 // This is camera orientation
+                Surface.ROTATION_90 -> 180
+                Surface.ROTATION_180 -> 90
+                Surface.ROTATION_270 -> 0
+                else -> 180
             }
 
             val matrix = Matrix()
             matrix.postRotate(angle.toFloat())
-            image.image = Bitmap.createBitmap(image.image, 0, 0, image.image.getWidth(), image.image.getHeight(), matrix, true)
+            image.image = Bitmap.createBitmap(image.image, 0, 0, image.image.width, image.image.height, matrix, true)
             return image
         }
         return image
-    }
-
-    fun dpToPx(dp: Int): Int {
-        val displayMetrics = applicationContext.resources.displayMetrics
-        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT))
     }
 
     fun loadAssureIDImage(url: String?, credential: Credential?): Bitmap? {
@@ -1111,8 +1082,7 @@ class MainActivity : AppCompatActivity() {
             c.setRequestProperty("Authorization", basicAuth)
             c.useCaches = false
             c.connect()
-            val bmImg = BitmapFactory.decodeStream(c.inputStream)
-            return bmImg
+            return BitmapFactory.decodeStream(c.inputStream)
         }
         return null
     }

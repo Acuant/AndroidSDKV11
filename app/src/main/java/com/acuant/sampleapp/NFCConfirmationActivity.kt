@@ -3,15 +3,16 @@ package com.acuant.sampleapp
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
-import android.app.ProgressDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.nfc.NfcAdapter
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import com.acuant.acuantechipreader.AcuantEchipReader
 import com.acuant.acuantechipreader.echipreader.NFCTagReadingListener
@@ -27,7 +28,8 @@ import java.util.*
  */
 class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
 
-    private val progressDialog: ProgressDialog? = null
+    private var progressDialog: LinearLayout? = null
+    private var progressText: TextView? = null
     private var alertDialog: AlertDialog? = null
     private var nfcScanningBtn: Button? = null
     private var nfcAdapter: NfcAdapter? = null
@@ -47,12 +49,26 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
 
     }
 
+    private fun setProgress(visible : Boolean, text : String = "") {
+        if(visible) {
+            progressDialog?.visibility = View.VISIBLE
+            window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        } else {
+            progressDialog?.visibility = View.GONE
+            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        }
+        progressText?.text = text
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_nfcconfirmation)
 
-        nfcScanningBtn = findViewById<Button>(R.id.buttonNFC)
+        nfcScanningBtn = findViewById(R.id.buttonNFC)
+        progressDialog = findViewById(R.id.nfc_progress_layout)
+        progressText = findViewById(R.id.nfc_pbText)
 
         documentNumber = intent.getStringExtra("DOCNUMBER")
         dob = intent.getStringExtra("DOB")
@@ -124,12 +140,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
         if (nfcAdapter != null) {
             ensureSensorIsOn()
             AcuantEchipReader.listenNFC(this, nfcAdapter)
-            if (alertDialog != null && alertDialog!!.isShowing) {
-                DialogUtils.dismissDialog(alertDialog)
-
-            }
-            alertDialog = DialogUtils.showDialog(this, "Searching for passport chip...\n\nTap and place the phone on top of passport chip.")
-            alertDialog!!.setCancelable(false)
+            setProgress(true, "Searching for passport chip...\n\nPlace the phone on top of passport chip.")
 
         } else {
             AlertDialog.Builder(this)
@@ -167,10 +178,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (alertDialog != null && alertDialog!!.isShowing) {
-            DialogUtils.dismissDialog(alertDialog)
-        }
-        alertDialog = DialogUtils.showProgessDialog(this, "Reading passport chip...\n\nPlease don't move passport or phone.")
+        setProgress(true, "Reading passport chip...\n\nPlease don't move passport or phone.")
         val docNumber = mrzDocNumber!!.text.toString().trim { it <= ' ' }
         val dateOfBirth = getFromattedStringFromDateString(mrzDOB!!.text.toString().trim { it <= ' ' })
         val dateOfExpiry = getFromattedStringFromDateString(mrzDOE!!.text.toString().trim { it <= ' ' })
@@ -183,9 +191,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
 
     override fun tagReadSucceeded(cardDetails: NFCData?, image: Bitmap?, sign_image: Bitmap?) {
         Log.d(TAG, "NFC Tag successfully read")
-        if (alertDialog != null && alertDialog!!.isShowing) {
-            DialogUtils.dismissDialog(alertDialog)
-        }
+        setProgress(false)
         val intent = Intent(this, NFCResultActivity::class.java)
         NFCStore.image = image
         NFCStore.signature_image = sign_image
@@ -201,6 +207,7 @@ class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
         if (alertDialog != null && alertDialog!!.isShowing) {
             DialogUtils.dismissDialog(alertDialog)
         }
+        setProgress(false)
         if(message!=null) {
             alertDialog = DialogUtils.showDialog(this, message)
             if (this.nfcAdapter != null) {

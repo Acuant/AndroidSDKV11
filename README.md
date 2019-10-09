@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.2.2
-**July 2019**
+# Acuant Android SDK v11.2.3
+**October 2019**
 
 ## Introduction ##
 
@@ -52,8 +52,6 @@ The SDK includes the following modules:
 
 ### Setup ###
 
-
-
 1. Specify the permissions in the App manifest file:
 	
 	    <uses-permission android:name="android.permission.INTERNET" />
@@ -69,8 +67,8 @@ The SDK includes the following modules:
     	    android:value="barcode,face"
     	    tools:replace="android:value"/>
     
-1. Add the Acuant SDK dependency in **build.gradle**:
-	
+2. Add the Acuant SDK dependency in **build.gradle**:
+
 		repositories {
 			//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveness
 			maven { url 'https://maven.google.com' }
@@ -132,7 +130,7 @@ The SDK includes the following modules:
 	    implementation project(path: ':acuantimagepreparation')
   		}
   		
-1. Add the Acuant SDK dependency in **build.gradle** if using Maven
+3. Add the Acuant SDK dependency in **build.gradle** if using Maven
 
 	- Add the following Maven URL
 	
@@ -141,19 +139,19 @@ The SDK includes the following modules:
         	
     - Add the following depedencies
 
-    		implementation 'com.acuant:acuantcommon:11.2.1'
-    		implementation 'com.acuant:acuantcamera:11.2.1'
-    		implementation 'com.acuant:acuantimagepreparation:11.2.1'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.2.1'
-    		implementation 'com.acuant:acuantechipreader:11.2.1'
-    		implementation 'com.acuant:acuantfacematch:11.2.1'
-    		implementation 'com.acuant:acuanthgliveness:11.2.1'
-    		implementation ('com.acuant:acuantipliveness:11.2.1'){
+    		implementation 'com.acuant:acuantcommon:11.2.3'
+    		implementation 'com.acuant:acuantcamera:11.2.3'
+    		implementation 'com.acuant:acuantimagepreparation:11.2.3'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.2.3'
+    		implementation 'com.acuant:acuantechipreader:11.2.3'
+    		implementation 'com.acuant:acuantfacematch:11.2.3'
+    		implementation 'com.acuant:acuanthgliveness:11.2.3'
+    		implementation ('com.acuant:acuantipliveness:11.2.3'){
         		transitive = true
     		}
 
 
-1. 	Create an xml file with the following tags:
+4. 	Create an xml file with the following tags:
 
 		<?xml version="1.0" encoding="UTF-8" ?>
 		<setting>
@@ -165,22 +163,29 @@ The SDK includes the following modules:
 		    <assureid_endpoint></assureid_endpoint>
 		</setting>
 
-1.	Save the file in the application assets directory:
+5.	Save the file in the application assets directory:
 
 		{PROJECT_ROOT_DIRECTORY} => app => src => main => assets => PATH/TO/CONFIG/FILENAME.XML
-
 			
 ### Capture an image using AcuantCamera ###
 
 1. Start camera activity:
 
         val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
-		cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, boolean)//default is true
-		cameraIntent.putExtra(ACUANT_EXTRA_BORDER_ENABLED, boolean)//default is true
+        
+        cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, boolean)//default is true
+        cameraIntent.putExtra(ACUANT_EXTRA_BORDER_ENABLED, boolean)//default is true
 
         startActivityForResult(cameraIntent, REQUEST_CODE) 
+Alternatively use the new options object. This method allows you to configure much more about the camera (see AcuantCameraOptions):
         
-1. Get activity result:
+        val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
+        
+        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, AcuantCameraOptions(allowBox = boolean, autoCapture = boolean)
+        
+        startActivityForResult(cameraIntent, REQUEST_CODE) 
+        
+2. Get activity result:
 	
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         	super.onActivityResult(requestCode, resultCode, data)
@@ -197,8 +202,7 @@ The SDK includes the following modules:
 		 
 ####AcuantImagePreparation####
 
-This section describes how to use **AcuantImagePreparation**. 
-  
+This section describes how to use **AcuantImagePreparation**.
 
 - **Initialization**
 
@@ -247,8 +251,8 @@ This section describes how to use **AcuantImagePreparation**.
 **AcuantImagePreparation** may be initialized by providing only a username and a password. However, without providing a Subscription ID, the application can *only* capture an image and get the image. Without a Subscription ID:
 
 1. Only the **AcuantCamera**, **AcuantImagePreparation**, and **AcuantHGLiveness** modules may be used.
-1. The SDK can be used to capture the identity documents.
-1. The captured images can be exported from the SDK. See the **onActivityResult** in the **MainActivity** of the sample application.
+2. The SDK can be used to capture the identity documents.
+3. The captured images can be exported from the SDK. See the **onActivityResult** in the **MainActivity** of the sample application.
 
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -298,7 +302,7 @@ After you capture a document image is captured, use the following steps to proce
     		void instanceCreated(String instanceId, Error error);
 		}
 		
-1. Upload an image:
+2. Upload an image:
 
 		public static void uploadImage(String instanceID, IdData idData, IdOptions options, UploadImageListener listener)
 		
@@ -306,7 +310,7 @@ After you capture a document image is captured, use the following steps to proce
     		void imageUploaded(Error error, Classification classification);
 		}
 		
-1. Get the data:
+3. Get the data:
 		
 		public static void getData(String instanceID,boolean isHealthCard, GetDataListener listener)
 		
@@ -314,7 +318,7 @@ After you capture a document image is captured, use the following steps to proce
     		void processingResultReceived(ProcessingResult result);
 		}
         
-1. Delete the instance:
+4. Delete the instance:
 
 
 		public static void deleteInstance(String instanceId, DeleteType type, DeleteListener listener)
@@ -344,7 +348,7 @@ After you capture a document image is captured, use the following steps to proce
             }
         })
         
-1. Get the Activity result:
+2. Get the Activity result:
 		
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 		    super.onActivityResult(requestCode, resultCode, data)
@@ -364,7 +368,7 @@ After you capture a document image is captured, use the following steps to proce
         	}
 		}
 		
-1. Get the facial capture result:
+3. Get the facial capture result:
 		
 		//isPassed = true if face is live. false if face is not live.
 		//frame contains the base64 encoded image
@@ -397,7 +401,7 @@ This module checks for liveness (whether the subject is a live person) by using 
         )
         startActivityForResult(cameraIntent, YOUR_REQUEST_CODE)
         
-1. Get the Activity result:
+2. Get the Activity result:
 
 		
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -427,18 +431,17 @@ This module is used to match two facial images:
 
 ### AcuantEChipReader ###
 
-
 1. Check that the permission is provided in the manifest file:
 
 		<uses-permission android:name="android.permission.NFC" />
 
-1. Make sure that the NFC sensor on the device is turned on.
+2. Make sure that the NFC sensor on the device is turned on.
 
-1. Initialize the Android NFC Adapter:
+3. Initialize the Android NFC Adapter:
 
 		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
-1. Use the SDK API to listen to NFC tags available in an e-Passport:
+4. Use the SDK API to listen to NFC tags available in an e-Passport:
 
 		public static void listenNFC(Activity activity,
 		 NfcAdapter nfcAdapterParam, NFCTagReadingListener listener)
@@ -517,13 +520,42 @@ This module is used to match two facial images:
 ### Image ###
 
 	public class Image {
-    	public Bitmap image;
-    	public int dpi;
-    	public boolean isCorrectAspectRatio;
-    	public float aspectRatio;
-    	public Error error;
-    	public Point[] points;
+        public Bitmap image;
+        public int dpi;
+        public boolean isCorrectAspectRatio;
+        public boolean isPassport;
+        public float aspectRatio;
+        public Error error;
+        public Point[] points;
 	}
+
+### AcuantCameraOptions ###
+
+        class AcuantCameraOptions constructor(
+            val timeInMsPerDigit: Int = 900,
+            val digitsToShow: Int = 2,
+            val allowBox : Boolean = true,
+            val autoCapture : Boolean = true,
+            val bracketLengthInHorizontal : Int = 155,
+            val bracketLengthInVertical : Int = 255,
+            val defaultBracketMarginWidth : Int = 160,
+            val defaultBracketMarginHeight : Int = 160,
+            val colorHold : Int = Color.YELLOW,
+            val colorCapturing : Int = Color.GREEN,
+            val colorBracketAlign : Int = Color.BLACK,
+            val colorBracketCloser : Int = Color.RED,
+            val colorBracketHold : Int = Color.YELLOW,
+            val colorBracketCapturing : Int = Color.GREEN
+        )
+
+### IdOptions ###
+
+        public class IdOptions {
+            public CardSide cardSide;
+            public boolean isRetrying;
+            public boolean isHealthCard;
+            public AuthenticationSensitivity authenticationSensitivity;
+        }
 
 
 ## Frequently Asked Questions ##

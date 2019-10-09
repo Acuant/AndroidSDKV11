@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -18,25 +17,24 @@
             android:layout_margin="2dp" />
     </RelativeLayout>
 
-    <RelativeLayout
+    <ImageView
+        android:id="@+id/classificationErrorImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:layout_below="@+id/classificationMessageLayout"
+        android:contentDescription="@string/classification_error_image_preview" />
+
+    <Button
+        android:id="@+id/retryClassificationButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/classificationMessageLayout">
-
-        <ImageView
-            android:id="@+id/classificationErrorImage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp" />
-
-        <Button
-            android:id="@+id/retryClassificationButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/classificationErrorImage"
-            android:layout_margin="5dp"
-            android:onClick="retryClassificationClicked"
-            android:text="Retry"></Button>
-    </RelativeLayout>
+        android:layout_marginBottom="25dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_alignParentBottom="true"
+        android:onClick="retryClassificationClicked"
+        android:text="@string/classification_error_retry"/>
 
 </RelativeLayout>

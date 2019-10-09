@@ -3,18 +3,12 @@ package com.acuant.acuantcamera.helper
 import android.graphics.*
 import android.media.Image
 import android.util.Log
-import java.io.ByteArrayOutputStream
 
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.nio.ByteBuffer
-import java.util.*
-import kotlin.experimental.xor
-import android.R.attr.left
 import android.graphics.ImageFormat
 import android.graphics.YuvImage
-
+import android.graphics.Bitmap.CompressFormat
+import android.graphics.BitmapFactory
+import java.io.*
 
 
 /**
@@ -28,6 +22,7 @@ internal class ImageSaver(
         /**
          * The JPEG image
          */
+        private val orientation: Int,
         private val image: Image,
 
         /**
@@ -40,13 +35,22 @@ internal class ImageSaver(
 
     override fun run() {
         val buffer = image.planes[0].buffer
-        val bytes = ByteArray(buffer.remaining())
+        var bytes = ByteArray(buffer.remaining())
         buffer.get(bytes)
+
+        //check if it needs to be rotated
+        if(orientation < DEGREES_TO_ROTATE_IMAGE) {
+            //code for rotating the image
+            val rotated = rotateImage(BitmapFactory.decodeByteArray(bytes, 0, bytes.size),180f)
+            val stream = ByteArrayOutputStream()
+            rotated.compress(CompressFormat.JPEG, 100, stream)
+            rotated.recycle()
+            bytes = stream.toByteArray()
+        }
+
         var output: FileOutputStream? = null
         try {
-            output = FileOutputStream(file).apply {
-                write(bytes)
-            }
+            output = FileOutputStream(file).apply {write(bytes)}
         } catch (e: IOException) {
             Log.e(TAG, e.toString())
         } finally {
@@ -66,10 +70,19 @@ internal class ImageSaver(
         /**
          * Tag for the [Log].
          */
-        private val TAG = "ImageSaver"
+        private const val TAG = "ImageSaver"
+        private const val DEGREES_TO_ROTATE_IMAGE = 181;
 
         @JvmStatic fun imageToByteArray(image: Image, quality: Int = 50): ByteArray {
             return NV21toJPEG(YUV420toNV21(image), image.getWidth(), image.getHeight(), 100)
+        }
+
+        private fun rotateImage(img: Bitmap, degree: Float): Bitmap {
+            val matrix = Matrix()
+            matrix.setRotate(degree)
+            val rotatedImg = Bitmap.createBitmap(img, 0, 0, img.width, img.height, matrix, true)
+            img.recycle()
+            return rotatedImg
         }
 
         private fun NV21toJPEG(nv21: ByteArray, width: Int, height: Int, quality: Int): ByteArray {

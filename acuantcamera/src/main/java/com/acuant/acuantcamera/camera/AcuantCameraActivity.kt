@@ -5,10 +5,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import com.acuant.acuantcamera.R
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_BORDER_ENABLED
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IMAGE_URL
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IS_AUTO_CAPTURE
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_PDF417_BARCODE
+import com.acuant.acuantcamera.constant.*
 
 
 interface ICameraActivityFinish{
@@ -50,6 +47,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
             cameraFragment.arguments = Bundle().apply {
                 putBoolean(ACUANT_EXTRA_IS_AUTO_CAPTURE, intent.getBooleanExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, true))
                 putBoolean(ACUANT_EXTRA_BORDER_ENABLED, intent.getBooleanExtra(ACUANT_EXTRA_BORDER_ENABLED, true))
+                putSerializable(ACUANT_EXTRA_CAMERA_OPTIONS, intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS))
             }
 
             supportFragmentManager.beginTransaction()

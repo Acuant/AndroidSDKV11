@@ -25,31 +25,23 @@
         android:layout_alignParentTop="true"
         android:layout_centerInParent="true"/>
 
-    <com.acuant.acuantcamera.overlay.BracketsView
-        android:id="@+id/counter_clock_surface"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"/>
-
-
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center">
 
     <TextView
         android:id="@+id/acu_display_text"
-        android:layout_width="match_parent"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:background="@color/gray_transparent"
+        android:background="@drawable/camera_text_config_default"
         android:gravity="center"
-        android:paddingHorizontal="60dp"
-        android:paddingVertical="15dp"
         android:rotation="90"
-        android:text="ALIGN"
+        android:text="@string/acuant_camera_align"
         android:textColor="@color/white"
-        android:textSize="33sp" />
+        android:textSize="24sp" />
     </RelativeLayout>
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center">

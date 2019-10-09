@@ -6,6 +6,7 @@
     <string name="acuant_camera_error">Este dispositivo no es compatible con la API de Camera2.</string>
 
     <string name="acuant_camera_align">ALINEAR</string>
+    <string name="acuant_camera_align_and_tap">ALINEAR Y TOCAR</string>
     <string name="acuant_camera_move_closer">MUÉVETE MAS CERCA</string>
     <string name="acuant_camera_hold_steady">MANTENER ESTABLE</string>
     <string name="acuant_camera_capturing">CAPTURA</string>
