@@ -129,43 +129,9 @@ class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr)
             start()
         }
 
-        fixPoints()
-
         calcPath()
 
         invalidate()
-    }
-
-    private fun fixPoints() {
-        if(points != null && points!!.size == 4) {
-            if(points!![0].y > points!![2].y && points!![0].x < points!![2].x) {
-
-                var tmp = points!![0]
-                points!![0] = points!![2]
-                points!![2] = tmp
-
-                tmp = points!![1]
-                points!![1] = points!![3]
-                points!![3] = tmp
-
-            } else if(points!![0].y > points!![2].y && points!![0].x > points!![2].x) {
-
-                val tmp = points!![0]
-                points!![0] = points!![3]
-                points!![1] = points!![2]
-                points!![2] = points!![1]
-                points!![3] = tmp
-
-            } else if(points!![0].y < points!![2].y && points!![0].x < points!![2].x) {
-
-                val tmp = points!![0]
-                points!![0] = points!![3]
-                points!![3] = points!![2]
-                points!![2] = points!![1]
-                points!![1] = tmp
-
-            }
-        }
     }
 
     private fun calcPath() {
