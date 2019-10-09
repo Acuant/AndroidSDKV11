@@ -200,7 +200,7 @@ Alternatively use the new options object. This method allows you to configure mu
 	**Note:**   **AcuantCamera** is depdendent on **AcuantImagePreparation** and  **AcuantCommon**.
 
 		 
-####AcuantImagePreparation####
+#### AcuantImagePreparation ####
 
 This section describes how to use **AcuantImagePreparation**.
 
@@ -560,7 +560,7 @@ This module is used to match two facial images:
 
 ## Frequently Asked Questions ##
 
-####How do I obfuscate my Android application?
+#### How do I obfuscate my Android application? ####
 
 Acuant does not provide obfuscation tools. See the Android developer documentation about obfuscation at: [https://developer.android.com/studio/build/shrink-code](https://developer.android.com/studio/build/shrink-code). Then open proguard-rules.pro for your project and set the obfuscation rules. 
 
