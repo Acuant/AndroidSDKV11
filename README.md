@@ -9,7 +9,7 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ![](https://i.imgur.com/KR0J94S.png)
 
-**Note** The accceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and matches an ID document.
+**Note** The acceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and matches an ID document.
 
 
 ## Modules ##
