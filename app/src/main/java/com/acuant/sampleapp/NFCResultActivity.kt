@@ -5,23 +5,30 @@ import android.app.Activity
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
+import android.util.Base64
 import android.view.Gravity
 import android.view.View
+import android.view.WindowManager
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
-import com.acuant.acuantdocumentprocessing.model.Action
-import com.acuant.acuantdocumentprocessing.model.IDResult
+import com.acuant.acuantcommon.model.Credential
+import com.acuant.acuantechipreader.AcuantEchipReader
 import com.acuant.acuantechipreader.model.NFCData
-
-import java.util.ArrayList
+import com.acuant.acuantechipreader.model.OzoneAuthRequest
+import com.acuant.acuantechipreader.model.OzoneAuthResult
+import com.acuant.acuantechipreader.service.OzoneAuthenticateServiceListener
 
 class NFCResultActivity : Activity() {
 
+    private var progressDialog: LinearLayout? = null
+    private var progressText: TextView? = null
     private var resultLayout: RelativeLayout? = null
     private var imageView: ImageView? = null
     private var signImageView: ImageView? = null
     private var currentId: Int = 0
+    private var subscription : String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -30,22 +37,74 @@ class NFCResultActivity : Activity() {
 
         setContentView(R.layout.activity_nfcresult)
 
+        subscription = Credential.get().ozone
+
+        progressDialog = findViewById(R.id.nfc_res_progress_layout)
+        progressText = findViewById(R.id.nfc_res_pbText)
+
         this.resultLayout = findViewById<View>(R.id.dataLayout) as RelativeLayout
         this.imageView = findViewById<View>(R.id.photo) as ImageView
         this.signImageView = findViewById<View>(R.id.signaturePhoto) as ImageView
 
     }
 
+    private fun setProgress(visible : Boolean, text : String = "") {
+        if(visible) {
+            progressDialog?.visibility = View.VISIBLE
+            window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        } else {
+            progressDialog?.visibility = View.GONE
+            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        }
+        progressText?.text = text
+    }
+
     override fun onResume() {
         super.onResume()
         val intent = intent
+
         if (intent != null) {
             val cardDetails = NFCStore.cardDetails
-            if (cardDetails != null) {
-                setData(cardDetails)
-                if (NFCStore.idResult != null) {
-                    setResultData(NFCStore.idResult)
+            if(subscription == null || subscription == "") {
+                if (cardDetails != null) {
+                    setData(cardDetails, null, null)
+                    val image = NFCStore.image
+                    if (image != null) {
+                        imageView!!.setImageBitmap(image)
+                    }
+                    if (NFCStore.signature_image != null) {
+                        signImageView!!.setImageBitmap(NFCStore.signature_image)
+                    }
+
+                    currentId = signImageView!!.id
+                } else {
+                    val message = intent.getStringExtra("DATA")
+                    addField("Error", message)
                 }
+            } else {
+                if (cardDetails != null) {
+                    val mrz = getMrzCharacters(cardDetails)
+                    val sod = getSODFile(cardDetails)
+
+                    getOzoneResult(mrz, sod, cardDetails)
+                }
+                else {
+                    val message = intent.getStringExtra("DATA")
+                    addField("Error", message)
+                }
+            }
+
+        }
+
+    }
+
+    private fun getOzoneResult(mrz: String, sod: String, cardDetails: NFCData){
+        setProgress(true, "Authenticating...")
+        AcuantEchipReader.authenticate(OzoneAuthRequest(apiKey = subscription ?: "", mrz = mrz, sod = sod), object: OzoneAuthenticateServiceListener {
+            override fun onSuccess(result: OzoneAuthResult) {
+                setProgress(false)
+                setData(cardDetails, result.isCountrySigned, result.isDocumentSigned)
                 val image = NFCStore.image
                 if (image != null) {
                     imageView!!.setImageBitmap(image)
@@ -55,18 +114,40 @@ class NFCResultActivity : Activity() {
                 }
 
                 currentId = signImageView!!.id
-            } else {
-                val message = intent.getStringExtra("DATA")
-                addField("Error", message)
             }
 
+            override fun onFailed(errorDescription: String) {
+                setProgress(false)
+                setData(cardDetails, null, null)
+                val image = NFCStore.image
+                if (image != null) {
+                    imageView!!.setImageBitmap(image)
+                }
+                if (NFCStore.signature_image != null) {
+                    signImageView!!.setImageBitmap(NFCStore.signature_image)
+                }
 
+                currentId = signImageView!!.id
+            }
+        })
+    }
+
+    private fun getSODFile(nfcData: NFCData): String{
+        return String(Base64.encode(nfcData.sod, Base64.DEFAULT)).replace("\n", "")
+    }
+
+    private fun getMrzCharacters(nfcData: NFCData): String{
+        val docCode = nfcData.dg1File.mrzInfo.documentCode
+        return if(docCode.length > 1){
+            "$docCode${nfcData.dg1File.mrzInfo.issuingState}"
         }
-
+        else{
+            "$docCode<${nfcData.dg1File.mrzInfo.issuingState}"
+        }
     }
 
 
-    private fun setData(data: NFCData) {
+    private fun setData(data: NFCData, isCountrySigned: Boolean?, isDocumentSigned: Boolean?) {
 
         var key: String
         var value: String?
@@ -177,53 +258,46 @@ class NFCResultActivity : Activity() {
 
 
         if (data.isBacSupported) {
-            key = "BAC Aunthentication"
-            addBooleanField(key, data.isBacAunthenticated)
+            key = "BAC Authentication"
+            addBooleanField(key, data.isBacAuthenticated)
         }
 
-        key = "Group Hash Aunthentication"
+        key = "Group Hash Authentication"
         addBooleanField(key, data.isAuthenticDataGroupHashes)
 
-        key = "Document Signer"
-        addBooleanField(key, data.isAuthenticDocSignature)
-
         if (data.isAaSupported) {
-            key = "Active Aunthentication"
-            addBooleanField(key, data.isAaAunthenticated)
+            key = "Active Authentication"
+            addBooleanField(key, data.isAaAuthenticated)
         }
 
         if (data.isCaSupported) {
-            key = "Chip Aunthentication"
-            addBooleanField(key, data.isCaAunthenticated)
+            key = "Chip Authentication"
+            addBooleanField(key, data.isCaAuthenticated)
         }
 
-        if (data.isTaSupported) {
-            key = "Terminal Aunthentication"
-            addBooleanField(key, data.isTaAunthenticated)
+        if(isDocumentSigned == null) {
+            key = "No Ozone, Following fields might be inaccurate"
+            addField(key, "")
         }
 
-    }
-
-    private fun setResultData(idResult: IDResult?) {
-        if (idResult != null) {
-            val authResult = idResult!!.result
-            var authSummary: ArrayList<Action>? = null
-            if (authResult != null && authResult.equals("passed", ignoreCase = true)) {
-                addBooleanField("Assure ID Authentication  ", true)
-            } else if (authResult != null && authResult.equals("failed", ignoreCase = true)) {
-                addBooleanField("Assure ID Authentication  ", false)
-            } else if (authResult != null) {
-                authSummary = idResult.alerts.actions
-                var summary = ""
-                for (i in authSummary!!.indices) {
-                    if (i == 0) {
-                        summary = authSummary[i].disposition
-                    } else {
-                        summary = summary + "," + authSummary[i].disposition
-                    }
-                }
-                addField("Assure ID " + authResult, summary)
+        key = "Document Signer"
+        if(isDocumentSigned != null) {
+            addBooleanField(key, isDocumentSigned)
+        } else {
+            if(data.getDocSignerValidity() == null) {
+                addBooleanField(key, data.isAuthenticDocSignature)
+            } else {
+                addBooleanField(key, false)
             }
+        }
+
+        addField("Terminal Authentication", "n/a")
+
+        key = "Country Signer"
+        if(isCountrySigned != null) {
+            addBooleanField(key, isCountrySigned)
+        } else {
+            addField(key, "Needs Ozone")
         }
     }
 

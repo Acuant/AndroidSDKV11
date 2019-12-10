@@ -27,6 +27,9 @@ import java.util.*
  * status bar and navigation/system bar) with user interaction.
  */
 class NFCConfirmationActivity : Activity(), NFCTagReadingListener {
+    override fun tagReadPartWayDone() {
+        setProgress(true, "Please keep holding...\n\nThis can take several seconds.")
+    }
 
     private var progressDialog: LinearLayout? = null
     private var progressText: TextView? = null

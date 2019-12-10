@@ -5,11 +5,11 @@ package com.acuant.sampleapp
  */
 class Constants {
     companion object {
-        public val REQUEST_CAMERA_PHOTO = 1
-        public val REQUEST_CAMERA_IP_SELFIE = 2
-        public val REQUEST_CONFIRMATION = 3
-        public val REQUEST_RETRY = 4
-        public val REQUEST_CAMERA_HG_SELFIE = 5
+        const val REQUEST_CAMERA_PHOTO = 1
+        const val REQUEST_CAMERA_IP_SELFIE = 2
+        const val REQUEST_CONFIRMATION = 3
+        const val REQUEST_RETRY = 4
+        const val REQUEST_CAMERA_HG_SELFIE = 5
 
     }
 }

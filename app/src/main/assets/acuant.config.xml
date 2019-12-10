@@ -6,4 +6,5 @@
     <frm_endpoint>https://frm.acuant.net</frm_endpoint>
     <med_endpoint>https://medicscan.acuant.net</med_endpoint>
     <assureid_endpoint>https://services.assureid.net</assureid_endpoint>
+    <ozone_subscription>xxx</ozone_subscription>
 </setting>

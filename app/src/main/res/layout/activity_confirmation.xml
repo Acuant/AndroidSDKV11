@@ -70,7 +70,7 @@
             android:layout_below="@+id/confrimationImage"
             android:layout_margin="5dp"
             android:onClick="confirmClicked"
-            android:text="Confirm"></Button>
+            android:text="Confirm"/>
 
         <Button
             android:id="@+id/retryButton"
@@ -79,7 +79,7 @@
             android:layout_below="@+id/confirmButton"
             android:layout_margin="5dp"
             android:onClick="retryClicked"
-            android:text="Retry"></Button>
+            android:text="Retry"/>
     </RelativeLayout>
 
 </RelativeLayout>

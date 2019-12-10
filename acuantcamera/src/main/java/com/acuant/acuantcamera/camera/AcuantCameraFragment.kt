@@ -510,14 +510,14 @@ class AcuantCameraFragment : Fragment(),
         }
 
         override fun onCaptureProgressed(session: CameraCaptureSession,
-                request: CaptureRequest,
-                partialResult: CaptureResult) {
+                                         request: CaptureRequest,
+                                         partialResult: CaptureResult) {
             process(partialResult)
         }
 
         override fun onCaptureCompleted(session: CameraCaptureSession,
-                request: CaptureRequest,
-                result: TotalCaptureResult) {
+                                        request: CaptureRequest,
+                                        result: TotalCaptureResult) {
             process(result)
         }
     }
@@ -530,8 +530,8 @@ class AcuantCameraFragment : Fragment(),
     }
 
     override fun onCreateView(inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+                              container: ViewGroup?,
+                              savedInstanceState: Bundle?
     ): View? = inflater.inflate(R.layout.fragment_camera2_basic, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -589,8 +589,8 @@ class AcuantCameraFragment : Fragment(),
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
-            permissions: Array<String>,
-            grantResults: IntArray) {
+                                            permissions: Array<String>,
+                                            grantResults: IntArray) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults.size != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 ErrorDialog.newInstance(getString(R.string.request_permission))
@@ -986,8 +986,8 @@ class AcuantCameraFragment : Fragment(),
                     unlockFocus()
                 }
                 override fun onCaptureCompleted(session: CameraCaptureSession,
-                        request: CaptureRequest,
-                        result: TotalCaptureResult) {
+                                                request: CaptureRequest,
+                                                result: TotalCaptureResult) {
                     unlockFocus()
                 }
             }
@@ -1140,5 +1140,3 @@ class AcuantCameraFragment : Fragment(),
         @JvmStatic fun newInstance(): AcuantCameraFragment = AcuantCameraFragment()
     }
 }
-
-

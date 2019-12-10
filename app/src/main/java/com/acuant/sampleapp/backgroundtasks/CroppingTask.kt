@@ -18,11 +18,6 @@ class CroppingTask constructor(val originalImage:Bitmap, val isFrontImage:Boolea
     var frontImage : Boolean = isFrontImage
     private var acuantImage : Image? = null
 
-    override fun onPreExecute() {
-        super.onPreExecute()
-
-    }
-
     override fun doInBackground(vararg p0: String?): String {
         if(image!=null) {
             val data = CroppingData()

@@ -5,14 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Base64
 import android.util.Log
-import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
@@ -54,7 +52,6 @@ import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
-    //TODO: Swap away from deprecated method of showing progress
     private var progressDialog: LinearLayout? = null
     private var progressText: TextView? = null
     private var capturedFrontImage: Image? = null
@@ -152,7 +149,13 @@ class MainActivity : AppCompatActivity() {
            AcuantInitializer.intialize("acuant.config.xml", this, listOf(ImageProcessorInitializer()),
                     object: IAcuantPackageCallback{
                         override fun onInitializeSuccess() {
-                            getFacialLivenessCredentials(callback)
+                            if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
+                                isIPLivenessEnabled = false
+                                callback.onInitializeSuccess()
+                            }
+                            else{
+                                getFacialLivenessCredentials(callback)
+                            }
                         }
 
                         override fun onInitializeFailed(error: List<Error>) {
@@ -246,7 +249,7 @@ class MainActivity : AppCompatActivity() {
                     this@MainActivity.runOnUiThread {
                         setProgress(false)
                     }
-                    CapturedImage.acuantImage = correctBitmapOrientation(acuantImage)
+                    CapturedImage.acuantImage = acuantImage
                     showConfirmation(isFrontImage, false)
                 }
             })
@@ -254,7 +257,7 @@ class MainActivity : AppCompatActivity() {
 
         }
         else if (resultCode == Constants.REQUEST_CONFIRMATION) {
-            val isFront = data!!.getBooleanExtra("IsFrontImage", true)
+            val isFront = data!!.getBooleanExtra("isFrontImage", true)
             val isConfirmed = data.getBooleanExtra("Confirmed", true)
             if (isConfirmed) {
                 if (isFront) {
@@ -531,16 +534,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showIPLiveness(){
+    private fun showIPLiveness() {
         setProgress(true, "Loading...")
-        AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
+        AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter {
             override fun onDataReceived(result: FacialSetupResult?) {
                 setProgress(false)
-                if(result != null){
+                if (result != null) {
+                    result.allowScreenshots = true
                     val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
                     startActivityForResult(facialIntent, Constants.REQUEST_CAMERA_IP_SELFIE)
-                }
-                else{
+                } else {
                     handleInternalError()
                 }
             }
@@ -551,7 +554,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-    private fun showHGLiveness(){
+    private fun showHGLiveness() {
         val cameraIntent = Intent(
                 this@MainActivity,
                 FacialLivenessActivity::class.java
@@ -559,8 +562,8 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_HG_SELFIE)
     }
 
-    fun handleInternalError(){
-        runOnUiThread{
+    fun handleInternalError() {
+        runOnUiThread {
             val alert = AlertDialog.Builder(this@MainActivity)
             alert.setTitle("Internal Error")
             alert.setMessage("Would you like to retry?")
@@ -980,8 +983,8 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity,
                 ConfirmationActivity::class.java
         )
-        confirmationIntent.putExtra("IsFrontImage", isFrontImage)
-        confirmationIntent.putExtra("IsBarcode", isBarcode)
+        confirmationIntent.putExtra("isFrontImage", isFrontImage)
+        confirmationIntent.putExtra("isBarcode", isBarcode)
         startActivityForResult(confirmationIntent, Constants.REQUEST_CONFIRMATION)
     }
 
@@ -1050,28 +1053,6 @@ class MainActivity : AppCompatActivity() {
         )
         setProgress(false)
         startActivity(resultIntent)
-    }
-
-    //Correct orientation
-    fun correctBitmapOrientation(image: Image?): Image? {
-        if (image?.image != null && image.image.height > image.image.width) {
-            val mWindowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-            val display = mWindowManager.defaultDisplay
-            val angle = when (display.rotation) {
-                Surface.ROTATION_0 // This is display orientation
-                -> 270 // This is camera orientation
-                Surface.ROTATION_90 -> 180
-                Surface.ROTATION_180 -> 90
-                Surface.ROTATION_270 -> 0
-                else -> 180
-            }
-
-            val matrix = Matrix()
-            matrix.postRotate(angle.toFloat())
-            image.image = Bitmap.createBitmap(image.image, 0, 0, image.image.width, image.image.height, matrix, true)
-            return image
-        }
-        return image
     }
 
     fun loadAssureIDImage(url: String?, credential: Credential?): Bitmap? {

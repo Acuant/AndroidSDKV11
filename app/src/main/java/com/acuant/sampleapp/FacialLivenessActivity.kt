@@ -14,6 +14,7 @@ import android.view.View
 import com.acuant.acuanthgliveness.detector.LiveFaceDetector
 import com.acuant.acuanthgliveness.detector.LiveFaceListener
 import com.acuant.acuanthgliveness.detector.LiveFaceProcessor
+import com.acuant.acuanthgliveness.detector.LiveFaceProcessor.*
 import com.acuant.acuanthgliveness.model.FaceCapturedImage
 import com.acuant.acuanthgliveness.model.LiveFaceDetails
 import com.acuant.sampleapp.facecapture.CameraSourcePreview
@@ -195,10 +196,11 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
         // want to increase the resolution.
         mCameraSource = CameraSource.Builder(context, liveFaceDetector)
                 .setFacing(facing)
-                .setRequestedPreviewSize(320, 240)
+                .setRequestedPreviewSize(ACUANT_CAMERA_SOURCE_WIDTH, ACUANT_CAMERA_SOURCE_HEIGHT)
                 .setRequestedFps(60.0f)
                 .setAutoFocusEnabled(true)
                 .build()
+
     }
 
     /**

@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.2.4
-**November 2019**
+# Acuant Android SDK v11.2.5
+**December 2019**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -10,6 +10,11 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 ![](https://i.imgur.com/KR0J94S.png)
 
 **Note** The acceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and matches an ID document.
+
+----------
+## Prerequisites ##
+
+- Supports Android SDK versions 21-28
 
 
 ## Modules ##
@@ -23,7 +28,7 @@ The SDK includes the following modules:
 **Acuant Camera Library (AcuantCamera) :**
 
 - Implemented using Camera 2 API with Google Vision for reading PDF417 barcodes
-- Uses AcuantImagePreparation for cropping.
+- Uses AcuantImagePreparation for cropping
 
 **Acuant Image Preparation Library (AcuantImagePreparation) :**
 
@@ -132,23 +137,23 @@ The SDK includes the following modules:
 	    implementation project(path: ':acuantimagepreparation')
   		}
   		
-3. Add the Acuant SDK dependency in **build.gradle** if using Maven
+3. Add the Acuant SDK dependency in **build.gradle** if using Maven:
 
 	- Add the following Maven URL
 	
 			maven {url  "https://dl.bintray.com/acuant/Acuant"}
         	maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
-    - Add the following depedencies
+    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.2.4'
-    		implementation 'com.acuant:acuantcamera:11.2.4'
-    		implementation 'com.acuant:acuantimagepreparation:11.2.4'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.2.4'
-    		implementation 'com.acuant:acuantechipreader:11.2.4'
-    		implementation 'com.acuant:acuantfacematch:11.2.4'
-    		implementation 'com.acuant:acuanthgliveness:11.2.4'
-    		implementation ('com.acuant:acuantipliveness:11.2.4'){
+    		implementation 'com.acuant:acuantcommon:11.2.5'
+    		implementation 'com.acuant:acuantcamera:11.2.5'
+    		implementation 'com.acuant:acuantimagepreparation:11.2.5'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.2.5'
+    		implementation 'com.acuant:acuantechipreader:11.2.5'
+    		implementation 'com.acuant:acuantfacematch:11.2.5'
+    		implementation 'com.acuant:acuanthgliveness:11.2.5'
+    		implementation ('com.acuant:acuantipliveness:11.2.5'){
         		transitive = true
     		}
 
@@ -179,7 +184,7 @@ The SDK includes the following modules:
         cameraIntent.putExtra(ACUANT_EXTRA_BORDER_ENABLED, boolean)//default is true
 
         startActivityForResult(cameraIntent, REQUEST_CODE) 
-Alternatively use the new options object. This method allows you to configure much more about the camera (see AcuantCameraOptions):
+Alternatively use the new options object. This method allows you to configure much more about the camera (see **AcuantCameraOptions**):
         
         val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
         
@@ -331,6 +336,7 @@ After you capture a document image is captured, use the following steps to proce
 		
 		
 ### AcuantIPLiveness ###
+
 1. Get the setup from the controller and begin Activity:
 
 		AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
@@ -338,6 +344,7 @@ After you capture a document image is captured, use the following steps to proce
                 if(result != null){
                 	//start face capture activity
                     val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
+                    facialIntent.allowScreenshots = false //Set to false by default; set to true to enable allowScreenshots
                     startActivityForResult(facialIntent, REQUEST_CODE)
                 }
                 else{
