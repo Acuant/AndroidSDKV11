@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.2.5
-**December 2019**
+# Acuant Android SDK v11.2.6
+**January 2020**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -146,14 +146,14 @@ The SDK includes the following modules:
         	
     - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.2.5'
-    		implementation 'com.acuant:acuantcamera:11.2.5'
-    		implementation 'com.acuant:acuantimagepreparation:11.2.5'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.2.5'
-    		implementation 'com.acuant:acuantechipreader:11.2.5'
-    		implementation 'com.acuant:acuantfacematch:11.2.5'
-    		implementation 'com.acuant:acuanthgliveness:11.2.5'
-    		implementation ('com.acuant:acuantipliveness:11.2.5'){
+    		implementation 'com.acuant:acuantcommon:11.2.6'
+    		implementation 'com.acuant:acuantcamera:11.2.6'
+    		implementation 'com.acuant:acuantimagepreparation:11.2.6'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.2.6'
+    		implementation 'com.acuant:acuantechipreader:11.2.6'
+    		implementation 'com.acuant:acuantfacematch:11.2.6'
+    		implementation 'com.acuant:acuanthgliveness:11.2.6'
+    		implementation ('com.acuant:acuantipliveness:11.2.6'){
         		transitive = true
     		}
 
