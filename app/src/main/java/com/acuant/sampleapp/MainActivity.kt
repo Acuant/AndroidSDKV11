@@ -75,6 +75,7 @@ class MainActivity : AppCompatActivity() {
     private var numerOfClassificationAttempts: Int = 0
     private var isInitialized = false
     private var isIPLivenessEnabled = false
+    private var isKeyless = false
 
     fun cleanUpTransaction() {
         facialResultString = null
@@ -151,6 +152,7 @@ class MainActivity : AppCompatActivity() {
                         override fun onInitializeSuccess() {
                             if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
                                 isIPLivenessEnabled = false
+                                isKeyless = true
                                 callback.onInitializeSuccess()
                             }
                             else{
@@ -237,6 +239,29 @@ class MainActivity : AppCompatActivity() {
         return bytes
     }
 
+    private fun handleKeyless(acuantImage: Image?){
+        if(acuantImage == null || acuantImage.isPassport || frontCaptured){
+            showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE_KEYLESS)
+        }
+        else{
+            this@MainActivity.runOnUiThread {
+                val alert = AlertDialog.Builder(this@MainActivity)
+                alert.setTitle("Message")
+                alert.setMessage(R.string.scan_back_side_id)
+                alert.setPositiveButton("OK") { dialog, _ ->
+                    frontCaptured = true
+                    dialog.dismiss()
+                    captureWaitTime = 2
+                    showDocumentCaptureCamera()
+                }
+                alert.setNegativeButton("CANCEL") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                alert.show()
+            }
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == Constants.REQUEST_CAMERA_PHOTO && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
@@ -249,8 +274,14 @@ class MainActivity : AppCompatActivity() {
                     this@MainActivity.runOnUiThread {
                         setProgress(false)
                     }
-                    CapturedImage.acuantImage = acuantImage
-                    showConfirmation(isFrontImage, false)
+
+                    if(isKeyless){
+                        handleKeyless(acuantImage)
+                    }
+                    else{
+                        CapturedImage.acuantImage = acuantImage
+                        showConfirmation(isFrontImage, false)
+                    }
                 }
             })
             croppingTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null)
@@ -525,7 +556,7 @@ class MainActivity : AppCompatActivity() {
                 showIPLiveness()
             }
             else{
-                showHGLiveness()
+                showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE)
             }
 
         }
@@ -554,12 +585,12 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-    private fun showHGLiveness() {
+    private fun showHGLiveness(requestCode: Int) {
         val cameraIntent = Intent(
                 this@MainActivity,
                 FacialLivenessActivity::class.java
         )
-        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_HG_SELFIE)
+        startActivityForResult(cameraIntent, requestCode)
     }
 
     fun handleInternalError() {

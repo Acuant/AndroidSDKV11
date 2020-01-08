@@ -138,6 +138,8 @@ class AcuantCameraFragment : Fragment(),
      * Whether the current camera device supports Flash or not.
      */
     private var flashSupported = false
+
+    private lateinit var displaySize:Point
     /**
      * Orientation of the camera sensor
      */
@@ -241,22 +243,38 @@ class AcuantCameraFragment : Fragment(),
         }
     }
 
-    private fun scalePoints(points: Array<Point>?) {
+    private fun scalePoints(points: Array<Point>) : Array<Point> {
+        val scaledPoints = points.copyOf()
+        val scaledPointY = textureView.height.toFloat() / previewSize.width.toFloat()
+        val scaledPointX = textureView.width.toFloat() / previewSize.height.toFloat()
+        rectangleView.setWidth(textureView.width.toFloat())
 
-        if(points != null) {
-            val scaledPointY = textureView.height.toFloat() / previewSize.width.toFloat()
-            val scaledPointX = textureView.width.toFloat() / previewSize.height.toFloat()
-            rectangleView.setWidth(textureView.width.toFloat())
+        scaledPoints.forEach {
+            it.x = (it.x * scaledPointY).toInt()
+            it.y = (it.y * scaledPointX).toInt()
+        }
 
-            points.apply {
-                this.forEach {
-                    it.x = (it.x * scaledPointY).toInt()
-                    it.y = (it.y * scaledPointX).toInt()
+        return scaledPoints
+    }
+
+    private fun isDocumentInFrame(points: Array<Point>?) : Boolean{
+        if(points != null){
+            val startY = 0 //textureView.width.toFloat() / 2 - previewSize.height.toFloat() / 2
+            val startX = 0 //textureView.height.toFloat() / 2 - previewSize.width.toFloat() / 2
+            val endY = startY + displaySize.x //textureView.width
+            val endX = startX + displaySize.y //textureView.height
+
+            for (point in points) {
+                if( point.x < startX ||
+                    point.x > endX ||
+                    (textureView.width - point.y) < startY ||
+                    (textureView.width - point.y) > endY) {
+                    return false
                 }
             }
-
-            fixPoints(points)
         }
+
+        return true
     }
 
     private fun drawBorder(points: Array<Point>?){
@@ -268,36 +286,38 @@ class AcuantCameraFragment : Fragment(),
         }
     }
 
-    private fun fixPoints(points: Array<Point>?) {
-        if(points != null && points.size == 4) {
-            if(points[0].y > points[2].y && points[0].x < points[2].x) {
+    private fun fixPoints(points: Array<Point>) : Array<Point> {
+        val fixedPoints = points.copyOf()
+        if(fixedPoints.size == 4) {
+            if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
                 //rotate 2
-                var tmp = points[0]
-                points[0] = points[2]
-                points[2] = tmp
+                var tmp = fixedPoints[0]
+                fixedPoints[0] = fixedPoints[2]
+                fixedPoints[2] = tmp
 
-                tmp = points[1]
-                points[1] = points[3]
-                points[3] = tmp
+                tmp = fixedPoints[1]
+                fixedPoints[1] = fixedPoints[3]
+                fixedPoints[3] = tmp
 
-            } else if(points[0].y > points[2].y && points[0].x > points[2].x) {
+            } else if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x > fixedPoints[2].x) {
                 //rotate 3
-                val tmp = points[0]
-                points[0] = points[1]
-                points[1] = points[2]
-                points[2] = points[3]
-                points[3] = tmp
+                val tmp = fixedPoints[0]
+                fixedPoints[0] = fixedPoints[1]
+                fixedPoints[1] = fixedPoints[2]
+                fixedPoints[2] = fixedPoints[3]
+                fixedPoints[3] = tmp
 
-            } else if(points[0].y < points[2].y && points[0].x < points[2].x) {
+            } else if(fixedPoints[0].y < fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
                 //rotate 1
-                val tmp = points[0]
-                points[0] = points[3]
-                points[3] = points[2]
-                points[2] = points[1]
-                points[1] = tmp
+                val tmp = fixedPoints[0]
+                fixedPoints[0] = fixedPoints[3]
+                fixedPoints[3] = fixedPoints[2]
+                fixedPoints[2] = fixedPoints[1]
+                fixedPoints[1] = tmp
 
             }
         }
+        return fixedPoints
     }
 
     /**
@@ -305,9 +325,14 @@ class AcuantCameraFragment : Fragment(),
      */
     override fun onDetected(croppedImage: com.acuant.acuantcommon.model.Image?, cropDuration: Long) {
         activity?.runOnUiThread {
-            scalePoints(croppedImage?.points)
+            var detectedPoints = croppedImage?.points
+
+            if(detectedPoints != null){
+                detectedPoints = fixPoints(scalePoints(croppedImage!!.points))
+            }
+
             when {
-                croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
+                !isDocumentInFrame(detectedPoints) || croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
                     unlockFocus()
                     rectangleView.setColorByState(CameraState.Align)
                     setTextFromState(CameraState.Align)
@@ -330,9 +355,9 @@ class AcuantCameraFragment : Fragment(),
                         --currentDigit
 
                     var dist = 0
-                    if(oldPoints != null && oldPoints!!.size == 4 && croppedImage.points != null && croppedImage.points.size == 4) {
+                    if(oldPoints != null && oldPoints!!.size == 4 && detectedPoints != null && detectedPoints.size == 4) {
                         for (i in 0..3) {
-                            dist += sqrt( ((oldPoints!![i].x-croppedImage.points!![i].x).toDouble().pow(2) + (oldPoints!![i].y - croppedImage.points!![i].y).toDouble().pow(2) )).toInt()
+                            dist += sqrt( ((oldPoints!![i].x-detectedPoints[i].x).toDouble().pow(2) + (oldPoints!![i].y - detectedPoints[i].y).toDouble().pow(2) )).toInt()
                         }
                     }
 
@@ -355,8 +380,8 @@ class AcuantCameraFragment : Fragment(),
                     }
                 }
             }
-            oldPoints = croppedImage?.points
-            drawBorder(croppedImage?.points)
+            oldPoints = detectedPoints
+            drawBorder(detectedPoints)
 
             this.isProcessing = false
         }
@@ -646,7 +671,7 @@ class AcuantCameraFragment : Fragment(),
                 sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
                 val swappedDimensions = areDimensionsSwapped(displayRotation)
 
-                val displaySize = Point()
+                displaySize = Point()
                 activity!!.windowManager.defaultDisplay.getSize(displaySize)
                 val rotatedPreviewWidth = if (swappedDimensions) height else width
                 val rotatedPreviewHeight = if (swappedDimensions) width else height

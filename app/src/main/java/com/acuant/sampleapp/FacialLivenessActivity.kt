@@ -25,6 +25,14 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.vision.CameraSource
 import java.io.IOException
 import kotlin.concurrent.thread
+import android.app.Activity
+import android.graphics.Point
+import android.util.DisplayMetrics
+import android.util.Size
+import java.security.AccessController.getContext
+import kotlin.math.max
+import kotlin.math.min
+
 
 class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
 
@@ -181,6 +189,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
     /**
      * Creates the face detector and the camera.
      */
+
     private fun createCameraSource() {
         val context = applicationContext
         liveFaceDetector = LiveFaceProcessor.initLiveFaceDetector(context, this)
@@ -193,14 +202,13 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
         // camera resolution.  The face detector will run faster with lower camera resolutions,
         // but may miss smaller faces, landmarks, or may not correctly detect eyes open/closed in
         // comparison to using higher camera resolutions.  If you have any of these issues, you may
+
         // want to increase the resolution.
         mCameraSource = CameraSource.Builder(context, liveFaceDetector)
                 .setFacing(facing)
-                .setRequestedPreviewSize(ACUANT_CAMERA_SOURCE_WIDTH, ACUANT_CAMERA_SOURCE_HEIGHT)
-                .setRequestedFps(60.0f)
+                .setRequestedFps(10.0f)
                 .setAutoFocusEnabled(true)
                 .build()
-
     }
 
     /**
@@ -231,6 +239,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
 
     override fun liveFaceDetailsCaptured(liveFaceDetails: LiveFaceDetails) {
         if (liveFaceDetails.error == null) {
+            mFacialGraphicOverlay!!.setState(liveFaceDetails.state)
             mFacialGraphicOverlay!!.add(mFacialGraphic!!)
             mFacialGraphic!!.updateLiveFaceDetails(liveFaceDetails)
             if(liveFaceDetails.isLiveFace){

@@ -84,6 +84,8 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     private var timeInMsPerDigit: Int = 800
     private var oldPoints : Array<Point>? = null
     private var digitsToShow: Int = 2
+    private lateinit var displaySize:Point
+
     /**
      * Initializes the UI and creates the detector pipeline.
      */
@@ -144,8 +146,10 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 capturing = true
                 lockFocus()
             }
-
         }
+
+        displaySize = Point()
+        this.windowManager.defaultDisplay.getSize(displaySize)
 
         mOrientationEventListener = object : OrientationEventListener(this.applicationContext) {
             var lastOrientation = 0
@@ -246,6 +250,32 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 .build()
     }
 
+    private fun isDocumentInPreviewFrame(points: Array<Point>) : Boolean{
+        points.apply {
+            this.forEach { p ->
+                if(p.x < 0 || (mPreview!!.mSurfaceView.width - p.y) < 0 || p.x > displaySize.y || (mPreview!!.mSurfaceView.width - p.y) > displaySize.x){
+                    return false
+                }
+            }
+        }
+        return true
+    }
+
+    private fun scalePoints(points: Array<Point>, frameSize: Size): Array<Point>{
+        val scaledPoints = points.copyOf()
+        val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
+        val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
+
+        scaledPoints.apply {
+            this.forEach { p ->
+                p.x = (p.x * scaleY).toInt()
+                p.y = (p.y * scaleX).toInt()
+            }
+        }
+
+        return scaledPoints
+    }
+
     private fun createDocumentDetector(): DocumentDetector {
         documentProcessor = LiveDocumentProcessor()
         return documentProcessor.getBarcodeDetector(applicationContext){
@@ -254,24 +284,20 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
             }
             else{
                 runOnUiThread {
-                    val points = it.point
+                    var points = it.point
                     val frameSize = it.frameSize!!
-                    val feedback = it.feedback
+                    var feedback = it.feedback
                     rectangleView.setWidth(mPreview!!.mSurfaceView.width.toFloat())
                     if (points != null && points.size == 4) {
 
-                        val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
-                        val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
+                        points = scalePoints(points, frameSize)
+                        points = fixPoints(points)
 
-                        points.apply {
-                            this.forEach { p ->
-                                p.x = (p.x * scaleY).toInt()
-                                p.y = (p.y * scaleX).toInt()
-                            }
+                        if(!isDocumentInPreviewFrame(points)){
+                            feedback = DocumentFeedback.NoDocument
                         }
-
-                        fixPoints(points)
                     }
+
 
                     if (!capturing && autoCapture) {
                         when (feedback) {
@@ -478,37 +504,38 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         currentDigit = digitsToShow
     }
 
-    private fun fixPoints(points: Array<Point>?): Array<Point>? {
-        if (points != null && points.size == 4) {
-            if (points[0].y > points[2].y && points[0].x < points[2].x) {
+    private fun fixPoints(points: Array<Point>) : Array<Point> {
+        val fixedPoints = points.copyOf()
+        if(fixedPoints.size == 4) {
+            if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
                 //rotate 2
-                var tmp = points[0]
-                points[0] = points[2]
-                points[2] = tmp
+                var tmp = fixedPoints[0]
+                fixedPoints[0] = fixedPoints[2]
+                fixedPoints[2] = tmp
 
-                tmp = points[1]
-                points[1] = points[3]
-                points[3] = tmp
+                tmp = fixedPoints[1]
+                fixedPoints[1] = fixedPoints[3]
+                fixedPoints[3] = tmp
 
-            } else if (points[0].y > points[2].y && points[0].x > points[2].x) {
+            } else if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x > fixedPoints[2].x) {
                 //rotate 3
-                val tmp = points[0]
-                points[0] = points[1]
-                points[1] = points[2]
-                points[2] = points[3]
-                points[3] = tmp
+                val tmp = fixedPoints[0]
+                fixedPoints[0] = fixedPoints[1]
+                fixedPoints[1] = fixedPoints[2]
+                fixedPoints[2] = fixedPoints[3]
+                fixedPoints[3] = tmp
 
-            } else if (points[0].y < points[2].y && points[0].x < points[2].x) {
+            } else if(fixedPoints[0].y < fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
                 //rotate 1
-                val tmp = points[0]
-                points[0] = points[3]
-                points[3] = points[2]
-                points[2] = points[1]
-                points[1] = tmp
+                val tmp = fixedPoints[0]
+                fixedPoints[0] = fixedPoints[3]
+                fixedPoints[3] = fixedPoints[2]
+                fixedPoints[2] = fixedPoints[1]
+                fixedPoints[1] = tmp
 
             }
         }
-        return points
+        return fixedPoints
     }
 
     protected fun onChanged(lastOrientation: Int, curOrientation: Int) {

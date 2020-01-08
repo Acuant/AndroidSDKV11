@@ -10,6 +10,7 @@ class Constants {
         const val REQUEST_CONFIRMATION = 3
         const val REQUEST_RETRY = 4
         const val REQUEST_CAMERA_HG_SELFIE = 5
+        const val REQUEST_CAMERA_HG_SELFIE_KEYLESS = 6
 
     }
 }
