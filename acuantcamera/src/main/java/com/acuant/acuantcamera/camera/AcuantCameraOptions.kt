@@ -12,8 +12,8 @@ import java.io.Serializable
  */
 class AcuantCameraOptions @JvmOverloads constructor(val timeInMsPerDigit: Int = 900,
                                                     val digitsToShow: Int = 2,
-                                                    val allowBox : Boolean = true,
-                                                    val autoCapture : Boolean = true,
+                                                    var allowBox : Boolean = true,
+                                                    var autoCapture : Boolean = true,
                                                     val bracketLengthInHorizontal : Int = 155,
                                                     val bracketLengthInVertical : Int = 255,
                                                     val defaultBracketMarginWidth : Int = 160,

@@ -14,7 +14,6 @@ import android.view.View
 import com.acuant.acuanthgliveness.detector.LiveFaceDetector
 import com.acuant.acuanthgliveness.detector.LiveFaceListener
 import com.acuant.acuanthgliveness.detector.LiveFaceProcessor
-import com.acuant.acuanthgliveness.detector.LiveFaceProcessor.*
 import com.acuant.acuanthgliveness.model.FaceCapturedImage
 import com.acuant.acuanthgliveness.model.LiveFaceDetails
 import com.acuant.sampleapp.facecapture.CameraSourcePreview
@@ -25,13 +24,6 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.vision.CameraSource
 import java.io.IOException
 import kotlin.concurrent.thread
-import android.app.Activity
-import android.graphics.Point
-import android.util.DisplayMetrics
-import android.util.Size
-import java.security.AccessController.getContext
-import kotlin.math.max
-import kotlin.math.min
 
 
 class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
@@ -243,9 +235,9 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
             mFacialGraphicOverlay!!.add(mFacialGraphic!!)
             mFacialGraphic!!.updateLiveFaceDetails(liveFaceDetails)
             if(liveFaceDetails.isLiveFace){
-                if(selfieCaptured==false) {
+                if(!selfieCaptured) {
                     selfieCaptured = true
-                    thread() {
+                    thread {
                         FaceCapturedImage.setImage(liveFaceDetails.image)
                         val result = Intent()
                         this@FacialLivenessActivity.setResult(RESPONSE_SUCCESS_CODE, result)

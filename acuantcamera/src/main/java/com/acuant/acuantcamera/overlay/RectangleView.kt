@@ -9,6 +9,7 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.animation.LinearInterpolator
 import com.acuant.acuantcamera.camera.AcuantCameraFragment
+import com.acuant.acuantcamera.camera.AcuantCameraOptions
 
 class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr) {
 
@@ -144,6 +145,20 @@ class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr)
             path.lineTo(points!![2].y.toFloat(), points!![2].x.toFloat())
             path.lineTo(points!![3].y.toFloat(), points!![3].x.toFloat())
         }
+    }
+
+    fun setFromOptions(options: AcuantCameraOptions){
+        allowBox = options.allowBox
+        bracketLengthInHorizontal = options.bracketLengthInHorizontal
+        bracketLengthInVertical = options.bracketLengthInVertical
+        defaultBracketMarginHeight = options.defaultBracketMarginHeight
+        defaultBracketMarginWidth = options.defaultBracketMarginWidth
+        paintColorCapturing = options.colorCapturing
+        paintColorHold = options.colorHold
+        paintColorBracketAlign = options.colorBracketAlign
+        paintColorBracketCapturing = options.colorBracketCapturing
+        paintColorBracketCloser = options.colorBracketCloser
+        paintColorBracketHold = options.colorBracketHold
     }
 
     fun setColorByState(state: AcuantCameraFragment.CameraState){

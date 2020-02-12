@@ -34,7 +34,6 @@ import com.acuant.acuantcamera.detector.document.AcuantDocumentDetector
 import com.acuant.acuantcamera.helper.ImageSaveHandler
 import com.acuant.acuantcamera.overlay.AcuantOrientationListener
 import com.acuant.acuantcamera.overlay.RectangleView
-import com.acuant.acuantcommon.helper.CardDetectorHelper
 import java.io.File
 import java.lang.Exception
 import java.lang.ref.WeakReference
@@ -176,17 +175,7 @@ class AcuantCameraFragment : Fragment(),
             this.timeInMsPerDigit = options.timeInMsPerDigit
             this.digitsToShow = options.digitsToShow
             isAutoCapture = options.autoCapture
-            rectangleView.allowBox = options.allowBox
-            rectangleView.bracketLengthInHorizontal = options.bracketLengthInHorizontal
-            rectangleView.bracketLengthInVertical = options.bracketLengthInVertical
-            rectangleView.defaultBracketMarginHeight = options.defaultBracketMarginHeight
-            rectangleView.defaultBracketMarginWidth = options.defaultBracketMarginWidth
-            rectangleView.paintColorCapturing = options.colorCapturing
-            rectangleView.paintColorHold = options.colorHold
-            rectangleView.paintColorBracketAlign = options.colorBracketAlign
-            rectangleView.paintColorBracketCapturing = options.colorBracketCapturing
-            rectangleView.paintColorBracketCloser = options.colorBracketCloser
-            rectangleView.paintColorBracketHold = options.colorBracketHold
+            rectangleView.setFromOptions(options)
         } else {
             rectangleView.allowBox = isBorderEnabled
         }
@@ -580,7 +569,7 @@ class AcuantCameraFragment : Fragment(),
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        file = File(activity!!.getExternalFilesDir(null),  "${UUID.randomUUID()}.jpg")
+        file = File(activity!!.cacheDir,  "${UUID.randomUUID()}.jpg")
     }
 
     override fun onResume() {
@@ -981,7 +970,7 @@ class AcuantCameraFragment : Fragment(),
     private fun captureStillPicture() {
         try {
             if (activity == null || cameraDevice == null) return
-            val rotation = activity!!.windowManager.defaultDisplay.rotation
+            activity!!.windowManager.defaultDisplay.rotation
 
             // This is the CaptureRequest.Builder that we use to take a picture.
             val captureBuilder = cameraDevice!!.createCaptureRequest(

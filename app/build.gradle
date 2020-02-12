@@ -20,7 +20,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 28
         versionCode 1
-        versionName "1.0"
+        versionName
         multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -74,33 +74,42 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 
-    implementation project(path: ':acuantcommon')
-    implementation project(path: ':acuantfacematch')
-    implementation project(path: ':acuantcamera')
-    implementation project(path: ':acuantipliveness')
+    //echip
+    implementation group: 'com.github.mhshams', name: 'jnbis', version: '1.0.4'//echip
+
+    implementation('org.jmrtd:jmrtd:0.7.15') {
+        transitive = true
+    }
+    implementation('org.ejbca.cvc:cert-cvc:1.4.6') {
+        transitive = true
+    }
+    implementation('org.bouncycastle:bcprov-jdk15on:1.61') {
+        transitive = true
+    }
+    implementation('net.sf.scuba:scuba-sc-android:0.0.18') {
+        transitive = true
+    }
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    //this is an alternative to the j2ktojpg we were using
+    implementation 'com.gemalto.jp2:jp2-android:1.0'
+    //end echip
+
+
+    //iproov
     implementation('com.iproov.sdk:iproov:4.4.0@aar') {
         transitive = true
     }
 
+    implementation project(path: ':acuantcommon')
+    implementation project(path: ':acuantfacematch')
+    implementation project(path: ':acuantcamera')
+    implementation project(path: ':acuantipliveness')
     implementation project(path: ':acuantdocumentprocessing')
     implementation project(path: ':acuantechipreader')
-    //external libraries for echip reading
-    implementation group: 'com.github.mhshams', name: 'jnbis', version: '1.0.4'
-
-    implementation('org.jmrtd:jmrtd:0.7.11') {
-        transitive = true;
-    }
-    implementation('org.ejbca.cvc:cert-cvc:1.4.6') {
-        transitive = true;
-    }
-    implementation('org.bouncycastle:bcprov-jdk15on:1.61') {
-        transitive = true;
-    }
-    implementation('net.sf.scuba:scuba-sc-android:0.0.18') {
-        transitive = true;
-    }
     implementation project(path: ':acuanthgliveness')
-
+    implementation project(path: ':acuantfacecapture')
+    implementation project(path: ':acuantpassiveliveness')
     implementation project(path: ':acuantimagepreparation')
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.6.3'

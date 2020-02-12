@@ -11,6 +11,18 @@
     <string name="acuant_camera_hold_steady">HUWAG IGALAW</string>
     <string name="acuant_camera_capturing">KINUKUHA</string>
 
+    <string name="acuant_face_camera_initial">Itapat ang mukha\nupang magsimula</string>
+    <string name="acuant_face_camera_face_too_close">Masyadong malapit!\nIlayo ang mukha</string>
+    <string name="acuant_face_too_far">Ilapit ang mukha sa screen</string>
+    <string name="acuant_face_camera_face_has_angle">May anggulo ang mukha.\nHuwag ikiling</string>
+    <string name="acuant_face_camera_face_not_in_frame">Itapat ang mukha\n sa frame</string>
+    <string name="acuant_face_camera_face_moved">Huwag igalaw</string>
+    <string name="acuant_face_camera_capturing">Kinukuha…</string>
+    <plurals name="acuant_face_camera_countdown">
+        <item quantity="one">Kinukuha\n%d…</item>
+        <item quantity="other">Kinukuha\n%d…</item>
+    </plurals>
+
     <string name="ok">OK</string>
     <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
     <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>

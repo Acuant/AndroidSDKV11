@@ -17,4 +17,11 @@
     <string name="health_insurance_button_text">Health Insurance Card</string>
     <string name="auto_capture">Auto Capture</string>
     <string name="ip_liveness_enabled">IP Liveness Enabled</string>
+    <string name="face_capture_button_text">Face Capture</string>
+    <string name="image_of_signature">Image of signature</string>
+    <string name="captured_face_image_preview">Captured Face Image Preview</string>
+    <string name="face_image_preview">Face Image Preview</string>
+    <string name="scan_echip">Scan eChip</string>
+    <string name="front_captured_image">Front Captured Image</string>
+    <string name="back_captured_image">Back Captured Image</string>
 </resources>

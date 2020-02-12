@@ -7,6 +7,19 @@
     tools:context="com.acuant.sampleapp.MainActivity"
     android:id="@+id/main_layout">
 
+<!--    <Button-->
+<!--        android:id="@+id/main_face_capture"-->
+<!--        android:gravity="center"-->
+<!--        app:layout_constraintTop_toTopOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintBottom_toBottomOf="parent"-->
+<!--        android:layout_margin="30dp"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:onClick="faceCaptureClicked"-->
+<!--        android:text="@string/face_capture_button_text"/>-->
+
     <Button
         android:id="@+id/main_id_passport"
         android:gravity="center"
@@ -19,6 +32,7 @@
         android:layout_height="wrap_content"
         android:onClick="idPassPortClicked"
         android:text="@string/id_passport_button_text"/>
+
     <Button
         android:id="@+id/main_health_card"
         android:layout_margin="30dp"
@@ -46,7 +60,7 @@
         android:layout_height="wrap_content"
         android:text="@string/ip_liveness_enabled"
         android:visibility="invisible"
-        android:checked="true"
+        android:checked="false"
         app:layout_constraintTop_toBottomOf="@id/autoCaptureSwitch"
         />
 

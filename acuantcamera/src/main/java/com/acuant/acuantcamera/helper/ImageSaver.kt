@@ -77,7 +77,7 @@ internal class ImageSaver(
             return NV21toJPEG(YUV420toNV21(image), image.getWidth(), image.getHeight(), 100)
         }
 
-        private fun rotateImage(img: Bitmap, degree: Float): Bitmap {
+        fun rotateImage(img: Bitmap, degree: Float): Bitmap {
             val matrix = Matrix()
             matrix.setRotate(degree)
             val rotatedImg = Bitmap.createBitmap(img, 0, 0, img.width, img.height, matrix, true)

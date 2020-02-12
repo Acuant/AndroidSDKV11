@@ -10,49 +10,53 @@ import android.widget.TextView
 
 class ResultActivity : AppCompatActivity() {
 
-    var imgFaceViewer: ImageView? = null
-    var imgSignatureViewer: ImageView? = null
-    var frontSideCardImageView: ImageView? = null
-    var backSideCardImageView: ImageView? = null
-
-    var textViewCardInfo: TextView? = null
-    var nfcScanningBtn: Button? = null
+    private lateinit var imgFaceViewer: ImageView
+    private lateinit var imgSignatureViewer: ImageView
+    private lateinit var frontSideCardImageView: ImageView
+    private lateinit var backSideCardImageView: ImageView
+    private lateinit var textViewCardInfo: TextView
+    private lateinit var nfcScanningBtn: Button
+    private lateinit var imgCapturedFaceViewer: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_result)
-        frontSideCardImageView = findViewById<ImageView>(R.id.frontSideCardImage) as ImageView
-        backSideCardImageView = findViewById<ImageView>(R.id.backSideCardImage) as ImageView
-        imgFaceViewer = findViewById<ImageView>(R.id.faceImage) as ImageView
-        imgSignatureViewer = findViewById<ImageView>(R.id.signatureImage) as ImageView
-        textViewCardInfo = findViewById<TextView>(R.id.textViewLicenseCardInfo) as TextView
-        nfcScanningBtn = findViewById<Button>(R.id.buttonNFC) as Button
+        frontSideCardImageView = findViewById(R.id.frontSideCardImage)
+        backSideCardImageView = findViewById(R.id.backSideCardImage)
+        imgFaceViewer = findViewById(R.id.faceImage)
+        imgCapturedFaceViewer = findViewById(R.id.faceImageCaptured)
+        imgSignatureViewer = findViewById(R.id.signatureImage)
+        textViewCardInfo = findViewById(R.id.textViewLicenseCardInfo)
+        nfcScanningBtn = findViewById(R.id.buttonNFC)
 
         if(ProcessedData.cardType.equals("ID3",true)){
-            nfcScanningBtn!!.visibility = View.VISIBLE
+            nfcScanningBtn.visibility = View.VISIBLE
         }else{
-            nfcScanningBtn!!.visibility = View.GONE
+            nfcScanningBtn.visibility = View.GONE
         }
 
         if(ProcessedData.frontImage != null){
-            frontSideCardImageView!!.setImageBitmap(ProcessedData.frontImage)
+            frontSideCardImageView.setImageBitmap(ProcessedData.frontImage)
         }
         if(ProcessedData.backImage != null){
-            backSideCardImageView!!.setImageBitmap(ProcessedData.backImage)
+            backSideCardImageView.setImageBitmap(ProcessedData.backImage)
         }
         if(ProcessedData.faceImage != null){
-            imgFaceViewer!!.setImageBitmap(ProcessedData.faceImage)
+            imgFaceViewer.setImageBitmap(ProcessedData.faceImage)
+        }
+        if(ProcessedData.capturedFaceImage != null){
+            imgCapturedFaceViewer.setImageBitmap(ProcessedData.capturedFaceImage)
         }
         if(ProcessedData.signImage != null){
-            imgSignatureViewer!!.setImageBitmap(ProcessedData.signImage)
+            imgSignatureViewer.setImageBitmap(ProcessedData.signImage)
         }
         if(ProcessedData.formattedString != null){
-            textViewCardInfo!!.setText(ProcessedData.formattedString)
+            textViewCardInfo.text = ProcessedData.formattedString
         }
 
     }
 
-    fun nfcPressed(v: View) {
+    fun nfcPressed(@Suppress("UNUSED_PARAMETER") v: View) {
         val confirmNFCDataActivity = Intent(this, NFCConfirmationActivity::class.java)
         confirmNFCDataActivity.putExtra("DOB", ProcessedData.dateOfBirth)
         confirmNFCDataActivity.putExtra("DOE", ProcessedData.dateOfExpiry)

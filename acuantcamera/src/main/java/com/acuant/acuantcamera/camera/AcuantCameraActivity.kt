@@ -44,7 +44,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         if(supportCamera2(this)){
             setContentView(R.layout.activity_acu_camera)
             hideTopMenu()
@@ -68,7 +68,10 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
                     this@AcuantCameraActivity,
                     DocumentCaptureActivity::class.java
             )
-            cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, intent.getBooleanExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, options.autoCapture))
+            options.autoCapture = options.autoCapture || intent.getBooleanExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, false)
+            options.allowBox =  options.allowBox || intent.getBooleanExtra(ACUANT_EXTRA_BORDER_ENABLED, false)
+
+            cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS))
             startActivityForResult(cameraIntent, 1)
         }
     }

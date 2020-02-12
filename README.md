@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.2.6
-**January 2020**
+# Acuant Android SDK v11.3.0
+**February 2020**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -55,6 +55,14 @@ The SDK includes the following modules:
 
 - Uses Camera 1 to capture facial liveness using a proprietary algorithm
 
+**Acuant Face Capture Library (AcuantFaceCapture):**
+
+- Uses Camera 1 to capture a single face image for use with our passive liveness system
+
+**Acuant Passive Liveness Library (AcuantPassiveLiveness):**
+
+- Processes a single photo using our web service to determine liveness.
+
 
 
 ### Setup ###
@@ -83,79 +91,87 @@ The SDK includes the following modules:
 		}
 
     	dependencies {
-      	//if possible, use v7:28.0.0 for android support version
-      	//implementation 'com.android.support:appcompat-v7:28'
-    	//implementation 'com.android.support:support-v4:28.0.0'
-    	//implementation 'com.android.support:appcompat-v7:28.0.0'
-    	//implementation 'com.android.support:exifinterface:28.0.0'
+	      	//if possible, use v7:28.0.0 for android support version
+	      	//implementation 'com.android.support:appcompat-v7:28'
+	    	//implementation 'com.android.support:support-v4:28.0.0'
+	    	//implementation 'com.android.support:appcompat-v7:28.0.0'
+	    	//implementation 'com.android.support:exifinterface:28.0.0'
 
-		//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveliness
-	    implementation 'com.google.android.gms:play-services-vision:15.0.2'
-	    
-	    //external libraries for echip reading
-        implementation group: 'com.github.mhshams', name: 'jnbis', version: '1.0.4'
+			//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveliness
+		    implementation 'com.google.android.gms:play-services-vision:15.0.2'
+		    
+		    //external libraries for echip reading
+	        implementation group: 'com.github.mhshams', name: 'jnbis', version: '1.0.4'
 
-	    implementation('org.jmrtd:jmrtd:0.7.11') {
-	        transitive = true;
-	    }
-	    implementation('org.ejbca.cvc:cert-cvc:1.4.6') {
-	        transitive = true;
-	    }
-	    implementation('org.bouncycastle:bcprov-jdk15on:1.61') {
-	        transitive = true;
-	    }
-	    implementation('net.sf.scuba:scuba-sc-android:0.0.18') {
-	        transitive = true;
-	    }
-	    //end echip reading
-	    
-	    //internal common library
-	    implementation project(path: ':acuantcommon')
-	    
-	    //camera with autocapture - Uses camera 2 API
-	    implementation project(path: ':acuantcamera')
-	    
-	    //document parse, classifcation, authentication
-	    implementation project(path: ':acuantdocumentprocessing')
-	    
-	    //face match library
-	    implementation project(path: ':acuantfacematchsdk')
-	    
-	    //for reading epassport chips
-	    implementation project(path: ':acuantechipreader')
+		    implementation('org.jmrtd:jmrtd:0.7.11') {
+		        transitive = true;
+		    }
+		    implementation('org.ejbca.cvc:cert-cvc:1.4.6') {
+		        transitive = true;
+		    }
+		    implementation('org.bouncycastle:bcprov-jdk15on:1.61') {
+		        transitive = true;
+		    }
+		    implementation('net.sf.scuba:scuba-sc-android:0.0.18') {
+		        transitive = true;
+		    }
+		    //end echip reading
+		    
+		    //internal common library
+		    implementation project(path: ':acuantcommon')
+		    
+		    //camera with autocapture - Uses camera 2 API
+		    implementation project(path: ':acuantcamera')
+		    
+		    //document parse, classifcation, authentication
+		    implementation project(path: ':acuantdocumentprocessing')
+		    
+		    //face match library
+		    implementation project(path: ':acuantfacematchsdk')
+		    
+		    //for reading epassport chips
+		    implementation project(path: ':acuantechipreader')
 
-    	 //face capture and liveliness
-	    implementation project(path: ':acuantipliveness')
-	    implementation('com.iproov.sdk:iproov:4.4.0@aar') {
-	        transitive = true
-	    }
-	    
-	    //face capture and liveliness
-	    implementation project(path: ':acuanthgliveness')
-	    
-	    //image processing (cropping, glare, sharpness)
-	    implementation project(path: ':acuantimagepreparation')
+	    	 //face capture and liveliness
+		    implementation project(path: ':acuantipliveness')
+		    implementation('com.iproov.sdk:iproov:4.4.0@aar') {
+		        transitive = true
+		    }
+		    
+		    //face capture and liveliness
+		    implementation project(path: ':acuanthgliveness')
+		    
+		    //image processing (cropping, glare, sharpness)
+		    implementation project(path: ':acuantimagepreparation')
+		    
+		    //face capture
+		    implementation project(path: ':acuantfacecapture')
+		    
+		    //passive liveness
+		    implementation project(path: ':acuantpassiveliveness')
   		}
   		
 3. Add the Acuant SDK dependency in **build.gradle** if using Maven:
 
 	- Add the following Maven URL
 	
-			maven {url  "https://dl.bintray.com/acuant/Acuant"}
+			maven { url 'https://dl.bintray.com/acuant/Acuant' }
         	maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
     - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.2.6'
-    		implementation 'com.acuant:acuantcamera:11.2.6'
-    		implementation 'com.acuant:acuantimagepreparation:11.2.6'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.2.6'
-    		implementation 'com.acuant:acuantechipreader:11.2.6'
-    		implementation 'com.acuant:acuantfacematch:11.2.6'
-    		implementation 'com.acuant:acuanthgliveness:11.2.6'
-    		implementation ('com.acuant:acuantipliveness:11.2.6'){
+    		implementation 'com.acuant:acuantcommon:11.3.0'
+    		implementation 'com.acuant:acuantcamera:11.3.0'
+    		implementation 'com.acuant:acuantimagepreparation:11.3.0'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.3.0'
+    		implementation 'com.acuant:acuantechipreader:11.3.0'
+    		implementation 'com.acuant:acuantfacematch:11.3.0'
+    		implementation 'com.acuant:acuanthgliveness:11.3.0'
+    		implementation ('com.acuant:acuantipliveness:11.3.0'){
         		transitive = true
     		}
+    		implementation 'com.acuant:acuantfacecapture:11.3.0'
+    		implementation 'com.acuant:acuantpassiveliveness:11.3.0'
 
 
 4. 	Create an xml file with the following tags:
@@ -168,9 +184,10 @@ The SDK includes the following modules:
 		    <frm_endpoint></frm_endpoint>
 		    <med_endpoint></med_endpoint>
 		    <assureid_endpoint></assureid_endpoint>
+		    <passive_liveness_endpoint></passive_liveness_endpoint>
 		</setting>
 
-5.	Save the file in the application assets directory:
+5.	Save the file to the application assets directory:
 
 		{PROJECT_ROOT_DIRECTORY} => app => src => main => assets => PATH/TO/CONFIG/FILENAME.XML
 			
@@ -204,7 +221,7 @@ Alternatively use the new options object. This method allows you to configure mu
         	}
         }
 
-	**Note:**   **AcuantCamera** is depdendent on **AcuantImagePreparation** and  **AcuantCommon**.
+	**Note:**   **AcuantCamera** is dependent on **AcuantImagePreparation** and  **AcuantCommon**.
 
 		 
 #### AcuantImagePreparation ####
@@ -220,7 +237,7 @@ This section describes how to use **AcuantImagePreparation**.
 		        
 		        //Specify the path to the previously created XML file, using “assets” as root
 		        //Pass in Context from Application
-		        //List the packages to intitialize; only ImageProcessor is required
+		        //List the packages to initialize; only ImageProcessor is required
 
 				try{
 					AcuantInitializer.intialize("PATH/TO/CONFIG/FILENAME.XML", this, 
@@ -471,6 +488,97 @@ This module is used to match two facial images:
         	AcuantEchipReader.readNFCTag(this, intent, docNumber, dateOfBirth, dateOfExpiry)
     	}
 
+### AcuantFaceCapture ###
+
+This module is used to automate capturing an image of a face appropriate for use with passive liveness.
+
+1. Start the face capture activity:
+
+	    val cameraIntent = Intent(
+	            this@MainActivity,
+	            FaceCaptureActivity::class.java
+	    )
+
+	    //Optional, should only be used if you are changing some of the options,
+	    // pointless to pass default options
+	    //
+	    //cameraIntent.putExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS, FaceCaptureOptions())
+
+	    startActivityForResult(cameraIntent, YOUR_REQUEST_CODE)
+
+2. Receive the result from the face capture activity:
+
+		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+		    super.onActivityResult(requestCode, resultCode, data)
+
+			if (requestCode == YOUR_REQUEST_CODE) {
+	            when (resultCode) {
+	                FaceCaptureActivity.RESPONSE_SUCCESS_CODE -> {
+	                    processingFacialLiveness = true
+	                    val bytes = readFromFile(data?.getStringExtra(FaceCaptureActivity.OUTPUT_URL))
+	                    val capturedSelfieImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+	                    //do whatever you want with the image
+	                }
+	                FaceCaptureActivity.RESPONSE_CANCEL_CODE -> {
+	                    //handle user canceling
+	                }
+	                else -> {
+	                    //handle error during capture
+	                }
+	            }
+			}
+		}
+
+### AcuantPassiveLiveness ###
+
+This module is used to determine liveness from a single selfie image.
+
+1. Call and handle response:
+
+		val plData = PassiveLivenessData(capturedSelfieImage)
+        AcuantPassiveLiveness.processFaceLiveness(plData, object : PassiveLivenessListener {
+            override fun passiveLivenessFinished(result: PassiveLivenessResult) {
+                when (result.livenessAssessment) {
+                    AcuantPassiveLiveness.LivenessAssessment.Live -> {
+                        //handle live person
+                    }
+                    AcuantPassiveLiveness.LivenessAssessment.NotLive -> {
+                        //handle not live person
+                    }
+                    AcuantPassiveLiveness.LivenessAssessment.PoorQuality -> {
+                        //handle input image being too poor quality
+                    }
+                    else -> {
+                        //handle error
+                    }
+                }
+            }
+        })
+
+Relevant Enums:
+
+		enum class LivenessAssessment {
+	        Error,
+	        PoorQuality,
+	        Live,
+	        NotLive
+	    }
+
+	    enum class PassiveLivenessErrorCode {
+	        Unknown,
+	        FaceTooClose,
+	        FaceNotFound,
+	        FaceTooSmall,
+	        FaceAngleTooLarge,
+	        FailedToReadImage,
+	        InvalidRequest,
+	        InvalidRequestSettings,
+	        Unauthorized,
+	        NotFound,
+		   InternalError,
+		   InvalidJson
+	    }
+
 ### Error codes ###
 
 		public class ErrorCodes
@@ -557,6 +665,19 @@ This module is used to match two facial images:
             val colorBracketCapturing : Int = Color.GREEN
         )
 
+### FaceCaptureOptions ###
+
+		class FaceCaptureOptions constructor(
+			val totalCaptureTime : Int = 2,
+			val colorGood : Int = Color.GREEN,
+			val colorDefault : Int = Color.BLACK,
+			val colorError : Int = Color.RED,
+			val colorTextGood : Int = Color.GREEN,
+			val colorTextDefault : Int = Color.WHITE,
+			val colorTextError : Int = Color.RED,
+			val showOval : Boolean = false
+		)
+
 ### IdOptions ###
 
         public class IdOptions {
@@ -575,13 +696,13 @@ Acuant does not provide obfuscation tools. See the Android developer documentati
 
 -------------------------------------
 
-**Copyright 2019 Acuant Inc. All rights reserved.**
+**Copyright 2020 Acuant Inc. All rights reserved.**
 
 This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
 
 AssureID and *i-D*entify are trademarks of Acuant Inc. Other Acuant product or service names or logos referenced this document are either trademarks or registered trademarks of Acuant.
 
-All 3M trademarks are trademarks of Gemalto Inc.
+All 3M trademarks are trademarks of Gemalto Inc./Thales
 
 Windows is a registered trademark of Microsoft Corporation.
 

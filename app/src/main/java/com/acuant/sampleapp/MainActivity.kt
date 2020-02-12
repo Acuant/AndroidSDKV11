@@ -19,6 +19,7 @@ import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
 import com.acuant.acuantcamera.constant.*
 import com.acuant.acuantcommon.exception.AcuantException
+import com.acuant.acuantcommon.helper.Resizer
 import com.acuant.acuantcommon.initializer.AcuantInitializer
 import com.acuant.acuantcommon.initializer.IAcuantPackageCallback
 import com.acuant.acuantcommon.model.*
@@ -29,6 +30,7 @@ import com.acuant.acuantdocumentprocessing.service.listener.CreateInstanceListen
 import com.acuant.acuantdocumentprocessing.service.listener.DeleteListener
 import com.acuant.acuantdocumentprocessing.service.listener.GetDataListener
 import com.acuant.acuantdocumentprocessing.service.listener.UploadImageListener
+import com.acuant.acuantfacecapture.FaceCaptureActivity
 import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
@@ -41,6 +43,10 @@ import com.acuant.acuantipliveness.facialcapture.model.FacialSetupResult
 import com.acuant.acuantipliveness.facialcapture.service.FacialCaptureCredentialListener
 import com.acuant.acuantipliveness.facialcapture.service.FacialCaptureLisenter
 import com.acuant.acuantipliveness.facialcapture.service.FacialSetupLisenter
+import com.acuant.acuantpassiveliveness.AcuantPassiveLiveness
+import com.acuant.acuantpassiveliveness.model.PassiveLivenessData
+import com.acuant.acuantpassiveliveness.model.PassiveLivenessResult
+import com.acuant.acuantpassiveliveness.service.PassiveLivenessListener
 import com.acuant.sampleapp.backgroundtasks.CroppingTask
 import com.acuant.sampleapp.backgroundtasks.CroppingTaskListener
 import com.acuant.sampleapp.utils.CommonUtils
@@ -62,7 +68,7 @@ class MainActivity : AppCompatActivity() {
     private var frontCaptured: Boolean = false
     private var isHealthCard: Boolean = false
     private var isRetrying: Boolean = false
-    private var insruanceButton: Button? = null
+    private var insuranceButton: Button? = null
     private var idButton: Button? = null
     private var capturingImageData: Boolean = true
     private var capturingSelfieImage: Boolean = false
@@ -72,10 +78,11 @@ class MainActivity : AppCompatActivity() {
     private var captureWaitTime: Int = 0
     private var documentInstanceID: String? = null
     private var autoCaptureEnabled: Boolean = true
-    private var numerOfClassificationAttempts: Int = 0
+    private var numberOfClassificationAttempts: Int = 0
     private var isInitialized = false
     private var isIPLivenessEnabled = false
     private var isKeyless = false
+    private var processingFacialLiveness = false
 
     fun cleanUpTransaction() {
         facialResultString = null
@@ -85,10 +92,11 @@ class MainActivity : AppCompatActivity() {
         capturedFaceImage = null
         capturedBarcodeString = null
         isHealthCard = false
+        processingFacialLiveness = false
         isRetrying = false
         capturingImageData = true
         documentInstanceID = null
-        numerOfClassificationAttempts = 0
+        numberOfClassificationAttempts = 0
 
     }
 
@@ -96,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-        insruanceButton = findViewById(R.id.main_health_card)
+        insuranceButton = findViewById(R.id.main_health_card)
         idButton = findViewById(R.id.main_id_passport)
 
         val autoCaptureSwitch = findViewById<Switch>(R.id.autoCaptureSwitch)
@@ -147,7 +155,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeAcuantSdk(callback:IAcuantPackageCallback){
         try{
-           AcuantInitializer.intialize("acuant.config.xml", this, listOf(ImageProcessorInitializer()),
+           AcuantInitializer.initialize("acuant.config.xml", this, listOf(ImageProcessorInitializer()),
                     object: IAcuantPackageCallback{
                         override fun onInitializeSuccess() {
                             if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
@@ -174,7 +182,7 @@ class MainActivity : AppCompatActivity() {
                     "https://services.assureid.net",
                     "https://medicscan.acuant.net")
 
-            AcuantInitializer.intialize(null, this.applicationContext, listOf(ImageProcessorInitializer()),
+            AcuantInitializer.initialize(null, this.applicationContext, listOf(ImageProcessorInitializer()),
                     object: IAcuantPackageCallback {
                         override fun onInitializeSuccess() {
                             getFacialLivenessCredentials(callback)
@@ -212,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                         isIPEnabledSwitch.visibility = View.VISIBLE
                     }
                 }
-                isIPLivenessEnabled = result
+                isIPLivenessEnabled = false
                 callback.onInitializeSuccess()
             }
 
@@ -287,7 +295,7 @@ class MainActivity : AppCompatActivity() {
             croppingTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null)
 
         }
-        else if (resultCode == Constants.REQUEST_CONFIRMATION) {
+        else if (requestCode == Constants.REQUEST_CONFIRMATION && resultCode == Constants.REQUEST_CONFIRMATION) {
             val isFront = data!!.getBooleanExtra("isFrontImage", true)
             val isConfirmed = data.getBooleanExtra("Confirmed", true)
             if (isConfirmed) {
@@ -349,7 +357,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 showDocumentCaptureCamera()
             }
-        } else if (resultCode == Constants.REQUEST_RETRY) {
+        } else if (requestCode == Constants.REQUEST_RETRY && resultCode == Constants.REQUEST_RETRY) {
             isRetrying = true
             showDocumentCaptureCamera()
 
@@ -369,12 +377,48 @@ class MainActivity : AppCompatActivity() {
             }
         } else if (requestCode == Constants.REQUEST_CAMERA_HG_SELFIE){
             if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
-                capturedSelfieImage = FaceCapturedImage.bitmapImage
+                capturedSelfieImage = Resizer.resize(FaceCapturedImage.bitmapImage, 720)
                 facialLivelinessResultString = "Facial Liveliness: true"
                 processFacialMatch()
             }
             else{
                 showFaceCaptureError()
+            }
+        } else if (requestCode == Constants.REQUEST_CAMERA_FACE_CAPTURE) {
+
+            when (resultCode) {
+                FaceCaptureActivity.RESPONSE_SUCCESS_CODE -> {
+                    processingFacialLiveness = true
+                    val bytes = readFromFile(data?.getStringExtra(FaceCaptureActivity.OUTPUT_URL))
+                    capturedSelfieImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    val plData = PassiveLivenessData(capturedSelfieImage as Bitmap)
+                    AcuantPassiveLiveness.processFaceLiveness(plData, object : PassiveLivenessListener {
+                        override fun passiveLivenessFinished(result: PassiveLivenessResult) {
+                            facialLivelinessResultString = when (result.livenessAssessment) {
+                                AcuantPassiveLiveness.LivenessAssessment.Live -> {
+                                    "Facial Liveliness: live"
+                                }
+                                AcuantPassiveLiveness.LivenessAssessment.NotLive -> {
+                                    "Facial Liveliness: not live"
+                                }
+                                AcuantPassiveLiveness.LivenessAssessment.PoorQuality -> {
+                                    "Facial Liveliness: poor quality image (unable to verify liveness)"
+                                }
+                                else -> {
+                                    "Facial Liveliness: ${result.errorCode} - ${result.errorDesc}"
+                                }
+                            }
+                            processingFacialLiveness = false
+                        }
+                    })
+                    processFacialMatch()
+                }
+                FaceCaptureActivity.RESPONSE_CANCEL_CODE -> {
+                    showFaceCaptureCanceled()
+                }
+                else -> {
+                    showFaceCaptureError()
+                }
             }
         }
     }
@@ -382,6 +426,22 @@ class MainActivity : AppCompatActivity() {
     private fun showFaceCaptureError(){
         val alert = AlertDialog.Builder(this@MainActivity)
         alert.setTitle("Error Capturing Face")
+        alert.setMessage("Would you like to retry?")
+        alert.setPositiveButton("YES") { dialog, _ ->
+            dialog.dismiss()
+            showFrontCamera()
+        }
+        alert.setNegativeButton("NO") { dialog, _ ->
+            dialog.dismiss()
+            capturingSelfieImage = false
+            facialLivelinessResultString = "Facial Liveliness Failed"
+        }
+        alert.show()
+    }
+
+    private fun showFaceCaptureCanceled(){
+        val alert = AlertDialog.Builder(this@MainActivity)
+        alert.setTitle("User Canceled Face Capture")
         alert.setMessage("Would you like to retry?")
         alert.setPositiveButton("YES") { dialog, _ ->
             dialog.dismiss()
@@ -430,6 +490,55 @@ class MainActivity : AppCompatActivity() {
         val networkInfo=connectivityManager.activeNetworkInfo
         return networkInfo!=null && networkInfo.isConnected
     }
+
+//    fun faceCaptureClicked(@Suppress("UNUSED_PARAMETER") view: View) {
+//        if(!hasInternetConnection()){
+//            val alert = AlertDialog.Builder(this@MainActivity)
+//            alert.setTitle("Error")
+//            alert.setMessage("No internet connection available.")
+//            alert.setPositiveButton("OK") { dialog, _ ->
+//                dialog.dismiss()
+//            }
+//            alert.show()
+//        }
+//        else{
+//            if(isInitialized){
+//                frontCaptured = false
+//                cleanUpTransaction()
+//                captureWaitTime = 0
+//                showFaceCapture()
+//            }
+//            else{
+//                setProgress(true, "Initializing...")
+//                initializeAcuantSdk(object: IAcuantPackageCallback{
+//                    override fun onInitializeSuccess() {
+//                        this@MainActivity.runOnUiThread {
+//                            isInitialized = true
+//                            setProgress(false)
+//                            frontCaptured = false
+//                            cleanUpTransaction()
+//                            captureWaitTime = 0
+//                            showFaceCapture()
+//                        }
+//                    }
+//
+//                    override fun onInitializeFailed(error: List<Error>) {
+//                        this@MainActivity.runOnUiThread {
+//                            setProgress(false)
+//                            val alert = AlertDialog.Builder(this@MainActivity)
+//                            alert.setTitle("Error")
+//                            alert.setMessage("Could not initialize")
+//                            alert.setPositiveButton("OK") { dialog, _ ->
+//                                dialog.dismiss()
+//                            }
+//                            alert.show()
+//                        }
+//                    }
+//
+//                })
+//            }
+//        }
+//    }
 
     // ID/Passport Clicked
     fun idPassPortClicked(@Suppress("UNUSED_PARAMETER") view: View) {
@@ -534,7 +643,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //Show Rear Camera to Capture Image of ID,Passport or Health Insruance Card
+    //Show front camera to capture face for passive liveness
+    private fun showFaceCapture() {
+        val cameraIntent = Intent(
+                this@MainActivity,
+                FaceCaptureActivity::class.java
+        )
+
+        //Optional, should only be used if you are changing some of the options,
+        // pointless to pass default options
+        //
+        //cameraIntent.putExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS, FaceCaptureOptions())
+
+        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_FACE_CAPTURE)
+    }
+
+    //Show Rear Camera to Capture Image of ID,Passport or Health Insurance Card
     fun showDocumentCaptureCamera() {
         CapturedImage.barcodeString = null
         val cameraIntent = Intent(
@@ -556,7 +680,8 @@ class MainActivity : AppCompatActivity() {
                 showIPLiveness()
             }
             else{
-                showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE)
+                //showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE)
+                showFaceCapture()
             }
 
         }
@@ -585,6 +710,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+
+    @Suppress("SameParameterValue")
     private fun showHGLiveness(requestCode: Int) {
         val cameraIntent = Intent(
                 this@MainActivity,
@@ -780,7 +907,7 @@ class MainActivity : AppCompatActivity() {
 
     // Upload front Image of Driving License
     fun uploadFrontImageOfDocument(instanceId: String, idData: IdData, idOptions: IdOptions) {
-        numerOfClassificationAttempts += 1
+        numberOfClassificationAttempts += 1
         // Upload front Image of DL
         Log.d("InstanceId:",instanceId)
         AcuantDocumentProcessor.uploadImage(instanceId, idData, idOptions, object:UploadImageListener{
@@ -958,7 +1085,6 @@ class MainActivity : AppCompatActivity() {
                         Thread.sleep(100)
                     }
                     this@MainActivity.runOnUiThread {
-                        setProgress(false)
                         showResults(result.biographic.birthDate, result.biographic.expirationDate, docNumber, frontImage, backImage, faceImage, signImage, resultString, cardType)
                     }
                 }
@@ -979,10 +1105,9 @@ class MainActivity : AppCompatActivity() {
                 facialMatchData.faceImageTwo = capturedSelfieImage
 
                 if(facialMatchData.faceImageOne != null && facialMatchData.faceImageTwo != null){
-                    setProgress(true, "Matching selfie...")
+                    setProgress(true, "Processing...")
                     AcuantFaceMatch.processFacialMatch(facialMatchData, FacialMatchListener { result ->
                         this@MainActivity.runOnUiThread {
-                            setProgress(false)
                             if (result!!.error == null) {
                                 val resultStr = CommonUtils.stringFromFacialMatchResult(result)
                                 facialResultString = resultStr
@@ -997,12 +1122,12 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                         capturingSelfieImage = false
-                        //capturingFacialMatch = false
+                        capturingFacialMatch = false
                     })
                 }
                 else{
                     capturingSelfieImage = false
-                    //capturingFacialMatch = false
+                    capturingFacialMatch = false
                 }
             }
         }
@@ -1053,6 +1178,7 @@ class MainActivity : AppCompatActivity() {
         ProcessedData.frontImage = frontImage
         ProcessedData.backImage = backImage
         ProcessedData.faceImage = faceImage
+        ProcessedData.capturedFaceImage = capturedSelfieImage
         ProcessedData.signImage = signImage
         ProcessedData.dateOfBirth = dateOfBirth
         ProcessedData.dateOfExpiry = dateOfExpiry
@@ -1060,11 +1186,11 @@ class MainActivity : AppCompatActivity() {
         ProcessedData.cardType = cardType
         if (!isHealthCard) {
             thread {
-                while (capturingFacialMatch) {
+                while (capturingFacialMatch || processingFacialLiveness) {
                     Thread.sleep(100)
                 }
                 this@MainActivity.runOnUiThread {
-                    facialResultString = if(facialResultString == null) "Facial Match Failed" else facialResultString
+                    facialResultString = if (facialResultString == null) "Facial Match Failed" else facialResultString
                     ProcessedData.formattedString = facialLivelinessResultString + System.lineSeparator() + facialResultString + System.lineSeparator() + resultString
                     val resultIntent = Intent(
                             this@MainActivity,
@@ -1073,24 +1199,23 @@ class MainActivity : AppCompatActivity() {
                     setProgress(false)
                     startActivity(resultIntent)
                 }
-
             }
-            return
+        } else {
+            ProcessedData.formattedString = resultString
+            val resultIntent = Intent(
+                    this@MainActivity,
+                    ResultActivity::class.java
+            )
+            setProgress(false)
+            startActivity(resultIntent)
         }
-        ProcessedData.formattedString = resultString
-        val resultIntent = Intent(
-                this@MainActivity,
-                ResultActivity::class.java
-        )
-        setProgress(false)
-        startActivity(resultIntent)
     }
 
     fun loadAssureIDImage(url: String?, credential: Credential?): Bitmap? {
         if (url != null && credential != null) {
             val c = URL(url).openConnection() as HttpURLConnection
-            val userpass = credential.username + ":" + credential.password
-            val basicAuth = "Basic " + String(Base64.encode(userpass.toByteArray(), Base64.DEFAULT))
+            val userPass = credential.username + ":" + credential.password
+            val basicAuth = "Basic " + String(Base64.encode(userPass.toByteArray(), Base64.DEFAULT))
             c.setRequestProperty("Authorization", basicAuth)
             c.useCaches = false
             c.connect()

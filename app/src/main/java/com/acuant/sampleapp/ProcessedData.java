@@ -5,11 +5,11 @@ import android.graphics.Bitmap;
 /**
  * Created by tapasbehera on 5/16/18.
  */
-
 public class ProcessedData {
     public static Bitmap frontImage = null;
     public static Bitmap backImage = null;
     public static Bitmap faceImage = null;
+    public static Bitmap capturedFaceImage = null;
     public static Bitmap signImage = null;
     public static String formattedString="";
     public static String dateOfBirth = null;
@@ -21,6 +21,7 @@ public class ProcessedData {
         frontImage = null;
         backImage = null;
         faceImage = null;
+        capturedFaceImage = null;
         signImage = null;
         formattedString="";
         dateOfBirth = null;

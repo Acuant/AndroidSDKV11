@@ -8,6 +8,8 @@ import android.view.View
 import com.acuant.acuanthgliveness.model.LiveFaceDetailState
 import com.google.android.gms.vision.CameraSource
 import java.util.*
+import kotlin.math.max
+import kotlin.math.min
 
 class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private val mLock = Any()
@@ -19,12 +21,11 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
     private val mGraphics = HashSet<Graphic>()
 
     private var textPaint: Paint? = null
-    private var instructionText = "Algin face and blink when green oval appears"
-    private val inst1 = "Algin face and blink when "
+    private var instructionText = "Align face and blink when green oval appears"
+    private val inst1 = "Align face and blink when "
     private val inst2 = " green oval "
     private val inst3 = "  appears"
     private val textRect = Rect()
-    private val watermarkText = "Powered by Acuant"
 
     private var clearPaint: Paint? = null
     private var mTransparentPaint: Paint? = null
@@ -95,12 +96,8 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
 
     init {
         textPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
-        val currentTypeFace = textPaint!!.typeface
-        val bold = Typeface.create(currentTypeFace, Typeface.BOLD)
         textPaint!!.color = Color.WHITE
         textPaint!!.textAlign = Paint.Align.LEFT
-
-        // adjust UI textSize depending on screenwidth
 
 
         mTransparentPaint = Paint()
@@ -180,7 +177,6 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
                 graphic.draw(canvas)
             }
 
-            //drawOval
             drawOval(canvas)
 
             // draw UI
@@ -191,8 +187,8 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
     private fun drawOval(canvas: Canvas) {
         val width = canvas.width
         val height = canvas.height
-        val minLength = 0.7f * Math.min(width, height)
-        val maxLength = 0.7f * Math.max(width, height)
+        val minLength = 0.7f * min(width, height)
+        val maxLength = 0.7f * max(width, height)
         val left = (width - minLength) / 2f
         val top = (height - maxLength) / 2f
         val rect = RectF(left, top, left + minLength, top + maxLength)
@@ -202,7 +198,6 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
         canvas.drawOval(rect, mTransparentPaint!!)
         canvas.clipPath(mPath)
         canvas.drawColor(Color.parseColor("#A6000000"))
-
     }
 
     private fun setSize(size: Float){
@@ -210,91 +205,70 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
 
         textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
 
-        val screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels
+        val screenWidth = Resources.getSystem().displayMetrics.widthPixels
         if (textRect.width() > screenWidth) {
             textPaint!!.textSize = 40f
         }
     }
 
+    private fun drawSimpleInst(canvas: Canvas, size: Float, color: Int) {
+        val width = canvas.width
+        val height: Float = canvas.height.toFloat()
+        setSize(size)
+        textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
+        val x = (width - textRect.width()) / 2f
+        val y = height * 0.1f
+        textPaint!!.color = color
+        canvas.drawText(instructionText, x, y, textPaint!!)
+    }
+
     private fun drawUI(canvas: Canvas) {
         val width = canvas.width
-        val height = canvas.height
-        var x = 0f
-        var y = 0f
-        when(state){
+        val height: Float = canvas.height.toFloat()
+        var x: Float
+        val y: Float
+        when (state) {
             LiveFaceDetailState.NONE -> {
-                // Instruction Text
-                instructionText = "Algin face and blink when green oval appears"
+                instructionText = "Align face and blink when green oval appears"
+
                 setSize(50f)
                 textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
                 x = (width - textRect.width()) / 2f
                 y = height * 0.1f
+                textPaint!!.color = Color.WHITE
                 canvas.drawText(inst1, x, y, textPaint!!)
 
                 textPaint!!.getTextBounds(inst1, 0, inst1.length, textRect)
-                x = x + textRect.width()
+                x += textRect.width()
                 textPaint!!.color = Color.GREEN
                 canvas.drawText(inst2, x, y, textPaint!!)
 
                 textPaint!!.getTextBounds(inst2, 0, inst2.length, textRect)
-                x = x + textRect.width()
+                x += textRect.width()
                 textPaint!!.color = Color.WHITE
                 canvas.drawText(inst3, x, y, textPaint!!)
 
             }
             LiveFaceDetailState.FACE_TOO_FAR -> {
-                instructionText = "Move Closer"
-                setSize(60f)
-                textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
-                x = (width - textRect.width()) / 2f
-                y = height * 0.1f
-                textPaint!!.color = Color.RED
-                canvas.drawText(instructionText, x, y, textPaint!!)
+                instructionText = "Move closer"
+                drawSimpleInst(canvas, 60f, Color.RED)
             }
             LiveFaceDetailState.FACE_TOO_CLOSE -> {
-                instructionText = "Too Close! Move away"
-                setSize(60f)
-                textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
-                x = (width - textRect.width()) / 2f
-                y = height * 0.1f
-                textPaint!!.color = Color.RED
-                canvas.drawText(instructionText, x, y, textPaint!!)
+                instructionText = "Too close! Move away"
+                drawSimpleInst(canvas, 60f, Color.RED)
             }
             LiveFaceDetailState.FACE_GOOD_DISTANCE -> {
                 instructionText = "Blink!"
-                setSize(70f)
-                textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
-                x = (width - textRect.width()) / 2f
-                y = height * 0.1f
-                textPaint!!.color = Color.GREEN
-                canvas.drawText(instructionText, x, y, textPaint!!)
+                drawSimpleInst(canvas, 70f, Color.GREEN)
             }
             LiveFaceDetailState.FACE_NOT_IN_FRAME -> {
-                instructionText = "Move in Frame"
-                setSize(60f)
-                textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
-                x = (width - textRect.width()) / 2f
-                y = height * 0.1f
-                textPaint!!.color = Color.RED
-                canvas.drawText(instructionText, x, y, textPaint!!)
+                instructionText = "Move in frame"
+                drawSimpleInst(canvas, 60f, Color.RED)
             }
             LiveFaceDetailState.FACE_MOVED -> {
-                instructionText = "Hold Steady"
-                setSize(60f)
-                textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
-                x = (width - textRect.width()) / 2f
-                y = height * 0.1f
-                textPaint!!.color = Color.RED
-                canvas.drawText(instructionText, x, y, textPaint!!)
+                instructionText = "Hold steady"
+                drawSimpleInst(canvas, 60f, Color.RED)
             }
         }
-
-//        //Watermark text
-        textPaint!!.textSize = 50f
-        textPaint!!.color = Color.WHITE
-        textPaint!!.getTextBounds(watermarkText, 0, watermarkText.length, textRect)
-        x = width * 0.90f - textRect.width().toFloat() - 100f
-        y = height * 0.95f
-        canvas.drawText(watermarkText, x, y, textPaint!!)
     }
 }

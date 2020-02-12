@@ -43,10 +43,10 @@ import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import android.graphics.drawable.Drawable
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IMAGE_URL
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IS_AUTO_CAPTURE
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_PDF417_BARCODE
+import com.acuant.acuantcamera.camera.AcuantCameraOptions
+import com.acuant.acuantcamera.constant.*
 import com.acuant.acuantcamera.helper.ImageSaver
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -65,8 +65,8 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     private var documentCameraSource: DocumentCameraSource? = null
     private var mPreview: DocumentCameraSourcePreview? = null
     private var capturing = false
-    private var waitTime = 2
     private var autoCapture = false
+    private var isBorderEnabled = false
     private lateinit var documentProcessor: LiveDocumentProcessor
     private var documentDetector: DocumentDetector? = null
 
@@ -82,17 +82,16 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     private var currentDigit: Int = 2
     private var lastTime: Long = System.currentTimeMillis()
     private var timeInMsPerDigit: Int = 800
-    private var oldPoints : Array<Point>? = null
+    private var oldPoints: Array<Point>? = null
     private var digitsToShow: Int = 2
-    private lateinit var displaySize:Point
+    private lateinit var displaySize: Point
+    private var lastOrientation = ORIENTATION_LANDSCAPE
 
     /**
      * Initializes the UI and creates the detector pipeline.
      */
     public override fun onCreate(icicle: Bundle?) {
         super.onCreate(icicle)
-        waitTime = intent.getIntExtra("WAIT", 2)
-        autoCapture = intent.getBooleanExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, true)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -138,9 +137,11 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
             requestCameraPermission()
         }
 
-        if(!autoCapture){
+        setOptions(intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions? ?: AcuantCameraOptions())
+
+        if (!autoCapture) {
             instructionView.text = getString(R.string.acuant_camera_align_and_tap)
-            parent.setOnClickListener{
+            parent.setOnClickListener {
                 instructionView.setBackgroundColor(getColorWithAlpha(Color.GREEN, .50f))
                 instructionView.text = getString(R.string.acuant_camera_capturing)
                 capturing = true
@@ -152,7 +153,6 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         this.windowManager.defaultDisplay.getSize(displaySize)
 
         mOrientationEventListener = object : OrientationEventListener(this.applicationContext) {
-            var lastOrientation = 0
             override fun onOrientationChanged(orientation: Int) {
                 if (orientation < 0) {
                     return  // Flip screen, Not take account
@@ -177,15 +177,15 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         }
     }
 
-    private fun lockFocus(){
+    private fun lockFocus() {
         documentCameraSource?.autoFocus {
-            if(it){
+            if (it) {
                 capture()
             }
         }
     }
 
-    private fun capture(){
+    private fun capture() {
         documentCameraSource?.takePicture(this@DocumentCaptureActivity, this@DocumentCaptureActivity)
     }
 
@@ -250,10 +250,10 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 .build()
     }
 
-    private fun isDocumentInPreviewFrame(points: Array<Point>) : Boolean{
+    private fun isDocumentInPreviewFrame(points: Array<Point>): Boolean {
         points.apply {
             this.forEach { p ->
-                if(p.x < 0 || (mPreview!!.mSurfaceView.width - p.y) < 0 || p.x > displaySize.y || (mPreview!!.mSurfaceView.width - p.y) > displaySize.x){
+                if (p.x < 0 || (mPreview!!.mSurfaceView.width - p.y) < 0 || p.x > displaySize.y || (mPreview!!.mSurfaceView.width - p.y) > displaySize.x) {
                     return false
                 }
             }
@@ -261,7 +261,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         return true
     }
 
-    private fun scalePoints(points: Array<Point>, frameSize: Size): Array<Point>{
+    private fun scalePoints(points: Array<Point>, frameSize: Size): Array<Point> {
         val scaledPoints = points.copyOf()
         val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
         val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
@@ -278,11 +278,10 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
     private fun createDocumentDetector(): DocumentDetector {
         documentProcessor = LiveDocumentProcessor()
-        return documentProcessor.getBarcodeDetector(applicationContext){
-            if(it.feedback == DocumentFeedback.Barcode){
+        return documentProcessor.getBarcodeDetector(applicationContext) {
+            if (it.feedback == DocumentFeedback.Barcode) {
                 this.capturedbarcodeString = it.barcode
-            }
-            else{
+            } else {
                 runOnUiThread {
                     var points = it.point
                     val frameSize = it.frameSize!!
@@ -293,7 +292,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                         points = scalePoints(points, frameSize)
                         points = fixPoints(points)
 
-                        if(!isDocumentInPreviewFrame(points)){
+                        if (!isDocumentInPreviewFrame(points)) {
                             feedback = DocumentFeedback.NoDocument
                         }
                     }
@@ -318,13 +317,13 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                             }
                             else -> {
 
-                                if(System.currentTimeMillis() - lastTime > (digitsToShow - currentDigit + 2) * timeInMsPerDigit)
+                                if (System.currentTimeMillis() - lastTime > (digitsToShow - currentDigit + 2) * timeInMsPerDigit)
                                     --currentDigit
 
                                 var dist = 0
-                                if(oldPoints != null && oldPoints!!.size == 4 && points != null && points.size == 4) {
+                                if (oldPoints != null && oldPoints!!.size == 4 && points != null && points.size == 4) {
                                     for (i in 0..3) {
-                                        dist += sqrt( ((oldPoints!![i].x-points[i].x).toDouble().pow(2) + (oldPoints!![i].y - points[i].y).toDouble().pow(2) )).toInt()
+                                        dist += sqrt(((oldPoints!![i].x - points[i].x).toDouble().pow(2) + (oldPoints!![i].y - points[i].y).toDouble().pow(2))).toInt()
                                     }
                                 }
 
@@ -357,6 +356,13 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         }
 
+    }
+
+    private fun setOptions(options : AcuantCameraOptions) {
+        this.timeInMsPerDigit = options.timeInMsPerDigit
+        this.digitsToShow = options.digitsToShow
+        autoCapture = options.autoCapture
+        rectangleView.setFromOptions(options)
     }
 
     private lateinit var mOrientationEventListener: OrientationEventListener
@@ -460,12 +466,13 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         }
     }
+
     override fun onBackPressed() {
         this@DocumentCaptureActivity.finish()
     }
 
     private fun setTextFromState(state: AcuantCameraFragment.CameraState) {
-        when(state) {
+        when (state) {
             AcuantCameraFragment.CameraState.MoveCloser -> {
                 instructionView.background = defaultTextDrawable
                 instructionView.text = getString(R.string.acuant_camera_move_closer)
@@ -504,10 +511,10 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         currentDigit = digitsToShow
     }
 
-    private fun fixPoints(points: Array<Point>) : Array<Point> {
+    private fun fixPoints(points: Array<Point>): Array<Point> {
         val fixedPoints = points.copyOf()
-        if(fixedPoints.size == 4) {
-            if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
+        if (fixedPoints.size == 4) {
+            if (fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
                 //rotate 2
                 var tmp = fixedPoints[0]
                 fixedPoints[0] = fixedPoints[2]
@@ -517,7 +524,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 fixedPoints[1] = fixedPoints[3]
                 fixedPoints[3] = tmp
 
-            } else if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x > fixedPoints[2].x) {
+            } else if (fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x > fixedPoints[2].x) {
                 //rotate 3
                 val tmp = fixedPoints[0]
                 fixedPoints[0] = fixedPoints[1]
@@ -525,7 +532,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 fixedPoints[2] = fixedPoints[3]
                 fixedPoints[3] = tmp
 
-            } else if(fixedPoints[0].y < fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
+            } else if (fixedPoints[0].y < fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
                 //rotate 1
                 val tmp = fixedPoints[0]
                 fixedPoints[0] = fixedPoints[3]
@@ -563,32 +570,43 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
 
     override fun onPictureTaken(data: ByteArray) {
-        Thread(Runnable {
-            val mgr = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            mgr.setStreamMute(AudioManager.STREAM_SYSTEM, false)
-            this@DocumentCaptureActivity.runOnUiThread {
-                val result = Intent()
-                val file = File(this.getExternalFilesDir(null),  "${UUID.randomUUID()}.jpg")
-                saveFile(file, data)
-                result.putExtra(ACUANT_EXTRA_IMAGE_URL, file.absolutePath)
-                result.putExtra(ACUANT_EXTRA_PDF417_BARCODE, this.capturedbarcodeString)
-                setResult(AcuantCameraActivity.RESULT_SUCCESS_CODE, result)
-                finish()
-            }
-        }).start()
+        var updated = data
+        val image = BitmapFactory.decodeByteArray(data, 0, data.size)
 
+        if((image.width > image.height && this.lastOrientation == ORIENTATION_LANDSCAPE_REVERSE) ||
+                 (image.width < image.height && this.lastOrientation == ORIENTATION_LANDSCAPE)){
+            val rotated = ImageSaver.rotateImage(image, 180f)
+            val stream = ByteArrayOutputStream()
+            rotated.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            rotated.recycle()
+            updated = stream.toByteArray()
+
+        }
+
+        val file = File(this.cacheDir, "${UUID.randomUUID()}.jpg")
+        saveFile(file, updated)
+
+        this@DocumentCaptureActivity.runOnUiThread {
+            val result = Intent()
+            result.putExtra(ACUANT_EXTRA_IMAGE_URL, file.absolutePath)
+            result.putExtra(ACUANT_EXTRA_PDF417_BARCODE, this.capturedbarcodeString)
+            setResult(AcuantCameraActivity.RESULT_SUCCESS_CODE, result)
+            finish()
+        }
     }
 
-    private fun saveFile(file: File, data: ByteArray){
+    private fun saveFile(file: File, data: ByteArray) {
         var output: FileOutputStream? = null
         try {
-            output = FileOutputStream(file).apply {write(data)}
+            output = FileOutputStream(file).apply { write(data) }
         } catch (e: IOException) {
+            e.printStackTrace()
         } finally {
             output?.let {
                 try {
                     it.close()
                 } catch (e: IOException) {
+                    e.printStackTrace()
                 }
             }
         }
