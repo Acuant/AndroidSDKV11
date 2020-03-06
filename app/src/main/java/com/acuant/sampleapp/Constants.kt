@@ -12,6 +12,7 @@ class Constants {
         const val REQUEST_CAMERA_HG_SELFIE = 5
         const val REQUEST_CAMERA_HG_SELFIE_KEYLESS = 6
         const val REQUEST_CAMERA_FACE_CAPTURE = 7
+        const val HG_FRAME_RATE_TARGET = "targetFrameRate"
 
     }
 }

@@ -23,5 +23,6 @@ class AcuantCameraOptions @JvmOverloads constructor(val timeInMsPerDigit: Int = 
                                                     val colorBracketAlign : Int = Color.BLACK,
                                                     val colorBracketCloser : Int = Color.RED,
                                                     val colorBracketHold : Int = Color.YELLOW,
-                                                    val colorBracketCapturing : Int = Color.GREEN
+                                                    val colorBracketCapturing : Int = Color.GREEN,
+                                                    var useGMS: Boolean = true
 ) : Serializable

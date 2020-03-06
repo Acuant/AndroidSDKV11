@@ -12,6 +12,8 @@ import android.view.View
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.cameraone.DocumentCaptureActivity
 import com.acuant.acuantcamera.constant.*
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 
 
 interface ICameraActivityFinish{
@@ -45,7 +47,27 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if(supportCamera2(this)){
+        val unserializedOptions = intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS)
+        val options: AcuantCameraOptions = if (unserializedOptions == null) {
+            AcuantCameraOptions()
+        } else {
+            unserializedOptions as AcuantCameraOptions
+        }
+
+        if (options.useGMS) {
+            val resultCode = try {
+                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this)
+            } catch (e: java.lang.Exception) {
+                e.printStackTrace()
+                ConnectionResult.SERVICE_INVALID
+            }
+
+            if (resultCode != ConnectionResult.SUCCESS) {
+                options.useGMS = false
+            }
+        }
+
+        if(supportCamera2(this) || !options.useGMS) {
             setContentView(R.layout.activity_acu_camera)
             hideTopMenu()
 
@@ -54,7 +76,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
                 cameraFragment.arguments = Bundle().apply {
                     putBoolean(ACUANT_EXTRA_IS_AUTO_CAPTURE, intent.getBooleanExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, true))
                     putBoolean(ACUANT_EXTRA_BORDER_ENABLED, intent.getBooleanExtra(ACUANT_EXTRA_BORDER_ENABLED, true))
-                    putSerializable(ACUANT_EXTRA_CAMERA_OPTIONS, intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS))
+                    putSerializable(ACUANT_EXTRA_CAMERA_OPTIONS, options)
                 }
 
                 supportFragmentManager.beginTransaction()
@@ -63,7 +85,6 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
             }
         }
         else{
-            val options = intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions? ?: AcuantCameraOptions(autoCapture = true, allowBox = true)
             val cameraIntent = Intent(
                     this@AcuantCameraActivity,
                     DocumentCaptureActivity::class.java

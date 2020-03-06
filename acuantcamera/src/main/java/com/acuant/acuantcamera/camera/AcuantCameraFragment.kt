@@ -156,13 +156,18 @@ class AcuantCameraFragment : Fragment(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        detectors = listOf(AcuantDocumentDetector(this), AcuantBarcodeDetector(this.activity!!.applicationContext, this))
         isAutoCapture = arguments?.getBoolean(ACUANT_EXTRA_IS_AUTO_CAPTURE) ?: true
         isBorderEnabled = arguments?.getBoolean(ACUANT_EXTRA_BORDER_ENABLED) ?: true
         options = arguments?.getSerializable(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions? ?: AcuantCameraOptions(autoCapture = isAutoCapture, allowBox = isBorderEnabled)
         if(options != null) {
             isAutoCapture = options!!.autoCapture
             isBorderEnabled = options!!.allowBox
+        }
+
+        detectors = if (options?.useGMS == false) {
+            listOf(AcuantDocumentDetector(this))
+        } else {
+            listOf(AcuantDocumentDetector(this), AcuantBarcodeDetector(this.activity!!.applicationContext, this))
         }
 
         capturingTextDrawable = activity!!.getDrawable(R.drawable.camera_text_config_capturing)

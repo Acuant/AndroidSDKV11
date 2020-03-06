@@ -24,4 +24,10 @@
     <string name="scan_echip">Scan eChip</string>
     <string name="front_captured_image">Front Captured Image</string>
     <string name="back_captured_image">Back Captured Image</string>
+    <string name="hg_move_in_frame">Move in frame</string>
+    <string name="hg_hold_steady">Hold steady</string>
+    <string name="hg_blink">Blink!</string>
+    <string name="hg_too_close">Too close! Move away</string>
+    <string name="hg_too_far_away">Move closer</string>
+    <string name="hg_align_face_and_blink">Align face to begin</string>
 </resources>

@@ -6,6 +6,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
 import com.acuant.acuanthgliveness.model.LiveFaceDetailState
+import com.acuant.sampleapp.R
 import com.google.android.gms.vision.CameraSource
 import java.util.*
 import kotlin.math.max
@@ -21,10 +22,7 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
     private val mGraphics = HashSet<Graphic>()
 
     private var textPaint: Paint? = null
-    private var instructionText = "Align face and blink when green oval appears"
-    private val inst1 = "Align face and blink when "
-    private val inst2 = " green oval "
-    private val inst3 = "  appears"
+    private var instructionText: String = context.getString(R.string.hg_align_face_and_blink)
     private val textRect = Rect()
 
     private var clearPaint: Paint? = null
@@ -229,44 +227,27 @@ class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context
         val y: Float
         when (state) {
             LiveFaceDetailState.NONE -> {
-                instructionText = "Align face and blink when green oval appears"
-
-                setSize(50f)
-                textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
-                x = (width - textRect.width()) / 2f
-                y = height * 0.1f
-                textPaint!!.color = Color.WHITE
-                canvas.drawText(inst1, x, y, textPaint!!)
-
-                textPaint!!.getTextBounds(inst1, 0, inst1.length, textRect)
-                x += textRect.width()
-                textPaint!!.color = Color.GREEN
-                canvas.drawText(inst2, x, y, textPaint!!)
-
-                textPaint!!.getTextBounds(inst2, 0, inst2.length, textRect)
-                x += textRect.width()
-                textPaint!!.color = Color.WHITE
-                canvas.drawText(inst3, x, y, textPaint!!)
-
+                instructionText = context.getString(R.string.hg_align_face_and_blink)
+                drawSimpleInst(canvas, 60f, Color.WHITE)
             }
             LiveFaceDetailState.FACE_TOO_FAR -> {
-                instructionText = "Move closer"
+                instructionText = context.getString(R.string.hg_too_far_away)
                 drawSimpleInst(canvas, 60f, Color.RED)
             }
             LiveFaceDetailState.FACE_TOO_CLOSE -> {
-                instructionText = "Too close! Move away"
+                instructionText = context.getString(R.string.hg_too_close)
                 drawSimpleInst(canvas, 60f, Color.RED)
             }
             LiveFaceDetailState.FACE_GOOD_DISTANCE -> {
-                instructionText = "Blink!"
+                instructionText = context.getString(R.string.hg_blink)
                 drawSimpleInst(canvas, 70f, Color.GREEN)
             }
             LiveFaceDetailState.FACE_NOT_IN_FRAME -> {
-                instructionText = "Move in frame"
+                instructionText = context.getString(R.string.hg_move_in_frame)
                 drawSimpleInst(canvas, 60f, Color.RED)
             }
             LiveFaceDetailState.FACE_MOVED -> {
-                instructionText = "Hold steady"
+                instructionText = context.getString(R.string.hg_hold_steady)
                 drawSimpleInst(canvas, 60f, Color.RED)
             }
         }

@@ -57,7 +57,7 @@ import java.util.*
 import kotlin.concurrent.thread
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var progressDialog: LinearLayout? = null
     private var progressText: TextView? = null
     private var capturedFrontImage: Image? = null
@@ -80,9 +80,11 @@ class MainActivity : AppCompatActivity() {
     private var autoCaptureEnabled: Boolean = true
     private var numberOfClassificationAttempts: Int = 0
     private var isInitialized = false
-    private var isIPLivenessEnabled = false
+    private var livenessSelected = 0
     private var isKeyless = false
     private var processingFacialLiveness = false
+    private lateinit var livenessSpinner : Spinner
+    private lateinit var livenessArrayAdapter: ArrayAdapter<String>
 
     fun cleanUpTransaction() {
         facialResultString = null
@@ -90,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         capturedBackImage = null
         capturedSelfieImage = null
         capturedFaceImage = null
+        facialLivelinessResultString = null
         capturedBarcodeString = null
         isHealthCard = false
         processingFacialLiveness = false
@@ -106,6 +109,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         insuranceButton = findViewById(R.id.main_health_card)
         idButton = findViewById(R.id.main_id_passport)
+
+        livenessSpinner = findViewById(R.id.livenessSpinner)
+        val list = mutableListOf("No liveness test/face match", "Liveness: Passive Liveness")
+        livenessArrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, list)
+        livenessArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        livenessArrayAdapter
+        livenessSpinner.adapter = livenessArrayAdapter
+        livenessSpinner.onItemSelectedListener = this
 
         val autoCaptureSwitch = findViewById<Switch>(R.id.autoCaptureSwitch)
         autoCaptureSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -141,6 +152,14 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    override fun onNothingSelected(parent: AdapterView<*>?) {
+        //do nothing
+    }
+
+    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+        livenessSelected = position
+    }
+
     private fun setProgress(visible : Boolean, text : String = "") {
         if(visible) {
             progressDialog?.visibility = View.VISIBLE
@@ -159,7 +178,6 @@ class MainActivity : AppCompatActivity() {
                     object: IAcuantPackageCallback{
                         override fun onInitializeSuccess() {
                             if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
-                                isIPLivenessEnabled = false
                                 isKeyless = true
                                 callback.onInitializeSuccess()
                             }
@@ -213,14 +231,10 @@ class MainActivity : AppCompatActivity() {
             override fun onDataReceived(result: Boolean) {
                 if(result){
                     runOnUiThread{
-                        val isIPEnabledSwitch = findViewById<Switch>(R.id.isIPLivenessEnabled)
-                        isIPEnabledSwitch.setOnCheckedChangeListener { _, isChecked ->
-                            isIPLivenessEnabled = isChecked
-                        }
-                        isIPEnabledSwitch.visibility = View.VISIBLE
+                        livenessArrayAdapter.insert("Liveness: Enhanced Liveness",2)
+                        livenessArrayAdapter.notifyDataSetChanged()
                     }
                 }
-                isIPLivenessEnabled = false
                 callback.onInitializeSuccess()
             }
 
@@ -326,14 +340,25 @@ class MainActivity : AppCompatActivity() {
                         val alert = AlertDialog.Builder(this@MainActivity)
                         alert.setTitle("Message")
                         if (capturedBarcodeString != null && capturedBarcodeString!!.trim().isNotEmpty()) {
-                            alert.setMessage("Following barcode is captured.\n\n"
-                                    + "Barcode String :\n\n"
-                                    + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt())
-                                    + "...\n\n"
-                                    + "Capture Selfie Image now.")
+                            if (livenessSelected != 0) {
+                                alert.setMessage("Following barcode is captured.\n\n"
+                                        + "Barcode String :\n\n"
+                                        + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt())
+                                        + "...\n\n"
+                                        + "Capture Selfie Image now.")
+                            } else {
+                                alert.setMessage("Following barcode is captured.\n\n"
+                                        + "Barcode String :\n\n"
+                                        + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt()))
+                            }
                         }
                         else{
-                            alert.setMessage("Capture Selfie Image now.")
+                            if (livenessSelected != 0) {
+                                alert.setMessage("Capture Selfie Image now.")
+                            } else {
+                                alert.setMessage("Continue.")
+
+                            }
                         }
                         alert.setPositiveButton("OK") { dialog, _ ->
                             dialog.dismiss()
@@ -341,12 +366,14 @@ class MainActivity : AppCompatActivity() {
                             uploadBackImageOfDocument()
                             showFrontCamera()
                         }
-                        alert.setNegativeButton("CANCEL") { dialog, _ ->
-                            setProgress(true, "Getting Data...")
-                            facialLivelinessResultString = "Facial Liveliness Failed"
-                            capturingSelfieImage = false
-                            uploadBackImageOfDocument()
-                            dialog.dismiss()
+                        if (livenessSelected != 0) {
+                            alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                setProgress(true, "Getting Data...")
+                                facialLivelinessResultString = "Facial Liveliness Failed"
+                                capturingSelfieImage = false
+                                uploadBackImageOfDocument()
+                                dialog.dismiss()
+                            }
                         }
                         alert.show()
                     } else {
@@ -674,14 +701,21 @@ class MainActivity : AppCompatActivity() {
     //Show Front Camera to Capture Live Selfie
     fun showFrontCamera() {
         try{
-            capturingSelfieImage = true
 
-            if(isIPLivenessEnabled){
-                showIPLiveness()
-            }
-            else{
-                //showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE)
-                showFaceCapture()
+            when (livenessSelected) {
+                2 -> {
+                    capturingSelfieImage = true
+                    showIPLiveness()
+                }
+                1 -> {
+                    capturingSelfieImage = true
+                    showFaceCapture()
+                    //showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE)
+                }
+                else -> {
+                    capturingSelfieImage = false
+                    //just go to results
+                }
             }
 
         }
@@ -717,6 +751,9 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity,
                 FacialLivenessActivity::class.java
         )
+
+        //cameraIntent.putExtra(Constants.HG_FRAME_RATE_TARGET, 10f)
+
         startActivityForResult(cameraIntent, requestCode)
     }
 
@@ -935,18 +972,24 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             val alert = AlertDialog.Builder(this@MainActivity)
                             alert.setTitle("Message")
-                            alert.setMessage("Capture Selfie Image")
+                            if (livenessSelected != 0) {
+                                alert.setMessage("Capture Selfie Image")
+                            } else {
+                                alert.setMessage("Continue")
+                            }
                             alert.setPositiveButton("OK") { dialog, _ ->
                                 dialog.dismiss()
                                 setProgress(true, "Getting Data...")
                                 showFrontCamera()
                                 getData()
                             }
-                            alert.setNegativeButton("CANCEL") { dialog, _ ->
-                                facialLivelinessResultString = "Facial Liveliness Failed"
-                                setProgress(true, "Getting Data...")
-                                getData()
-                                dialog.dismiss()
+                            if (livenessSelected != 0) {
+                                alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                    facialLivelinessResultString = "Facial Liveliness Failed"
+                                    setProgress(true, "Getting Data...")
+                                    getData()
+                                    dialog.dismiss()
+                                }
                             }
                             alert.show()
                         }
@@ -1191,7 +1234,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 this@MainActivity.runOnUiThread {
                     facialResultString = if (facialResultString == null) "Facial Match Failed" else facialResultString
-                    ProcessedData.formattedString = facialLivelinessResultString + System.lineSeparator() + facialResultString + System.lineSeparator() + resultString
+                    ProcessedData.formattedString = (facialLivelinessResultString ?: "No Liveness Test Performed") + System.lineSeparator() + facialResultString+ System.lineSeparator() + resultString
                     val resultIntent = Intent(
                             this@MainActivity,
                             ResultActivity::class.java

@@ -34,6 +34,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
     private var mFacialGraphic: FacialGraphic? = null
     private var selfieCaptured = false
     private var liveFaceDetector : LiveFaceDetector? = null
+    private var targetFps: Float = 10f
     //==============================================================================================
     // Activity Methods
     //==============================================================================================
@@ -47,6 +48,8 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
 
         mPreview = findViewById<View>(R.id.preview) as CameraSourcePreview
         mFacialGraphicOverlay = findViewById<View>(R.id.faceOverlay) as FacialGraphicOverlay
+
+        targetFps = intent.getFloatExtra(Constants.HG_FRAME_RATE_TARGET, 10f)
 
         // Check for the camera permission before accessing the camera.  If the
         // permission is not granted yet, request permission.
@@ -139,12 +142,12 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
                                             grantResults: IntArray) {
         if (requestCode != RC_HANDLE_CAMERA_PERM) {
-            Log.d(TAG, "Got unexpected permission result: " + requestCode)
+            Log.d(TAG, "Got unexpected permission result: $requestCode")
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
             return
         }
 
-        if (grantResults.size != 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Camera permission granted - initialize the camera source")
             // we have permission, so create the camerasource
             createCameraSource()
@@ -152,9 +155,9 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
         }
 
         Log.e(TAG, "Permission not granted: results len = " + grantResults.size +
-                " Result code = " + if (grantResults.size > 0) grantResults[0] else "(empty)")
+                " Result code = " + if (grantResults.isNotEmpty()) grantResults[0] else "(empty)")
 
-        val listener = DialogInterface.OnClickListener { dialog, id -> finish() }
+        val listener = DialogInterface.OnClickListener { _, _ -> finish() }
 
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Face Tracker sample")
@@ -198,7 +201,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
         // want to increase the resolution.
         mCameraSource = CameraSource.Builder(context, liveFaceDetector)
                 .setFacing(facing)
-                .setRequestedFps(10.0f)
+                .setRequestedFps(targetFps)
                 .setAutoFocusEnabled(true)
                 .build()
     }
@@ -251,13 +254,13 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
     }
 
     companion object {
-        private val TAG = "GooglyEyes"
+        private const val TAG = "GooglyEyes"
 
-        private val RC_HANDLE_GMS = 9001
+        private const val RC_HANDLE_GMS = 9001
 
         // permission request codes need to be < 256
-        private val RC_HANDLE_CAMERA_PERM = 2
+        private const val RC_HANDLE_CAMERA_PERM = 2
 
-        val RESPONSE_SUCCESS_CODE = 2
+        const val RESPONSE_SUCCESS_CODE = 2
     }
 }

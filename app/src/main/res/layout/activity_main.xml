@@ -53,14 +53,11 @@
         app:layout_constraintTop_toBottomOf="@id/main_health_card"
         />
 
-    <Switch
+    <Spinner
         android:layout_margin="30dp"
-        android:id="@+id/isIPLivenessEnabled"
+        android:id="@+id/livenessSpinner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/ip_liveness_enabled"
-        android:visibility="invisible"
-        android:checked="false"
         app:layout_constraintTop_toBottomOf="@id/autoCaptureSwitch"
         />
 

@@ -23,6 +23,13 @@
         <item quantity="other">Captura\n%d…</item>
     </plurals>
 
+    <string name="hg_move_in_frame">Moverse en cuadro</string>
+    <string name="hg_hold_steady">Mantener estable</string>
+    <string name="hg_blink">Parpadeo!</string>
+    <string name="hg_too_close">¡Demasiado cerca! Alejarse</string>
+    <string name="hg_too_far_away">Muévete mas cerca</string>
+    <string name="hg_align_face_and_blink">Alinear la cara para comenzar</string>
+
     <string name="ok">OK</string>
     <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
     <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
