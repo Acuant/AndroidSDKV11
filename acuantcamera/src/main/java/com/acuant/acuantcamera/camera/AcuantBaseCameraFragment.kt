@@ -9,31 +9,30 @@ import android.graphics.drawable.Drawable
 import android.hardware.camera2.*
 import android.media.Image
 import android.media.ImageReader
-import android.os.*
-import android.support.v4.app.ActivityCompat
+import android.os.AsyncTask
+import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.util.Size
 import android.util.SparseIntArray
 import android.view.*
+import android.widget.ImageView
 import android.widget.TextView
 import com.acuant.acuantcamera.R
-import com.acuant.acuantcamera.constant.*
-import com.acuant.acuantcamera.helper.AutoFitTextureView
-import com.acuant.acuantcamera.helper.ConfirmationDialog
-import com.acuant.acuantcamera.helper.ErrorDialog
-import com.acuant.acuantcamera.helper.CompareSizesByArea
-import com.acuant.acuantcamera.helper.ImageSaver
+import com.acuant.acuantcamera.constant.ACUANT_EXTRA_BORDER_ENABLED
+import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IS_AUTO_CAPTURE
+import com.acuant.acuantcamera.constant.REQUEST_CAMERA_PERMISSION
 import com.acuant.acuantcamera.detector.AcuantDetectorWorker
 import com.acuant.acuantcamera.detector.IAcuantDetector
-import com.acuant.acuantcamera.detector.barcode.AcuantBarcodeDetector
-import com.acuant.acuantcamera.detector.barcode.AcuantBarcodeDetectorHandler
-import com.acuant.acuantcamera.detector.document.AcuantDocumentDectectorHandler
-import com.acuant.acuantcamera.detector.document.AcuantDocumentDetector
-import com.acuant.acuantcamera.helper.ImageSaveHandler
+import com.acuant.acuantcamera.helper.*
+import com.acuant.acuantcamera.helper.CompareSizesByArea
+import com.acuant.acuantcamera.detector.ImageSaveHandler
+import com.acuant.acuantcamera.detector.ImageSaver
+import com.acuant.acuantcamera.overlay.BaseRectangleView
 import com.acuant.acuantcamera.overlay.AcuantOrientationListener
-import com.acuant.acuantcamera.overlay.RectangleView
 import java.io.File
 import java.lang.Exception
 import java.lang.ref.WeakReference
@@ -42,59 +41,53 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 import kotlin.math.max
-import kotlin.math.pow
-import kotlin.math.roundToInt
-import kotlin.math.sqrt
 
-class AcuantCameraFragment : Fragment(),
-        ActivityCompat.OnRequestPermissionsResultCallback, AcuantDocumentDectectorHandler, AcuantBarcodeDetectorHandler {
+abstract class AcuantBaseCameraFragment : Fragment() {
 
-    enum class CameraState {Align, MoveCloser, Hold, Steady, Capturing}
+    enum class CameraState {Align, MoveCloser, Hold, Steady, Capturing, MrzNone, MrzAlign, MrzMoveCloser, MrzReposition, MrzTrying, MrzCapturing}
 
-    //Configurable variables
+    private var captureImageReader: ImageReader? = null
+    protected var isProcessing = false
+    private var image: Image? = null
+    internal var options: AcuantCameraOptions? = null
+    internal var isAutoCapture = true
+    internal var isBorderEnabled = true
+    protected var capturingTextDrawable: Drawable? = null
+    protected var defaultTextDrawable: Drawable? = null
+    protected lateinit var rectangleView: BaseRectangleView
+    protected lateinit var textView: TextView
+    protected lateinit var imageView: ImageView
+    protected lateinit var detectors: List<IAcuantDetector>
+    private lateinit var orientationListener: AcuantOrientationListener
+    protected var oldPoints : Array<Point>? = null
+    private lateinit var displaySize: Point
+    internal var targetSmallDocDpi: Int = 0
+    internal var targetLargeDocDpi: Int = 0
+    internal var barCodeString: String? = null
+    internal var isCapturing = false
+    /**
+     * This is the output file for our picture.
+     */
+    internal lateinit var file: File
+    /**
+     * The current state of camera state for taking pictures.
+     *
+     * @see .captureCallback
+     */
+    private var state = STATE_PREVIEW
+
     /**
      * Approximate time that the camera should spend at each digit.
      *
      * Must be at least 0. If it is set to less than 200 digits might be skipped on slow phones.
      */
-    private var timeInMsPerDigit: Int = 800
+    internal var timeInMsPerDigit: Int = 800
     /**
      * The number of digits for the countdown to show until it starts a capture.
      *
      * Must be at least 0. If it is set to less than 2 accidental captures might occur.
      */
-    private var digitsToShow: Int = 2
-
-    private var capturingTextDrawable: Drawable? = null
-    private var defaultTextDrawable: Drawable? = null
-    private var holdTextDrawable: Drawable? = null
-
-    //private variables
-    private var currentDigit: Int = digitsToShow
-    private var lastTime: Long = System.currentTimeMillis()
-    private var options : AcuantCameraOptions? = null
-    private var oldPoints : Array<Point>? = null
-    /**
-     * ID of the current [CameraDevice].
-     */
-    private lateinit var cameraId: String
-    /**
-     * An [AutoFitTextureView] for camera preview.
-     */
-    private lateinit var textureView: AutoFitTextureView
-    private lateinit var textView:TextView
-    /**
-     * A [CameraCaptureSession] for camera preview.
-     */
-    private var captureSession: CameraCaptureSession? = null
-    /**
-     * A reference to the opened [CameraDevice].
-     */
-    private var cameraDevice: CameraDevice? = null
-    /**
-     * The [android.util.Size] of camera preview.
-     */
-    private lateinit var previewSize: Size
+    internal var digitsToShow: Int = 2
     /**
      * An additional thread for running tasks that shouldn't block the UI.
      */
@@ -102,77 +95,59 @@ class AcuantCameraFragment : Fragment(),
     /**
      * A [Handler] for running tasks in the background.
      */
-    private var backgroundHandler: Handler? = null
+    internal var backgroundHandler: Handler? = null
     /**
      * An [ImageReader] that handles still image capture.
      */
     private var imageReader: ImageReader? = null
-    private var captureImageReader: ImageReader? = null
     /**
-     * This is the output file for our picture.
+     * ID of the current [CameraDevice].
      */
-    private lateinit var file: File
-    private var targetSmallDocDpi: Int = 0
-    private var targetLargeDocDpi: Int = 0
-    private lateinit var rectangleView: RectangleView
+    private lateinit var cameraId: String
+    /**
+     * An [AutoFitTextureView] for camera preview.
+     */
+    protected lateinit var textureView: AutoFitTextureView
+    /**
+     * A [CameraCaptureSession] for camera preview.
+     */
+    internal var captureSession: CameraCaptureSession? = null
+    /**
+     * A reference to the opened [CameraDevice].
+     */
+    internal var cameraDevice: CameraDevice? = null
+    /**
+     * The [android.util.Size] of camera preview.
+     */
+    protected lateinit var previewSize: Size
     /**
      * [CaptureRequest.Builder] for the camera preview
      */
-    private lateinit var previewRequestBuilder: CaptureRequest.Builder
+    internal lateinit var previewRequestBuilder: CaptureRequest.Builder
     /**
      * [CaptureRequest] generated by [.previewRequestBuilder]
      */
-    private lateinit var previewRequest: CaptureRequest
-    /**
-     * The current state of camera state for taking pictures.
-     *
-     * @see .captureCallback
-     */
-    private var state = STATE_PREVIEW
+    internal lateinit var previewRequest: CaptureRequest
     /**
      * A [Semaphore] to prevent the app from exiting before closing the camera.
      */
-    private val cameraOpenCloseLock = Semaphore(1)
+    internal val cameraOpenCloseLock = Semaphore(1)
     /**
      * Whether the current camera device supports Flash or not.
      */
     private var flashSupported = false
-
-    private lateinit var displaySize:Point
     /**
      * Orientation of the camera sensor
      */
     private var sensorOrientation = 0
-    private lateinit var detectors : List<IAcuantDetector>
-    private lateinit var orientationListener :AcuantOrientationListener
-    private var barCodeString: String? = null
-    private var isCapturing = false
-    private var isProcessing = false
-    private var isAutoCapture = true
-    private var isBorderEnabled = true
-    private var redTransparent: Int = 0
-    private var grayTransparent: Int = 0
-    private var greenTransparent: Int = 0
+
+    protected abstract fun setTextFromState(state: CameraState)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         isAutoCapture = arguments?.getBoolean(ACUANT_EXTRA_IS_AUTO_CAPTURE) ?: true
         isBorderEnabled = arguments?.getBoolean(ACUANT_EXTRA_BORDER_ENABLED) ?: true
-        options = arguments?.getSerializable(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions? ?: AcuantCameraOptions(autoCapture = isAutoCapture, allowBox = isBorderEnabled)
-        if(options != null) {
-            isAutoCapture = options!!.autoCapture
-            isBorderEnabled = options!!.allowBox
-        }
-
-        detectors = if (options?.useGMS == false) {
-            listOf(AcuantDocumentDetector(this))
-        } else {
-            listOf(AcuantDocumentDetector(this), AcuantBarcodeDetector(this.activity!!.applicationContext, this))
-        }
-
-        capturingTextDrawable = activity!!.getDrawable(R.drawable.camera_text_config_capturing)
-        defaultTextDrawable = activity!!.getDrawable(R.drawable.camera_text_config_default)
-        holdTextDrawable = activity!!.getDrawable(R.drawable.camera_text_config_hold)
     }
 
     private fun setOptions(options : AcuantCameraOptions?) {
@@ -180,11 +155,118 @@ class AcuantCameraFragment : Fragment(),
             this.timeInMsPerDigit = options.timeInMsPerDigit
             this.digitsToShow = options.digitsToShow
             isAutoCapture = options.autoCapture
-            rectangleView.setFromOptions(options)
+            rectangleView.allowBox = options.allowBox
+            rectangleView.bracketLengthInHorizontal = options.bracketLengthInHorizontal
+            rectangleView.bracketLengthInVertical = options.bracketLengthInVertical
+            rectangleView.defaultBracketMarginHeight = options.defaultBracketMarginHeight
+            rectangleView.defaultBracketMarginWidth = options.defaultBracketMarginWidth
+            rectangleView.paintColorCapturing = options.colorCapturing
+            rectangleView.paintColorHold = options.colorHold
+            rectangleView.paintColorBracketAlign = options.colorBracketAlign
+            rectangleView.paintColorBracketCapturing = options.colorBracketCapturing
+            rectangleView.paintColorBracketCloser = options.colorBracketCloser
+            rectangleView.paintColorBracketHold = options.colorBracketHold
+            rectangleView.cardRatio = options.cardRatio
         } else {
             rectangleView.allowBox = isBorderEnabled
         }
     }
+
+    internal fun isDocumentInFrame(points: Array<Point>?) : Boolean{
+        if(points != null){
+            val startY = 0 //textureView.width.toFloat() / 2 - previewSize.height.toFloat() / 2
+            val startX = 0 //textureView.height.toFloat() / 2 - previewSize.width.toFloat() / 2
+            val endY = startY + displaySize.x //textureView.width
+            val endX = startX + displaySize.y //textureView.height
+
+            for (point in points) {
+                if( point.x < startX ||
+                        point.x > endX ||
+                        (textureView.width - point.y) < startY ||
+                        (textureView.width - point.y) > endY) {
+                    return false
+                }
+            }
+        }
+
+        return true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        detectors.forEach{
+            it.clean()
+        }
+        image?.close()
+    }
+
+    override fun onCreateView(inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+    ): View? = inflater.inflate(R.layout.fragment_camera2_basic, container, false)
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        textView = view.findViewById(R.id.acu_display_text)
+        imageView = view.findViewById(R.id.acu_help_image)
+        orientationListener = AcuantOrientationListener(activity!!.applicationContext, WeakReference(textView), WeakReference(imageView))
+
+        setOptions(options)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        file = File(activity!!.getExternalFilesDir(null),  "${UUID.randomUUID()}.jpg")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startBackgroundThread()
+
+        activity?.window?.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        orientationListener.enable()
+
+        // When the screen is turned off and turned back on, the SurfaceTexture is already
+        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
+        // a camera and start preview from here (otherwise, we wait until the surface is ready in
+        // the SurfaceTextureListener).
+        if (textureView.isAvailable) {
+            openCamera(textureView.width, textureView.height)
+        } else {
+            textureView.surfaceTextureListener = surfaceTextureListener
+        }
+    }
+
+    override fun onPause() {
+        rectangleView.end()
+        closeCamera()
+        stopBackgroundThread()
+        orientationListener.disable()
+        super.onPause()
+    }
+
+    private fun requestCameraPermission() {
+        if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            ConfirmationDialog().show(childFragmentManager, FRAGMENT_DIALOG)
+        } else {
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int,
+            permissions: Array<String>,
+            grantResults: IntArray) {
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.size != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                ErrorDialog.newInstance(getString(R.string.request_permission))
+                        .show(fragmentManager!!, FRAGMENT_DIALOG)
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
+    }
+
+    abstract fun setTapToCapture()
 
     /**
      * [TextureView.SurfaceTextureListener] handles several lifecycle events on a
@@ -212,217 +294,20 @@ class AcuantCameraFragment : Fragment(),
 
         override fun onOpened(cameraDevice: CameraDevice) {
             cameraOpenCloseLock.release()
-            this@AcuantCameraFragment.cameraDevice = cameraDevice
+            this@AcuantBaseCameraFragment.cameraDevice = cameraDevice
             createCameraPreviewSession()
         }
 
         override fun onDisconnected(cameraDevice: CameraDevice) {
             cameraOpenCloseLock.release()
             cameraDevice.close()
-            this@AcuantCameraFragment.cameraDevice = null
+            this@AcuantBaseCameraFragment.cameraDevice = null
         }
 
         override fun onError(cameraDevice: CameraDevice, error: Int) {
             onDisconnected(cameraDevice)
-            this@AcuantCameraFragment.activity?.finish()
+            this@AcuantBaseCameraFragment.activity?.finish()
         }
-    }
-
-    private fun getTargetDpi(isPassport : Boolean): Int{
-        return if(isPassport){
-            targetLargeDocDpi
-        }
-        else{
-            targetSmallDocDpi
-        }
-    }
-
-    private fun scalePoints(points: Array<Point>) : Array<Point> {
-        val scaledPoints = points.copyOf()
-        val scaledPointY = textureView.height.toFloat() / previewSize.width.toFloat()
-        val scaledPointX = textureView.width.toFloat() / previewSize.height.toFloat()
-        rectangleView.setWidth(textureView.width.toFloat())
-
-        scaledPoints.forEach {
-            it.x = (it.x * scaledPointY).toInt()
-            it.y = (it.y * scaledPointX).toInt()
-        }
-
-        return scaledPoints
-    }
-
-    private fun isDocumentInFrame(points: Array<Point>?) : Boolean{
-        if(points != null){
-            val startY = 0 //textureView.width.toFloat() / 2 - previewSize.height.toFloat() / 2
-            val startX = 0 //textureView.height.toFloat() / 2 - previewSize.width.toFloat() / 2
-            val endY = startY + displaySize.x //textureView.width
-            val endX = startX + displaySize.y //textureView.height
-
-            for (point in points) {
-                if( point.x < startX ||
-                    point.x > endX ||
-                    (textureView.width - point.y) < startY ||
-                    (textureView.width - point.y) > endY) {
-                    return false
-                }
-            }
-        }
-
-        return true
-    }
-
-    private fun drawBorder(points: Array<Point>?){
-        if(points != null){
-            rectangleView.setAndDrawPoints(points)
-        }
-        else{
-            rectangleView.setAndDrawPoints(null)
-        }
-    }
-
-    private fun fixPoints(points: Array<Point>) : Array<Point> {
-        val fixedPoints = points.copyOf()
-        if(fixedPoints.size == 4) {
-            if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
-                //rotate 2
-                var tmp = fixedPoints[0]
-                fixedPoints[0] = fixedPoints[2]
-                fixedPoints[2] = tmp
-
-                tmp = fixedPoints[1]
-                fixedPoints[1] = fixedPoints[3]
-                fixedPoints[3] = tmp
-
-            } else if(fixedPoints[0].y > fixedPoints[2].y && fixedPoints[0].x > fixedPoints[2].x) {
-                //rotate 3
-                val tmp = fixedPoints[0]
-                fixedPoints[0] = fixedPoints[1]
-                fixedPoints[1] = fixedPoints[2]
-                fixedPoints[2] = fixedPoints[3]
-                fixedPoints[3] = tmp
-
-            } else if(fixedPoints[0].y < fixedPoints[2].y && fixedPoints[0].x < fixedPoints[2].x) {
-                //rotate 1
-                val tmp = fixedPoints[0]
-                fixedPoints[0] = fixedPoints[3]
-                fixedPoints[3] = fixedPoints[2]
-                fixedPoints[2] = fixedPoints[1]
-                fixedPoints[1] = tmp
-
-            }
-        }
-        return fixedPoints
-    }
-
-    /**
-     * Callback from AcuantDocumentDetector's Detect()
-     */
-    override fun onDetected(croppedImage: com.acuant.acuantcommon.model.Image?, cropDuration: Long) {
-        activity?.runOnUiThread {
-            var detectedPoints = croppedImage?.points
-
-            if(detectedPoints != null){
-                detectedPoints = fixPoints(scalePoints(croppedImage!!.points))
-            }
-
-            when {
-                !isDocumentInFrame(detectedPoints) || croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
-                    unlockFocus()
-                    rectangleView.setColorByState(CameraState.Align)
-                    setTextFromState(CameraState.Align)
-                    resetTimer()
-                }
-                croppedImage.dpi < getTargetDpi(croppedImage.isPassport) -> {
-                    unlockFocus()
-                    rectangleView.setColorByState(CameraState.MoveCloser)
-                    setTextFromState(CameraState.MoveCloser)
-                    resetTimer()
-                }
-                !croppedImage.isCorrectAspectRatio -> {
-                    unlockFocus()
-                    rectangleView.setColorByState(CameraState.Align)
-                    setTextFromState(CameraState.Align)
-                    resetTimer()
-                }
-                else -> {
-                    if(System.currentTimeMillis() - lastTime > (digitsToShow - currentDigit + 2) * timeInMsPerDigit)
-                        --currentDigit
-
-                    var dist = 0
-                    if(oldPoints != null && oldPoints!!.size == 4 && detectedPoints != null && detectedPoints.size == 4) {
-                        for (i in 0..3) {
-                            dist += sqrt( ((oldPoints!![i].x-detectedPoints[i].x).toDouble().pow(2) + (oldPoints!![i].y - detectedPoints[i].y).toDouble().pow(2) )).toInt()
-                        }
-                    }
-
-                    when {
-                        dist > TOO_MUCH_MOVEMENT -> {
-                            rectangleView.setColorByState(CameraState.Steady)
-                            setTextFromState(CameraState.Steady)
-                            resetTimer()
-                        }
-                        System.currentTimeMillis() - lastTime < digitsToShow * timeInMsPerDigit -> {
-                            rectangleView.setColorByState(CameraState.Hold)
-                            setTextFromState(CameraState.Hold)
-                        }
-                        else -> {
-                            this.isCapturing = true
-                            rectangleView.setColorByState(CameraState.Capturing)
-                            setTextFromState(CameraState.Capturing)
-                            lockFocus()
-                        }
-                    }
-                }
-            }
-            oldPoints = detectedPoints
-            drawBorder(detectedPoints)
-
-            this.isProcessing = false
-        }
-    }
-
-    private fun setTextFromState(state: CameraState) {
-        when(state) {
-            CameraState.MoveCloser -> {
-                textView.background = defaultTextDrawable
-                textView.text = getString(R.string.acuant_camera_move_closer)
-                textView.setTextColor(Color.WHITE)
-                textView.textSize = 24f
-            }
-            CameraState.Hold -> {
-                textView.background = holdTextDrawable
-                textView.text = resources.getQuantityString(R.plurals.acuant_camera_timer, currentDigit, currentDigit)
-                textView.setTextColor(Color.RED)
-                textView.textSize = 48f
-            }
-            CameraState.Steady -> {
-                textView.background = defaultTextDrawable
-                textView.text = getString(R.string.acuant_camera_hold_steady)
-                textView.setTextColor(Color.WHITE)
-                textView.textSize = 24f
-            }
-            CameraState.Capturing -> {
-                textView.background = capturingTextDrawable
-                textView.text = resources.getQuantityString(R.plurals.acuant_camera_timer, currentDigit, currentDigit)
-                textView.setTextColor(Color.RED)
-                textView.textSize = 48f
-            }
-            else -> {//align
-                textView.background = defaultTextDrawable
-                textView.text = getString(R.string.acuant_camera_align)
-                textView.setTextColor(Color.WHITE)
-                textView.textSize = 24f
-            }
-        }
-    }
-
-    private fun resetTimer() {
-        lastTime = System.currentTimeMillis()
-        currentDigit = digitsToShow
-    }
-
-    override fun onBarcodeDetected(barcode: String){
-        this.barCodeString = barcode
     }
 
     /**
@@ -463,9 +348,11 @@ class AcuantCameraFragment : Fragment(),
                     this.isProcessing = true
                     this.isCapturing = false
 
-                    backgroundHandler?.post(ImageSaver(orientationListener.previousAngle, image, file, object: ImageSaveHandler {
+                    backgroundHandler?.post(ImageSaver(orientationListener.previousAngle, image, file, object : ImageSaveHandler {
                         override fun onSave() {
-                            (activity as ICameraActivityFinish).onActivityFinish(file.absolutePath, barCodeString)
+                            if (activity is ICameraActivityFinish) {
+                                (activity as ICameraActivityFinish).onActivityFinish(file.absolutePath, barCodeString)
+                            }
                         }
                     }))
                 }
@@ -541,99 +428,6 @@ class AcuantCameraFragment : Fragment(),
         }
     }
 
-    override fun onDestroy() {
-        detectors.forEach{
-            it.clean()
-        }
-        super.onDestroy()
-    }
-
-    override fun onCreateView(inflater: LayoutInflater,
-                              container: ViewGroup?,
-                              savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_camera2_basic, container, false)
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        textureView = view.findViewById(R.id.texture)
-        textView = view.findViewById(R.id.acu_display_text)
-        rectangleView = view.findViewById(R.id.acu_rectangle)
-        orientationListener = AcuantOrientationListener(activity!!.applicationContext, WeakReference(textView))
-
-        redTransparent = getColorWithAlpha(Color.RED, .50f)
-        grayTransparent = getColorWithAlpha(Color.BLACK, .50f)
-        greenTransparent = getColorWithAlpha(Color.GREEN, .50f)
-
-        setOptions(options)
-
-    }
-
-    @Suppress("SameParameterValue")
-    private fun getColorWithAlpha(color: Int, ratio: Float): Int {
-        return Color.argb((Color.alpha(color) * ratio).roundToInt(), Color.red(color), Color.green(color), Color.blue(color))
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        file = File(activity!!.cacheDir,  "${UUID.randomUUID()}.jpg")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        startBackgroundThread()
-        orientationListener.enable()
-        // When the screen is turned off and turned back on, the SurfaceTexture is already
-        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surface is ready in
-        // the SurfaceTextureListener).
-        if (textureView.isAvailable) {
-            openCamera(textureView.width, textureView.height)
-        } else {
-            textureView.surfaceTextureListener = surfaceTextureListener
-        }
-    }
-
-    override fun onPause() {
-        closeCamera()
-        stopBackgroundThread()
-        orientationListener.disable()
-        super.onPause()
-    }
-
-    private fun requestCameraPermission() {
-        if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-            ConfirmationDialog().show(childFragmentManager, FRAGMENT_DIALOG)
-        } else {
-            requestPermissions(arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int,
-                                            permissions: Array<String>,
-                                            grantResults: IntArray) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.size != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                ErrorDialog.newInstance(getString(R.string.request_permission))
-                        .show(childFragmentManager, FRAGMENT_DIALOG)
-            }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        }
-    }
-
-    private fun setAutoCapture(){
-        if(!isAutoCapture){
-            textView.text = getString(R.string.acuant_camera_align_and_tap)
-            textureView.setOnClickListener{
-                activity?.runOnUiThread{
-                    this.isCapturing = true
-                    textView.setBackgroundColor(greenTransparent)
-                    textView.text = getString(R.string.acuant_camera_capturing)
-                    lockFocus()
-                }
-            }
-        }
-    }
-
     /**
      * Sets up member variables related to camera.
      *
@@ -643,7 +437,7 @@ class AcuantCameraFragment : Fragment(),
     private fun setUpCameraOutputs(width: Int, height: Int) {
         val manager = activity!!.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
-            setAutoCapture()
+            setTapToCapture()
             for (cameraId in manager.cameraIdList) {
                 val characteristics = manager.getCameraCharacteristics(cameraId)
 
@@ -758,7 +552,7 @@ class AcuantCameraFragment : Fragment(),
     }
 
     /**
-     * Opens the camera specified by [AcuantCameraFragment.cameraId].
+     * Opens the camera.
      */
     private fun openCamera(width: Int, height: Int) {
         val permission = activity?.let { ContextCompat.checkSelfPermission(it, Manifest.permission.CAMERA) }
@@ -929,7 +723,7 @@ class AcuantCameraFragment : Fragment(),
     /**
      * Lock the focus as the first step for a still image capture.
      */
-    private fun lockFocus() {
+    internal fun lockFocus() {
         try {
             // This is how to tell the camera to lock focus.
             previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
@@ -1027,7 +821,7 @@ class AcuantCameraFragment : Fragment(),
      * Unlock the focus. This method should be called when still image capture sequence is
      * finished.
      */
-    private fun unlockFocus() {
+    internal fun unlockFocus() {
         try {
             // Reset the auto-focus trigger
             previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
@@ -1063,12 +857,7 @@ class AcuantCameraFragment : Fragment(),
         /**
          * Tag for the [Log].
          */
-        private const val TAG = "AcuantCameraFragment"
-
-        /**
-         * How much total x/y movement between frames is too much
-         */
-        private const val TOO_MUCH_MOVEMENT = 350
+        private const val TAG = "AcuantBaseCameraFrag"
 
         /**
          * Camera state: Showing camera preview.
@@ -1155,7 +944,7 @@ class AcuantCameraFragment : Fragment(),
                 }
             }
         }
-
-        @JvmStatic fun newInstance(): AcuantCameraFragment = AcuantCameraFragment()
     }
 }
+
+

@@ -1,16 +1,14 @@
 package com.acuant.sampleapp
 
 import android.app.Application
-import com.acuant.acuantcommon.initializer.AcuantInitializer
-import com.acuant.acuantimagepreparation.initializer.ImageProcessorInitializer
 import com.squareup.leakcanary.LeakCanary
-import com.squareup.leakcanary.LeakCanary.refWatcher
 import com.squareup.leakcanary.RefWatcher
 
 
 /**
  * Created by tapasbehera on 4/18/18.
  */
+@Suppress("unused")
 class AppInstance : Application() {
     private var mDefaultUncaughtExceptionHandler: Thread.UncaughtExceptionHandler? = null
     private var refWatcher:RefWatcher? = null
@@ -33,18 +31,8 @@ class AppInstance : Application() {
         refWatcher = LeakCanary.install(this)
 
         instance = this
-        mDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-        Thread.setDefaultUncaughtExceptionHandler(mCaughtExceptionHandler);
+        mDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler(mCaughtExceptionHandler)
 
-    }
-
-    fun mustDie(obj: Any) {
-        if (refWatcher != null) {
-            refWatcher!!.watch(obj)
-        }
-    }
-
-    override fun onTerminate() {
-        super.onTerminate()
     }
 }

@@ -2,22 +2,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.acuant.acuantcamera">
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+
     <application>
-        <activity
-            android:name=".camera.AcuantCameraActivity"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".camera.cameraone.DocumentCaptureActivity"
-            android:screenOrientation="portrait" />
 
         <meta-data
             android:name="com.google.android.gms.vision.DEPENDENCIES"
             android:value="barcode" />
+
+        <activity
+            android:name=".camera.AcuantCameraActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.acuant.acuantcamera.camera.document.cameraone.DocumentCaptureActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.acuant.acuantcamera.camera.mrz.cameraone.DocumentCaptureActivity"
+            android:screenOrientation="portrait" />
     </application>
-
-    <uses-feature android:name="android.hardware.camera.autofocus" />
-    <uses-feature android:name="android.hardware.camera" />
-
-    <uses-permission android:name="android.permission.CAMERA" />
 
 </manifest>

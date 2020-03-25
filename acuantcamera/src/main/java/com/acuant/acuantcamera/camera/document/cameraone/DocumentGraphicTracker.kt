@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.acuant.acuantcamera.camera.cameraone
+package com.acuant.acuantcamera.camera.document.cameraone
 
 import android.support.annotation.UiThread
-
 import com.google.android.gms.vision.Detector
 import com.google.android.gms.vision.Tracker
 import com.google.android.gms.vision.barcode.Barcode

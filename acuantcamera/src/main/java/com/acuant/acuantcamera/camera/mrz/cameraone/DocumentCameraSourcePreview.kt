@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.acuant.acuantcamera.camera.cameraone
+package com.acuant.acuantcamera.camera.mrz.cameraone
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import android.support.annotation.RequiresPermission
@@ -151,13 +150,13 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
         }
         try {
             startIfReady()
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
 
     }
 
     companion object {
-        private val TAG = "CameraSourcePreview"
+        private const val TAG = "CameraSourcePreview"
     }
 }

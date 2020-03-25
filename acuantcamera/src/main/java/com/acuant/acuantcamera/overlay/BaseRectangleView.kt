@@ -8,21 +8,19 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
 import android.view.animation.LinearInterpolator
-import com.acuant.acuantcamera.camera.AcuantCameraFragment
-import com.acuant.acuantcamera.camera.AcuantCameraOptions
 
-class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr) {
+abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(context, attr), ISetFromState {
 
-    private val paint: Paint = Paint()
-    private val paintBracket: Paint = Paint()
+    internal val paint: Paint = Paint()
+    internal val paintBracket: Paint = Paint()
+    internal var animateTarget: Boolean = false
     private var points: Array<Point>? = null
     private var oldPoints: Array<Point>? = null
     private var path: Path = Path()
     private var textureViewWidth: Float = 0.0f
     private var frame: Rect? = null
-    private var cardRatio = 0.65f
+    internal var cardRatio = 0.15f
     private var drawBox: Boolean = false
-    private var animateTarget: Boolean = false
     private var bracketAnimator : ValueAnimator? = null
     private var distanceMoved : Float = 0f
     /**
@@ -44,11 +42,11 @@ class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr)
     /**
      * Color that the paint is set to when the card is not aligned
      */
-    private var paintColorAlign = Color.BLACK
+    internal var paintColorAlign = Color.BLACK
     /**
      * Color that the paint is set to when the card is aligned but too far
      */
-    private var paintColorCloser = Color.RED
+    internal var paintColorCloser = Color.RED
 
     //Configurable Options
     /**
@@ -107,16 +105,10 @@ class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr)
         textureViewWidth = width
     }
 
-    fun setAndDrawPoints(points:Array<Point>?){
+    override fun setAndDrawPoints(points:Array<Point>?){
         if(this.points != null) {
             oldPoints = this.points
         }
-//        else {
-//            if (frame == null) {
-//                frame = calculatePreviewFrame(width, height)
-//            }
-//            oldPoints = arrayOf(Point(frame!!.bottom, frame!!.left), Point(frame!!.bottom, frame!!.right), Point(frame!!.top, frame!!.right), Point(frame!!.top, frame!!.left))
-//        }
         this.points = points
 
         bracketAnimator?.cancel()
@@ -147,56 +139,7 @@ class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr)
         }
     }
 
-    fun setFromOptions(options: AcuantCameraOptions){
-        allowBox = options.allowBox
-        bracketLengthInHorizontal = options.bracketLengthInHorizontal
-        bracketLengthInVertical = options.bracketLengthInVertical
-        defaultBracketMarginHeight = options.defaultBracketMarginHeight
-        defaultBracketMarginWidth = options.defaultBracketMarginWidth
-        paintColorCapturing = options.colorCapturing
-        paintColorHold = options.colorHold
-        paintColorBracketAlign = options.colorBracketAlign
-        paintColorBracketCapturing = options.colorBracketCapturing
-        paintColorBracketCloser = options.colorBracketCloser
-        paintColorBracketHold = options.colorBracketHold
-    }
-
-    fun setColorByState(state: AcuantCameraFragment.CameraState){
-        when(state) {
-            AcuantCameraFragment.CameraState.MoveCloser -> {
-                setDrawBox(false)
-                paint.color = paintColorCloser
-                paintBracket.color = paintColorBracketCloser
-                animateTarget = false
-            }
-            AcuantCameraFragment.CameraState.Hold -> {
-                setDrawBox(true)
-                paint.color = paintColorHold
-                paintBracket.color = paintColorBracketHold
-                animateTarget = true
-            }
-            AcuantCameraFragment.CameraState.Steady -> {
-                setDrawBox(true)
-                paint.color = paintColorHold
-                paintBracket.color = paintColorBracketHold
-                animateTarget = true
-            }
-            AcuantCameraFragment.CameraState.Capturing -> {
-                setDrawBox(true)
-                paint.color = paintColorCapturing
-                paintBracket.color = paintColorBracketCapturing
-                animateTarget = true
-            }
-            else -> {//align
-                setDrawBox(false)
-                paint.color = paintColorAlign
-                paintBracket.color = paintColorBracketAlign
-                animateTarget = false
-            }
-        }
-    }
-
-    private fun setDrawBox(drawBox : Boolean) {
+    internal fun setDrawBox(drawBox : Boolean) {
         if(allowBox)
             this.drawBox = drawBox
         else
@@ -277,6 +220,10 @@ class RectangleView(context: Context, attr: AttributeSet?) : View(context, attr)
         canvas.drawLine((y0 - bracketWidth / bracketWidthDivider), x0, (y0 + bracketLengthInHorizontal), x0, paintBracket)
         canvas.drawLine(y0, (x0 - bracketWidth / bracketWidthDivider), y0, (x0 - bracketLengthInVertical), paintBracket)
 
+    }
+
+    open fun end() {
+        bracketAnimator?.cancel()
     }
 
 

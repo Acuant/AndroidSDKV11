@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.acuant.acuantcamera.detector.IAcuantDetector
 import com.google.android.gms.vision.barcode.BarcodeDetector
-import java.lang.Exception
 import com.acuant.acuantcamera.detector.barcode.tracker.BarcodeTrackerFactory
 import com.google.android.gms.vision.MultiProcessor
 import com.google.android.gms.vision.Frame
@@ -21,7 +20,7 @@ class AcuantBarcodeDetector(context: Context, callback: AcuantBarcodeDetectorHan
             barcodeDetector.setProcessor(MultiProcessor.Builder(BarcodeTrackerFactory(callback)).build())
             isInitialized = true
         }
-        catch (e:Exception){
+        catch (e: Exception){
             e.printStackTrace()
             Log.e("barcode", "Error initializing barcode")
         }

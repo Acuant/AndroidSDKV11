@@ -7,31 +7,25 @@
     tools:context="com.acuant.sampleapp.MainActivity"
     android:id="@+id/main_layout">
 
-<!--    <Button-->
-<!--        android:id="@+id/main_face_capture"-->
-<!--        android:gravity="center"-->
-<!--        app:layout_constraintTop_toTopOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        android:layout_margin="30dp"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:onClick="faceCaptureClicked"-->
-<!--        android:text="@string/face_capture_button_text"/>-->
-
     <Button
         android:id="@+id/main_id_passport"
         android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
         android:layout_margin="30dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="idPassPortClicked"
-        android:text="@string/id_passport_button_text"/>
+        android:text="@string/id_passport_button_text"
+        app:layout_constraintBottom_toTopOf="@+id/main_mrz_camera"/>
+
+    <Button
+        android:id="@+id/main_mrz_camera"
+        android:layout_margin="30dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mrz_camera"
+        android:onClick="readMrzClicked"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/main_health_card"/>
 
     <Button
         android:id="@+id/main_health_card"
@@ -40,8 +34,7 @@
         android:layout_height="wrap_content"
         android:text="@string/health_insurance_button_text"
         android:onClick="healthInsuranceClicked"
-        app:layout_constraintTop_toBottomOf="@id/main_id_passport">
-    </Button>
+        app:layout_constraintBottom_toTopOf="@+id/autoCaptureSwitch"/>
 
     <Switch
         android:layout_margin="30dp"
@@ -50,16 +43,15 @@
         android:layout_height="wrap_content"
         android:text="@string/auto_capture"
         android:checked="true"
-        app:layout_constraintTop_toBottomOf="@id/main_health_card"
-        />
+        app:layout_constraintBottom_toTopOf="@+id/livenessSpinner"/>
 
     <Spinner
         android:layout_margin="30dp"
         android:id="@+id/livenessSpinner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/autoCaptureSwitch"
-        />
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
     <LinearLayout
         android:id="@+id/main_progress_layout"
@@ -74,7 +66,7 @@
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content" />
 
         <TextView
             android:id="@+id/pbText"
@@ -82,7 +74,7 @@
             android:layout_height="wrap_content"
             android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 

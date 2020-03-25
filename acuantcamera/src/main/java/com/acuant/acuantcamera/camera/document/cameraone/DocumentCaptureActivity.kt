@@ -1,28 +1,19 @@
-package com.acuant.acuantcamera.camera.cameraone
+package com.acuant.acuantcamera.camera.document.cameraone
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.app.Dialog
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Point
 import android.hardware.Camera
-import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
-import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.util.Size
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.OrientationEventListener
 import android.view.View
 import android.view.Window
@@ -31,8 +22,6 @@ import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 
-import com.acuant.acuantcamera.camera.AcuantCameraFragment
-import com.acuant.acuantcamera.overlay.RectangleView
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 
@@ -40,13 +29,19 @@ import java.io.IOException
 
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
+import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AppCompatActivity
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
 import com.acuant.acuantcamera.constant.*
-import com.acuant.acuantcamera.helper.ImageSaver
 import java.io.ByteArrayOutputStream
+import com.acuant.acuantcamera.overlay.DocRectangleView
+import com.acuant.acuantcamera.camera.AcuantBaseCameraFragment.CameraState
+import com.acuant.acuantcamera.detector.ImageSaver
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -66,7 +61,6 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     private var mPreview: DocumentCameraSourcePreview? = null
     private var capturing = false
     private var autoCapture = false
-    private var isBorderEnabled = false
     private lateinit var documentProcessor: LiveDocumentProcessor
     private var documentDetector: DocumentDetector? = null
 
@@ -74,7 +68,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
     private var capturedbarcodeString: String? = null
 
-    private lateinit var rectangleView: RectangleView
+    private lateinit var rectangleView: DocRectangleView
 
     private var capturingTextDrawable: Drawable? = null
     private var defaultTextDrawable: Drawable? = null
@@ -96,8 +90,8 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        supportActionBar!!.title = ""
-        supportActionBar!!.hide()
+        supportActionBar?.title = ""
+        supportActionBar?.hide()
         val parent = RelativeLayout(this)
         parent.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
         parent.keepScreenOn = true
@@ -112,7 +106,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         val vfvp = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
                 RelativeLayout.LayoutParams.WRAP_CONTENT)
-        rectangleView = RectangleView(this, null)
+        rectangleView = DocRectangleView(this, null)
         rectangleView.layoutParams = vfvp
         parent.addView(rectangleView)
 
@@ -125,14 +119,14 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         instructionView.gravity = Gravity.CENTER
         instructionView.rotation = 90.0f
         instructionView.layoutParams = tvlp
-        setTextFromState(AcuantCameraFragment.CameraState.Align)
+        setTextFromState(CameraState.Align)
         parent.addView(instructionView, tvlp)
 
         // Check for the camera permission before accessing the camera.  If the
         // permission is not granted yet, request permission.
         val rc = ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
         if (rc == PackageManager.PERMISSION_GRANTED) {
-            createCameraSource(true, false)
+            createCameraSource(autoFocus = true, useFlash = false)
         } else {
             requestCameraPermission()
         }
@@ -157,17 +151,22 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 if (orientation < 0) {
                     return  // Flip screen, Not take account
                 }
-                val curOrientation: Int
-                if (orientation <= 45) {
-                    curOrientation = ORIENTATION_PORTRAIT
-                } else if (orientation <= 135) {
-                    curOrientation = ORIENTATION_LANDSCAPE_REVERSE
-                } else if (orientation <= 225) {
-                    curOrientation = ORIENTATION_PORTRAIT_REVERSE
-                } else if (orientation <= 315) {
-                    curOrientation = ORIENTATION_LANDSCAPE
-                } else {
-                    curOrientation = ORIENTATION_PORTRAIT
+                val curOrientation: Int = when {
+                    orientation <= 45 -> {
+                        ORIENTATION_PORTRAIT
+                    }
+                    orientation <= 135 -> {
+                        ORIENTATION_LANDSCAPE_REVERSE
+                    }
+                    orientation <= 225 -> {
+                        ORIENTATION_PORTRAIT_REVERSE
+                    }
+                    orientation <= 315 -> {
+                        ORIENTATION_LANDSCAPE
+                    }
+                    else -> {
+                        ORIENTATION_PORTRAIT
+                    }
                 }
                 if (curOrientation != lastOrientation) {
                     onChanged(lastOrientation, curOrientation)
@@ -301,18 +300,18 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                     if (!capturing && autoCapture) {
                         when (feedback) {
                             DocumentFeedback.NoDocument -> {
-                                rectangleView.setColorByState(AcuantCameraFragment.CameraState.Align)
-                                setTextFromState(AcuantCameraFragment.CameraState.Align)
+                                rectangleView.setViewFromState(CameraState.Align)
+                                setTextFromState(CameraState.Align)
                                 resetTimer()
                             }
                             DocumentFeedback.SmallDocument -> {
-                                rectangleView.setColorByState(AcuantCameraFragment.CameraState.MoveCloser)
-                                setTextFromState(AcuantCameraFragment.CameraState.MoveCloser)
+                                rectangleView.setViewFromState(CameraState.MoveCloser)
+                                setTextFromState(CameraState.MoveCloser)
                                 resetTimer()
                             }
                             DocumentFeedback.BadDocument -> {
-                                rectangleView.setColorByState(AcuantCameraFragment.CameraState.Align)
-                                setTextFromState(AcuantCameraFragment.CameraState.MoveCloser)
+                                rectangleView.setViewFromState(CameraState.Align)
+                                setTextFromState(CameraState.MoveCloser)
                                 resetTimer()
                             }
                             else -> {
@@ -329,18 +328,18 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
                                 when {
                                     dist > 350 -> {
-                                        rectangleView.setColorByState(AcuantCameraFragment.CameraState.Steady)
-                                        setTextFromState(AcuantCameraFragment.CameraState.Steady)
+                                        rectangleView.setViewFromState(CameraState.Steady)
+                                        setTextFromState(CameraState.Steady)
                                         resetTimer()
 
                                     }
                                     System.currentTimeMillis() - lastTime < digitsToShow * timeInMsPerDigit -> {
-                                        rectangleView.setColorByState(AcuantCameraFragment.CameraState.Hold)
-                                        setTextFromState(AcuantCameraFragment.CameraState.Hold)
+                                        rectangleView.setViewFromState(CameraState.Hold)
+                                        setTextFromState(CameraState.Hold)
                                     }
                                     else -> {
-                                        rectangleView.setColorByState(AcuantCameraFragment.CameraState.Capturing)
-                                        setTextFromState(AcuantCameraFragment.CameraState.Capturing)
+                                        rectangleView.setViewFromState(CameraState.Capturing)
+                                        setTextFromState(CameraState.Capturing)
                                         capturing = true
                                         lockFocus()
                                     }
@@ -362,7 +361,18 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         this.timeInMsPerDigit = options.timeInMsPerDigit
         this.digitsToShow = options.digitsToShow
         autoCapture = options.autoCapture
-        rectangleView.setFromOptions(options)
+        rectangleView.allowBox = options.allowBox
+        rectangleView.bracketLengthInHorizontal = options.bracketLengthInHorizontal
+        rectangleView.bracketLengthInVertical = options.bracketLengthInVertical
+        rectangleView.defaultBracketMarginHeight = options.defaultBracketMarginHeight
+        rectangleView.defaultBracketMarginWidth = options.defaultBracketMarginWidth
+        rectangleView.paintColorCapturing = options.colorCapturing
+        rectangleView.paintColorHold = options.colorHold
+        rectangleView.paintColorBracketAlign = options.colorBracketAlign
+        rectangleView.paintColorBracketCapturing = options.colorBracketCapturing
+        rectangleView.paintColorBracketCloser = options.colorBracketCloser
+        rectangleView.paintColorBracketHold = options.colorBracketHold
+        rectangleView.cardRatio = options.cardRatio
     }
 
     private lateinit var mOrientationEventListener: OrientationEventListener
@@ -427,14 +437,14 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
             return
         }
 
-        if (grantResults.size != 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Camera permission granted - initialize the camera source")
-            createCameraSource(true, false)
+            createCameraSource(autoFocus = true, useFlash = false)
             return
         }
 
         Log.e(TAG, "Permission not granted: results len = " + grantResults.size +
-                " Result code = " + if (grantResults.size > 0) grantResults[0] else "(empty)")
+                " Result code = " + if (grantResults.isNotEmpty()) grantResults[0] else "(empty)")
 
         val listener = DialogInterface.OnClickListener { dialog, id -> finish() }
 
@@ -471,27 +481,27 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         this@DocumentCaptureActivity.finish()
     }
 
-    private fun setTextFromState(state: AcuantCameraFragment.CameraState) {
-        when (state) {
-            AcuantCameraFragment.CameraState.MoveCloser -> {
+    private fun setTextFromState(state: CameraState) {
+        when(state) {
+            CameraState.MoveCloser -> {
                 instructionView.background = defaultTextDrawable
                 instructionView.text = getString(R.string.acuant_camera_move_closer)
                 instructionView.setTextColor(Color.WHITE)
                 instructionView.textSize = 24f
             }
-            AcuantCameraFragment.CameraState.Hold -> {
+            CameraState.Hold -> {
                 instructionView.background = holdTextDrawable
                 instructionView.text = resources.getQuantityString(R.plurals.acuant_camera_timer, currentDigit, currentDigit)
                 instructionView.setTextColor(Color.RED)
                 instructionView.textSize = 48f
             }
-            AcuantCameraFragment.CameraState.Steady -> {
+            CameraState.Steady -> {
                 instructionView.background = defaultTextDrawable
                 instructionView.text = getString(R.string.acuant_camera_hold_steady)
                 instructionView.setTextColor(Color.WHITE)
                 instructionView.textSize = 24f
             }
-            AcuantCameraFragment.CameraState.Capturing -> {
+            CameraState.Capturing -> {
                 instructionView.background = capturingTextDrawable
                 instructionView.text = resources.getQuantityString(R.plurals.acuant_camera_timer, currentDigit, currentDigit)
                 instructionView.setTextColor(Color.RED)
@@ -619,12 +629,12 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     }
 
     companion object {
-        private val TAG = "Barcode-reader"
+        private const val TAG = "Barcode-reader"
 
         // intent request code to handle updating play services if needed.
-        private val RC_HANDLE_GMS = 9001
+        private const val RC_HANDLE_GMS = 9001
 
         // permission request codes need to be < 256
-        private val RC_HANDLE_CAMERA_PERM = 2
+        private const val RC_HANDLE_CAMERA_PERM = 2
     }
 }

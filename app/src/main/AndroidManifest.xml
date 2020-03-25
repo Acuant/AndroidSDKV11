@@ -45,10 +45,10 @@
             android:name=".ResultActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".NFCResultActivity"
+            android:name=".NfcResultActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".NFCConfirmationActivity"
+            android:name=".NfcConfirmationActivity"
             android:noHistory="true"
             android:screenOrientation="portrait" />
         <activity android:name=".ClassificationFailureActivity"

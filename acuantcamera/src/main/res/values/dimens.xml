@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="cam_info_width">300dp</dimen>
+    <dimen name="cam_error_width">450dp</dimen>
+    <dimen name="cam_mrz_width">1100dp</dimen>
+    <dimen name="cam_mrz_height">65dp</dimen>
+    <dimen name="cam_blank_width">100dp</dimen>
+    <dimen name="cam_mrz_font">6sp</dimen>
+    <dimen name="cam_doc_font">5.5sp</dimen>
+    <dimen name="cam_doc_font_big">11sp</dimen>
+</resources>

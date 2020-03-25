@@ -20,12 +20,17 @@
     <string name="picture">Picture</string>
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission.</string>
-
     <string name="acuant_camera_error">This device doesn\'t support Camera2 API.</string>
+
     <string name="acuant_camera_align">ALIGN</string>
     <string name="acuant_camera_align_and_tap">ALIGN AND TAP</string>
     <string name="acuant_camera_move_closer">MOVE CLOSER</string>
     <string name="acuant_camera_hold_steady">HOLD STEADY</string>
     <string name="acuant_camera_capturing">CAPTURING</string>
 
+    <string name="acuant_reading_mrz">Reading MRZ</string>
+    <string name="acuant_align_mrz">Align</string>
+    <string name="acuant_closer_mrz">Move Closer</string>
+    <string name="acuant_glare_mrz">Try Repositioning</string>
+    <string name="acuant_read_mrz">Read Successful</string>
 </resources>

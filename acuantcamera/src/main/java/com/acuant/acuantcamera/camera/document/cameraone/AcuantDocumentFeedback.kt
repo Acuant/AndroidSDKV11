@@ -1,4 +1,4 @@
-package com.acuant.acuantcamera.camera.cameraone
+package com.acuant.acuantcamera.camera.document.cameraone
 
 import android.graphics.Point
 import android.util.Size

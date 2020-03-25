@@ -24,10 +24,20 @@
     <string name="scan_echip">Scan eChip</string>
     <string name="front_captured_image">Front Captured Image</string>
     <string name="back_captured_image">Back Captured Image</string>
+    <string name="start_echip">Start eChip Reader</string>
+    <string name="document_number_label">Document number:</string>
+    <string name="dob_label">Date of birth (yyMMdd):</string>
+    <string name="doe_label">Expiration date (yyMMdd):</string>
+    <string name="verify_captured_data">Verify captured data and tap Start eChip Reader</string>
+    <string name="photo_of_person">Photo of the person obtained from chip</string>
+    <string name="photo_of_signature">Photo of signature obtained from passport chip</string>
+    <string name="mrz_camera">Read Passport MRZ</string>
     <string name="hg_move_in_frame">Move in frame</string>
     <string name="hg_hold_steady">Hold steady</string>
     <string name="hg_blink">Blink!</string>
     <string name="hg_too_close">Too close! Move away</string>
     <string name="hg_too_far_away">Move closer</string>
     <string name="hg_align_face_and_blink">Align face to begin</string>
+    <string name="mrz_successfully_read">MRZ Read Successfully</string>
+    <string name="the_following_fields_were_extracted">The following fields were extracted:</string>
 </resources>

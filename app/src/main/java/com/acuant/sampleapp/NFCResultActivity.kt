@@ -1,11 +1,10 @@
 package com.acuant.sampleapp
 
 import android.os.Bundle
-import android.app.Activity
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
-import android.util.Base64
+import android.support.v7.app.AppCompatActivity
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -13,14 +12,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
-import com.acuant.acuantcommon.model.Credential
-import com.acuant.acuantechipreader.AcuantEchipReader
-import com.acuant.acuantechipreader.model.NFCData
-import com.acuant.acuantechipreader.model.OzoneAuthRequest
-import com.acuant.acuantechipreader.model.OzoneAuthResult
-import com.acuant.acuantechipreader.service.OzoneAuthenticateServiceListener
+import com.acuant.acuantechipreader.model.NfcData
 
-class NFCResultActivity : Activity() {
+class NfcResultActivity : AppCompatActivity() {
 
     private var progressDialog: LinearLayout? = null
     private var progressText: TextView? = null
@@ -28,7 +22,6 @@ class NFCResultActivity : Activity() {
     private var imageView: ImageView? = null
     private var signImageView: ImageView? = null
     private var currentId: Int = 0
-    private var subscription : String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -36,8 +29,6 @@ class NFCResultActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_nfcresult)
-
-        subscription = Credential.get().ozone
 
         progressDialog = findViewById(R.id.nfc_res_progress_layout)
         progressText = findViewById(R.id.nfc_res_pbText)
@@ -65,240 +56,81 @@ class NFCResultActivity : Activity() {
         val intent = intent
 
         if (intent != null) {
-            val cardDetails = NFCStore.cardDetails
-            if(subscription == null || subscription == "") {
-                if (cardDetails != null) {
-                    setData(cardDetails, null, null)
-                    val image = NFCStore.image
-                    if (image != null) {
-                        imageView!!.setImageBitmap(image)
-                    }
-                    if (NFCStore.signature_image != null) {
-                        signImageView!!.setImageBitmap(NFCStore.signature_image)
-                    }
-
-                    currentId = signImageView!!.id
-                } else {
-                    val message = intent.getStringExtra("DATA")
-                    addField("Error", message)
-                }
-            } else {
-                if (cardDetails != null) {
-                    val mrz = getMrzCharacters(cardDetails)
-                    val sod = getSODFile(cardDetails)
-
-                    getOzoneResult(mrz, sod, cardDetails)
-                }
-                else {
-                    val message = intent.getStringExtra("DATA")
-                    addField("Error", message)
-                }
-            }
-
-        }
-
-    }
-
-    private fun getOzoneResult(mrz: String, sod: String, cardDetails: NFCData){
-        setProgress(true, "Authenticating...")
-        AcuantEchipReader.authenticate(OzoneAuthRequest(apiKey = subscription ?: "", mrz = mrz, sod = sod), object: OzoneAuthenticateServiceListener {
-            override fun onSuccess(result: OzoneAuthResult) {
+            val cardDetails = NfcStore.cardDetails
+            if (cardDetails != null) {
                 setProgress(false)
-                setData(cardDetails, result.isCountrySigned, result.isDocumentSigned)
-                val image = NFCStore.image
+                setData(cardDetails)
+                val image = cardDetails.image
                 if (image != null) {
                     imageView!!.setImageBitmap(image)
-                }
-                if (NFCStore.signature_image != null) {
-                    signImageView!!.setImageBitmap(NFCStore.signature_image)
                 }
 
                 currentId = signImageView!!.id
             }
-
-            override fun onFailed(errorDescription: String) {
-                setProgress(false)
-                setData(cardDetails, null, null)
-                val image = NFCStore.image
-                if (image != null) {
-                    imageView!!.setImageBitmap(image)
-                }
-                if (NFCStore.signature_image != null) {
-                    signImageView!!.setImageBitmap(NFCStore.signature_image)
-                }
-
-                currentId = signImageView!!.id
+            else {
+                val message = intent.getStringExtra("DATA")
+                addField("Error", message)
             }
-        })
-    }
-
-    private fun getSODFile(nfcData: NFCData): String{
-        return String(Base64.encode(nfcData.sod, Base64.DEFAULT)).replace("\n", "")
-    }
-
-    private fun getMrzCharacters(nfcData: NFCData): String{
-        val docCode = nfcData.dg1File.mrzInfo.documentCode
-        return if(docCode.length > 1){
-            "$docCode${nfcData.dg1File.mrzInfo.issuingState}"
-        }
-        else{
-            "$docCode<${nfcData.dg1File.mrzInfo.issuingState}"
         }
     }
 
+    private fun setData(data: NfcData) {
+        var key = "Given name"
+        var value = data.firstName
+        addField(key, value)
 
-    private fun setData(data: NFCData, isCountrySigned: Boolean?, isDocumentSigned: Boolean?) {
-
-        var key: String
-        var value: String?
-
-        if (data.getLdsVersion() != null) {
-            key = "LDS Version"
-            value = data.getLdsVersion()
-            addField(key, value)
+        key = "Surname"
+        value = data.lastName
+        val i = value.indexOf("<")
+        if (i > 0) {
+            value = value.substring(0, i)
         }
+        addField(key, value)
 
-        if (data.primaryIdentifier != null) {
-            key = "Primary Identifier"
-            value = data.primaryIdentifier
-            addField(key, value)
-        }
+        key = "Gender"
+        value = data.gender
+        addField(key, value)
 
-        if (data.secondaryIdentifier != null) {
-            key = "Secondary Identifier"
-            value = data.secondaryIdentifier
-            val i = value!!.indexOf("<")
-            if (i > 0) {
-                value = value.substring(0, i)
-            }
-            addField(key, value)
-        }
+        key = "Date of birth"
+        value = data.dateOfBirth
+        addField(key, value)
 
-        /*if(data.getGender()!=null){
-            key = "Gender";
-            value = data.getGender()+"";
-            addField(key,value);
-        }*/
+        key = "Nationality"
+        value = data.nationality
+        addField(key, value)
 
-        if (data.dateOfBirth != null) {
-            key = "Date of Birth"
-            value = data.dateOfBirth
-            addField(key, value)
-        }
+        key = "Expiration date"
+        value = data.documentExpiryDate
+        addField(key, value)
 
-        if (data.nationality != null) {
-            key = "Nationality"
-            value = data.nationality
-            addField(key, value)
-        }
+        key = "Document code"
+        value = data.documentCode
+        addField(key, value)
 
-        if (data.dateOfExpiry != null) {
-            key = "Date of Expiry"
-            value = data.dateOfExpiry
-            addField(key, value)
-        }
-
-        if (data.documentCode != null) {
-            key = "Document Code"
-            value = data.documentCode
-            addField(key, value)
-        }
-
-        key = "Document Type"
+        key = "Document type"
         value = data.documentType.toString() + ""
         addField(key, value)
 
-        if (data.issuingState != null) {
-            key = "Issuing State"
-            value = data.issuingState
-            addField(key, value)
-        }
+        key = "Issuing state"
+        value = data.issuingAuthority
+        addField(key, value)
 
-        if (data.documentNumber != null) {
-            key = "Document Number"
-            value = data.documentNumber
-            addField(key, value)
-        }
+        key = "Document number"
+        value = data.documentNumber
+        addField(key, value)
 
-        if (data.personalNumber != null) {
-            key = "Personal Number"
-            value = data.personalNumber
-            addField(key, value)
-        }
+        key = "Personal number"
+        value = data.personalNumber
+        addField(key, value)
 
-        if (data.optionalData1 != null) {
-            key = "OptionalData1"
-            value = data.optionalData1
-            addField(key, value)
-        }
+        key = "Data group hash authentication"
+        addBooleanField(key, data.passportDataValid)
 
-        if (data.optionalData2 != null) {
-            key = "OptionalData2"
-            value = data.optionalData2
-            addField(key, value)
-        }
+        key = "Document signer (Ozone)"
+        addBooleanField(key, data.passportSigned == NfcData.OzoneResultStatus.SUCCESS)
 
-        key = "Supported Authentications"
-        value = data.supportedMethodsString()
-        if (value != null && value != "") {
-            addField(key, value)
-        }
-
-        key = "Unsupported Authentications"
-        value = data.notSupportedMethodsString()
-        if (value != null && value != "") {
-            addField(key, value)
-        }
-
-        if (data.getDocSignerValidity() != null) {
-            key = "Document Signer Validity"
-            value = data.getDocSignerValidity()
-            addField(key, value)
-        }
-
-
-        if (data.isBacSupported) {
-            key = "BAC Authentication"
-            addBooleanField(key, data.isBacAuthenticated)
-        }
-
-        key = "Group Hash Authentication"
-        addBooleanField(key, data.isAuthenticDataGroupHashes)
-
-        if (data.isAaSupported) {
-            key = "Active Authentication"
-            addBooleanField(key, data.isAaAuthenticated)
-        }
-
-        if (data.isCaSupported) {
-            key = "Chip Authentication"
-            addBooleanField(key, data.isCaAuthenticated)
-        }
-
-        if(isDocumentSigned == null) {
-            key = "No Ozone, Following fields might be inaccurate"
-            addField(key, "")
-        }
-
-        key = "Document Signer"
-        if(isDocumentSigned != null) {
-            addBooleanField(key, isDocumentSigned)
-        } else {
-            if(data.getDocSignerValidity() == null) {
-                addBooleanField(key, data.isAuthenticDocSignature)
-            } else {
-                addBooleanField(key, false)
-            }
-        }
-
-        addField("Terminal Authentication", "n/a")
-
-        key = "Country Signer"
-        if(isCountrySigned != null) {
-            addBooleanField(key, isCountrySigned)
-        } else {
-            addField(key, "Needs Ozone")
-        }
+        key = "Country Signer (Ozone)"
+        addBooleanField(key, data.passportCountrySigned == NfcData.OzoneResultStatus.SUCCESS)
     }
 
     private fun addField(key: String, value: String?) {

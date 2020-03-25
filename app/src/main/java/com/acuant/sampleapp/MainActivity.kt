@@ -1,13 +1,16 @@
 package com.acuant.sampleapp
 
-import android.app.AlertDialog
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Base64
 import android.util.Log
@@ -18,6 +21,7 @@ import com.acuant.acuantcamera.CapturedImage
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
 import com.acuant.acuantcamera.constant.*
+import com.acuant.acuantcamera.helper.MrzResult
 import com.acuant.acuantcommon.exception.AcuantException
 import com.acuant.acuantcommon.helper.Resizer
 import com.acuant.acuantcommon.initializer.AcuantInitializer
@@ -30,6 +34,8 @@ import com.acuant.acuantdocumentprocessing.service.listener.CreateInstanceListen
 import com.acuant.acuantdocumentprocessing.service.listener.DeleteListener
 import com.acuant.acuantdocumentprocessing.service.listener.GetDataListener
 import com.acuant.acuantdocumentprocessing.service.listener.UploadImageListener
+import com.acuant.acuantcamera.initializer.MrzCameraInitializer
+import com.acuant.acuantechipreader.initializer.EchipInitializer
 import com.acuant.acuantfacecapture.FaceCaptureActivity
 import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
@@ -105,8 +111,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main)
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE), 99)
+        }
+
         insuranceButton = findViewById(R.id.main_health_card)
         idButton = findViewById(R.id.main_id_passport)
 
@@ -174,14 +184,33 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     private fun initializeAcuantSdk(callback:IAcuantPackageCallback){
         try{
-           AcuantInitializer.initialize("acuant.config.xml", this, listOf(ImageProcessorInitializer()),
+            // Or, if required to initialize without a config file , then can be done the following way
+            /*Credential.init("**username**",
+                    "**password**",
+                    "**subscription**",
+                    "https://frm.acuant.net",
+                    "https://services.assureid.net",
+                    "https://medicscan.acuant.net",
+                    "https://us.passlive.acuant.net",
+                    "https://acas.acuant.net",
+                    "https://ozone.acuant.net")
+
+            AcuantInitializer.initialize(null, ...proceed as normal from here...
+            */
+
+           AcuantInitializer.initialize("acuant.config.xml", this, listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
                     object: IAcuantPackageCallback{
+
                         override fun onInitializeSuccess() {
                             if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
                                 isKeyless = true
+                                livenessSpinner.visibility = View.INVISIBLE
                                 callback.onInitializeSuccess()
                             }
                             else{
+                                if(Credential.get().secureAuthorizations.ozoneAuth) {
+                                    findViewById<Button>(R.id.main_mrz_camera).visibility = View.VISIBLE
+                                }
                                 getFacialLivenessCredentials(callback)
                             }
                         }
@@ -191,25 +220,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                         }
 
                     })
-
-            // Or, if required to initialize without a config file , then can be done the following way
-            /*Credential.init("xxxx",
-                    "xxxx",
-                    "xxxx",
-                    "https://frm.acuant.net",
-                    "https://services.assureid.net",
-                    "https://medicscan.acuant.net")
-
-            AcuantInitializer.initialize(null, this.applicationContext, listOf(ImageProcessorInitializer()),
-                    object: IAcuantPackageCallback {
-                        override fun onInitializeSuccess() {
-                            getFacialLivenessCredentials(callback)
-                        }
-
-                        override fun onInitializeFailed(error: List<Error>) {
-                            callback.onInitializeFailed(error)
-                        }
-                    })*/
 
         }
         catch(e: AcuantException){
@@ -226,6 +236,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         }
     }
 
+
+
     private fun getFacialLivenessCredentials(callback: IAcuantPackageCallback){
         AcuantIPLiveness.getFacialCaptureCredential(object:FacialCaptureCredentialListener{
             override fun onDataReceived(result: Boolean) {
@@ -239,7 +251,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
 
             override fun onError(errorCode: Int, description: String) {
-                callback.onInitializeFailed(listOf())
+                Log.e("", description)
+                callback.onInitializeSuccess()
+                //callback.onInitializeFailed(listOf())
             }
         })
     }
@@ -447,6 +461,17 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     showFaceCaptureError()
                 }
             }
+        } else if (requestCode == Constants.REQUEST_CAMERA_MRZ && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
+            val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
+
+            val confirmNFCDataActivity = Intent(this, NfcConfirmationActivity::class.java)
+            confirmNFCDataActivity.putExtra("DOB", result.dob)
+            confirmNFCDataActivity.putExtra("DOE", result.passportExpiration)
+            confirmNFCDataActivity.putExtra("DOCNUMBER", result.passportNumber)
+            confirmNFCDataActivity.putExtra("COUNTRY", result.country)
+
+            this.startActivity(confirmNFCDataActivity)
+
         }
     }
 
@@ -490,7 +515,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 object: FacialCaptureLisenter {
                     override fun onDataReceived(result: FacialCaptureResult) {
                         facialLivelinessResultString = "Facial Liveliness: " + result.isPassed
-                        val decodedString = Base64.decode(result.frame, Base64.DEFAULT)
+                        val decodedString = Base64.decode(result.frame, Base64.NO_WRAP)
                         capturedSelfieImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
                         setProgress(false)
                         processFacialMatch()
@@ -517,55 +542,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         val networkInfo=connectivityManager.activeNetworkInfo
         return networkInfo!=null && networkInfo.isConnected
     }
-
-//    fun faceCaptureClicked(@Suppress("UNUSED_PARAMETER") view: View) {
-//        if(!hasInternetConnection()){
-//            val alert = AlertDialog.Builder(this@MainActivity)
-//            alert.setTitle("Error")
-//            alert.setMessage("No internet connection available.")
-//            alert.setPositiveButton("OK") { dialog, _ ->
-//                dialog.dismiss()
-//            }
-//            alert.show()
-//        }
-//        else{
-//            if(isInitialized){
-//                frontCaptured = false
-//                cleanUpTransaction()
-//                captureWaitTime = 0
-//                showFaceCapture()
-//            }
-//            else{
-//                setProgress(true, "Initializing...")
-//                initializeAcuantSdk(object: IAcuantPackageCallback{
-//                    override fun onInitializeSuccess() {
-//                        this@MainActivity.runOnUiThread {
-//                            isInitialized = true
-//                            setProgress(false)
-//                            frontCaptured = false
-//                            cleanUpTransaction()
-//                            captureWaitTime = 0
-//                            showFaceCapture()
-//                        }
-//                    }
-//
-//                    override fun onInitializeFailed(error: List<Error>) {
-//                        this@MainActivity.runOnUiThread {
-//                            setProgress(false)
-//                            val alert = AlertDialog.Builder(this@MainActivity)
-//                            alert.setTitle("Error")
-//                            alert.setMessage("Could not initialize")
-//                            alert.setPositiveButton("OK") { dialog, _ ->
-//                                dialog.dismiss()
-//                            }
-//                            alert.show()
-//                        }
-//                    }
-//
-//                })
-//            }
-//        }
-//    }
 
     // ID/Passport Clicked
     fun idPassPortClicked(@Suppress("UNUSED_PARAMETER") view: View) {
@@ -670,6 +646,70 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         }
     }
 
+
+    fun readMrzClicked(@Suppress("UNUSED_PARAMETER") view: View) {
+
+        if(!hasInternetConnection()){
+            val alert = AlertDialog.Builder(this@MainActivity)
+            alert.setTitle("Error")
+            alert.setMessage("No internet connection available.")
+            alert.setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+            }
+            alert.show()
+        }
+        else{
+            if(isInitialized){
+                frontCaptured = false
+                cleanUpTransaction()
+                captureWaitTime = 0
+                showMrzCaptureCamera()
+            }
+            else{
+                setProgress(true, "Initializing...")
+                initializeAcuantSdk(object: IAcuantPackageCallback{
+                    override fun onInitializeSuccess() {
+                        this@MainActivity.runOnUiThread {
+                            isInitialized = true
+                            setProgress(false)
+                            frontCaptured = false
+                            cleanUpTransaction()
+                            captureWaitTime = 0
+                            showMrzCaptureCamera()
+                        }
+                    }
+
+                    override fun onInitializeFailed(error: List<Error>) {
+                        this@MainActivity.runOnUiThread {
+                            setProgress(false)
+                            val alert = AlertDialog.Builder(this@MainActivity)
+                            alert.setTitle("Error")
+                            alert.setMessage("Could not initialize")
+                            alert.setPositiveButton("OK") { dialog, _ ->
+                                dialog.dismiss()
+                            }
+                            alert.show()
+                        }
+                    }
+
+                })
+            }
+        }
+    }
+
+    fun showMrzCaptureCamera() {
+        val cameraIntent = Intent(
+                this@MainActivity,
+                AcuantCameraActivity::class.java
+        )
+        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
+                AcuantCameraOptions
+                        .MrzCameraOptionsBuilder()
+                        .build()
+        )
+        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_MRZ)
+    }
+
     //Show front camera to capture face for passive liveness
     private fun showFaceCapture() {
         val cameraIntent = Intent(
@@ -687,13 +727,17 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     //Show Rear Camera to Capture Image of ID,Passport or Health Insurance Card
     fun showDocumentCaptureCamera() {
+
         CapturedImage.barcodeString = null
         val cameraIntent = Intent(
                 this@MainActivity,
                 AcuantCameraActivity::class.java
         )
         cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
-                AcuantCameraOptions(allowBox = true, autoCapture = autoCaptureEnabled)
+                AcuantCameraOptions
+                        .DocumentCameraOptionsBuilder()
+                        .setAutoCapture(autoCaptureEnabled)
+                        .build()
         )
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
     }
@@ -1258,7 +1302,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         if (url != null && credential != null) {
             val c = URL(url).openConnection() as HttpURLConnection
             val userPass = credential.username + ":" + credential.password
-            val basicAuth = "Basic " + String(Base64.encode(userPass.toByteArray(), Base64.DEFAULT))
+            val basicAuth = "Basic " + String(Base64.encode(userPass.toByteArray(), Base64.NO_WRAP))
             c.setRequestProperty("Authorization", basicAuth)
             c.useCaches = false
             c.connect()

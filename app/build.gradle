@@ -101,6 +101,8 @@ dependencies {
         transitive = true
     }
 
+    implementation 'com.rmtheis:tess-two:9.0.0'
+
     implementation project(path: ':acuantcommon')
     implementation project(path: ':acuantfacematch')
     implementation project(path: ':acuantcamera')

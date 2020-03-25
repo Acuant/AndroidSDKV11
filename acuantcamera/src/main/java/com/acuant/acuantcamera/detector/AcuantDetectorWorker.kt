@@ -3,7 +3,6 @@ package com.acuant.acuantcamera.detector
 import android.graphics.*
 import android.media.Image
 import android.os.AsyncTask
-import com.acuant.acuantcamera.helper.ImageSaver
 import java.lang.Exception
 import kotlin.concurrent.thread
 

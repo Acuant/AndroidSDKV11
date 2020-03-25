@@ -1,13 +1,13 @@
 package com.acuant.sampleapp
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
@@ -164,17 +164,6 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
                 .setMessage(R.string.no_camera_permission)
                 .setPositiveButton(R.string.ok, listener)
                 .show()
-    }
-
-    //==============================================================================================
-    // UI
-    //==============================================================================================
-
-    /**
-     * Saves the camera facing mode, so that it can be restored after the device is rotated.
-     */
-    public override fun onSaveInstanceState(savedInstanceState: Bundle?) {
-        super.onSaveInstanceState(savedInstanceState)
     }
 
     //==============================================================================================

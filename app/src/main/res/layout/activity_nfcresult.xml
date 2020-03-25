@@ -7,7 +7,7 @@
         android:id="@+id/nfc_res_progress_layout"
         android:gravity="center"
         android:orientation="vertical"
-        android:background="#CCFFFFFF"
+        android:background="#FFFFFFFF"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
@@ -24,28 +24,34 @@
             android:layout_height="wrap_content"
             android:textStyle="bold"
             android:gravity="center"
+            android:padding="6dp"
             android:layout_marginTop="8dp"/>
 
     </LinearLayout>
+
     <ScrollView
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" >
+
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentTop="true"
+            android:layout_height="wrap_content"
             android:id="@+id/resultRelativeLayout">
+
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/photo"
-                android:layout_marginTop="20dp"/>
+                android:layout_marginTop="20dp"
+                android:contentDescription="@string/photo_of_person" />
+
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/signaturePhoto"
                 android:layout_below="@+id/photo"
-                android:layout_marginTop="20dp"/>
+                android:layout_marginTop="20dp"
+                android:contentDescription="@string/photo_of_signature" />
 
             <RelativeLayout
                 android:orientation="vertical"
@@ -58,6 +64,7 @@
             </RelativeLayout>
 
         </RelativeLayout>
+
     </ScrollView>
 
 </RelativeLayout>

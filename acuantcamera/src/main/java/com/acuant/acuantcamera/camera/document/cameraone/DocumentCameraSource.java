@@ -1,4 +1,4 @@
-package com.acuant.acuantcamera.camera.cameraone;
+package com.acuant.acuantcamera.camera.document.cameraone;
 
 import android.Manifest;
 import android.annotation.SuppressLint;

@@ -17,7 +17,8 @@ public class ProcessedData {
     public static String documentNumber = null;
     public static boolean isHealthCard = false;
     public static String cardType = "ID1";
-    public static void cleanup(){
+    public static String country = "unknown";
+    public static void cleanup() {
         frontImage = null;
         backImage = null;
         faceImage = null;

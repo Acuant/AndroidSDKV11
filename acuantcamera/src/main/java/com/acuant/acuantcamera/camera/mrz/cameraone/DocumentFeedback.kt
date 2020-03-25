@@ -1,4 +1,4 @@
-package com.acuant.acuantcamera.camera.cameraone
+package com.acuant.acuantcamera.camera.mrz.cameraone
 
 enum class DocumentFeedback {
     NoDocument,

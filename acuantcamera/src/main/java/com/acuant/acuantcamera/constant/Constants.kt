@@ -10,5 +10,6 @@ package com.acuant.acuantcamera.constant
 @JvmField val ACUANT_EXTRA_BORDER_ENABLED = "borderEnabled"
 @JvmField val ACUANT_EXTRA_CAMERA_OPTIONS = "cameraOptions"
 @JvmField val ACUANT_EXTRA_FACE_CAPTURE_OPTIONS = "faceCaptureOptions"
+@JvmField val ACUANT_EXTRA_MRZ_RESULT = "mrzResult"
 @JvmField val MINIMUM_DPI = 20
 @JvmField val MINIMUM_REQUIRED_DPI = 160
