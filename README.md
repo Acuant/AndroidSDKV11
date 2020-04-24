@@ -175,6 +175,8 @@ The SDK includes the following modules:
     		}
     		implementation 'com.acuant:acuantfacecapture:11.4.0'
     		implementation 'com.acuant:acuantpassiveliveness:11.4.0'
+		
+	- Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
 
 4. 	Create an xml file with the following tags:
@@ -191,6 +193,30 @@ The SDK includes the following modules:
 		    <acas_endpoint></acas_endpoint>
 		    <ozone_endpoint></ozone_endpoint>
 		</setting>
+		
+The following are the default values based on region:
+
+		USA
+		<frm_endpoint>https://frm.acuant.net</frm_endpoint>
+		<med_endpoint>https://medicscan.acuant.net</med_endpoint>
+		<assureid_endpoint>https://us.assureid.acuant.net</assureid_endpoint>
+		<passive_liveness_endpoint>https://us.passlive.acuant.net</passive_liveness_endpoint>
+		<acas_endpoint>https://us.acas.acuant.net</acas_endpoint>
+		<ozone_endpoint>https://ozone.acuant.net</ozone_endpoint>
+
+		EU
+		<frm_endpoint>https://eu.frm.acuant.net</frm_endpoint>
+		<assureid_endpoint>https://eu.assureid.acuant.net</assureid_endpoint>
+		<passive_liveness_endpoint>https://eu.passlive.acuant.net</passive_liveness_endpoint>
+		<acas_endpoint>https://eu.acas.acuant.net</acas_endpoint>
+		<ozone_endpoint>https://eu.ozone.acuant.net</ozone_endpoint>
+
+		AUS
+		<frm_endpoint>https://aus.frm.acuant.net</frm_endpoint>
+		<assureid_endpoint>https://aus.assureid.acuant.net</assureid_endpoint>
+		<passive_liveness_endpoint>https://aus.passlive.acuant.net</passive_liveness_endpoint>
+		<acas_endpoint>https://aus.acas.acuant.net</acas_endpoint>
+		<ozone_endpoint>https://aus.ozone.acuant.net</ozone_endpoint>
 
 5.	Save the file to the application assets directory:
 
