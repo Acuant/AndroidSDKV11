@@ -123,6 +123,9 @@ class NfcResultActivity : AppCompatActivity() {
         value = data.personalNumber
         addField(key, value)
 
+        key = "BAC authentication"
+        addBooleanField(key, true)
+
         key = "Data group hash authentication"
         addBooleanField(key, data.passportDataValid)
 

@@ -2,16 +2,20 @@ package com.acuant.sampleapp
 
 import android.content.DialogInterface
 import android.content.Intent
-import android.graphics.Bitmap
+import android.graphics.Typeface
 import android.nfc.NfcAdapter
 import android.os.Bundle
+import android.support.constraint.ConstraintLayout
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.StyleSpan
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
+import android.widget.ImageView
 import android.widget.TextView
 import com.acuant.acuantcommon.model.Credential
 import com.acuant.acuantcommon.model.Error
@@ -19,13 +23,20 @@ import com.acuant.acuantechipreader.AcuantEchipReader
 import com.acuant.acuantechipreader.AcuantEchipReader.getPositionOfChip
 import com.acuant.acuantechipreader.echipreader.NfcTagReadingListener
 import com.acuant.acuantechipreader.model.NfcData
-import com.acuant.acuantechipreader.model.OzoneAuthResult
 import com.acuant.sampleapp.utils.DialogUtils
+
 
 class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
 
-    private lateinit var progressDialog: LinearLayout
-    private lateinit var progressText: TextView
+    private enum class HelpState {
+        Locate, Found, Failed
+    }
+
+    private lateinit var nfcHelpLayout: ConstraintLayout
+    private lateinit var nfcTitle: TextView
+    private lateinit var nfcText: TextView
+    private lateinit var nfcImage: ImageView
+    private lateinit var nfcTextLower: TextView
     private lateinit var locationText: TextView
     private lateinit var mrzDocNumber: EditText
     private lateinit var mrzDOB: EditText
@@ -40,16 +51,42 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
     private var doe: String? = null
     private var error: Boolean = true
 
-    private fun setProgress(visible : Boolean, text : String = "") {
+    private fun setProgress(visible : Boolean, state : HelpState = HelpState.Locate, text : String = "") {
         if(visible) {
-            progressDialog.visibility = View.VISIBLE
+            nfcHelpLayout.visibility = View.VISIBLE
             window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+
+            nfcTextLower.text = text
+
+            when (state) {
+                HelpState.Locate -> {
+                    nfcText.text = getString(R.string.locate_echip_help)
+                    nfcTitle.text = getString(R.string.locate_echip)
+                    nfcImage.setImageResource(R.drawable.echip_searching_icon)
+                    nfcHelpLayout.setOnClickListener(null)
+                }
+                HelpState.Found -> {
+                    nfcText.text = getString(R.string.found_echip_help)
+                    nfcTitle.text = getString(R.string.found_echip)
+                    nfcImage.setImageResource(R.drawable.echip_checkmark_icon)
+                    nfcHelpLayout.setOnClickListener(null)
+                }
+                HelpState.Failed -> {
+                    nfcText.text = getString(R.string.error_echip_help)
+                    nfcTitle.text = getString(R.string.error_echip)
+                    nfcImage.setImageResource(R.drawable.echip_fail_icon)
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+                    nfcHelpLayout.setOnClickListener {
+                        setProgress(false)
+                    }
+                }
+            }
         } else {
-            progressDialog.visibility = View.GONE
+            nfcHelpLayout.visibility = View.GONE
             window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+            nfcHelpLayout.setOnClickListener(null)
         }
-        progressText.text = text
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,9 +95,20 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         setContentView(R.layout.activity_nfcconfirmation)
 
         nfcScanningBtn = findViewById(R.id.eChipButton)
-        progressDialog = findViewById(R.id.nfc_progress_layout)
-        progressText = findViewById(R.id.nfc_pbText)
+        nfcHelpLayout = findViewById(R.id.nfc_help_layout)
+        nfcImage = findViewById(R.id.nfc_help_image)
+        nfcTitle = findViewById(R.id.nfc_help_title)
+        nfcText = findViewById(R.id.nfc_help_text)
+        nfcTextLower = findViewById(R.id.nfc_help_text_2)
 
+        val str = SpannableStringBuilder(getString(R.string.verify_captured_data))
+        val indexOfBold = str.indexOf(getString(R.string.start_echip))
+        val indexOfEndBold = indexOfBold + getString(R.string.start_echip).length
+        str.setSpan(StyleSpan(Typeface.BOLD), indexOfBold, indexOfEndBold, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+        findViewById<TextView>(R.id.mrzInstruction).text = str
+
+        nfcImage.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
 
         country = intent.getStringExtra("COUNTRY") ?: "UNKNOWN"
         position = try {
@@ -108,13 +156,11 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         if (nfcAdapter != null) {
             ensureSensorIsOn()
             AcuantEchipReader.listenNfc(this, nfcAdapter!!)
-            var instString = "Searching for passport chip..." +
-                    "\n\nPlace the phone on top of passport chip." +
-                    "\n\nIf not detected within several seconds lift up and replace phone."
+            var instString = ""
             if(!position.equals("unknown", true) && position != "") {
-                instString += "\n\nNote: For $country passports, the eChip is typically on the $position"
+                instString += "Note: For $country passports, the eChip is typically on the $position"
             }
-            setProgress(true, instString)
+            setProgress(true, HelpState.Locate, instString)
 
         } else {
             AlertDialog.Builder(this)
@@ -151,8 +197,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         error = false
-        setProgress(true, "Reading passport chip...\n\n"
-                + "Please don't move passport or phone.")
+        setProgress(true, HelpState.Found)
         val docNumber = mrzDocNumber.text.toString().trim { it <= ' ' }
         val dateOfBirth = mrzDOB.text.toString()
         val dateOfExpiry = mrzDOE.text.toString()
@@ -160,14 +205,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
             AcuantEchipReader.readNfcTag(this, intent, Credential.get(), docNumber, dateOfBirth,
                     dateOfExpiry, this)
         } else {
-            setProgress(false)
-            AlertDialog.Builder(this)
-                    .setTitle("eChip read error!")
-                    .setMessage("Error in formatting for Document number, Date of birth, or Expiration date. Fix and retry.")
-                    .setPositiveButton("OK") { dialogInterface, _ ->
-                        dialogInterface.dismiss()
-                    }
-                    .show()
+            setProgress(true, HelpState.Failed, "Error in formatting for Document number, Date of birth, or Expiration date. Fix and retry." )
         }
     }
 
@@ -189,22 +227,15 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         }
         setProgress(false)
         if (error.errorDescription != null) {
-            alertDialog = DialogUtils.showDialog(this, error.errorDescription)
-            if (this.nfcAdapter != null) {
-                try {
-                    this.nfcAdapter!!.disableForegroundDispatch(this)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+            setProgress(true, HelpState.Failed, error.errorDescription)
         } else {
-            alertDialog = DialogUtils.showDialog(this, "Error Occurred During eChip Read")
-            if (this.nfcAdapter != null) {
-                try {
-                    this.nfcAdapter!!.disableForegroundDispatch(this)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            setProgress(true, HelpState.Failed)
+        }
+        if (this.nfcAdapter != null) {
+            try {
+                this.nfcAdapter!!.disableForegroundDispatch(this)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -213,7 +244,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         if (alertDialog != null && alertDialog!!.isShowing) {
             DialogUtils.dismissDialog(alertDialog)
         }
-        setProgress(true, status)
+        setProgress(true, HelpState.Found, status)
     }
 
 }

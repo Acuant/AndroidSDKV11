@@ -16,6 +16,7 @@ import com.acuant.acuanthgliveness.detector.LiveFaceListener
 import com.acuant.acuanthgliveness.detector.LiveFaceProcessor
 import com.acuant.acuanthgliveness.model.FaceCapturedImage
 import com.acuant.acuanthgliveness.model.LiveFaceDetails
+import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.acuant.sampleapp.facecapture.CameraSourcePreview
 import com.acuant.sampleapp.facecapture.FacialGraphic
 import com.acuant.sampleapp.facecapture.FacialGraphicOverlay
@@ -230,6 +231,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
                 if(!selfieCaptured) {
                     selfieCaptured = true
                     thread {
+                        liveFaceDetails.image = AcuantImagePreparation.resize(liveFaceDetails.image, 720)
                         FaceCapturedImage.setImage(liveFaceDetails.image)
                         val result = Intent()
                         this@FacialLivenessActivity.setResult(RESPONSE_SUCCESS_CODE, result)

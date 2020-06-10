@@ -1,3 +1,6 @@
+<!DOCTYPE resources [
+    <!ENTITY startEchip "Start eChip Reader">
+    ]>
 <resources>
     <string name="app_name">SampleApp</string>
     <string name="description_info">Info</string>
@@ -24,11 +27,11 @@
     <string name="scan_echip">Scan eChip</string>
     <string name="front_captured_image">Front Captured Image</string>
     <string name="back_captured_image">Back Captured Image</string>
-    <string name="start_echip">Start eChip Reader</string>
+    <string name="start_echip">&startEchip;</string>
     <string name="document_number_label">Document number:</string>
     <string name="dob_label">Date of birth (yyMMdd):</string>
     <string name="doe_label">Expiration date (yyMMdd):</string>
-    <string name="verify_captured_data">Verify captured data and tap Start eChip Reader</string>
+    <string name="verify_captured_data">Verify captured data and tap &startEchip;</string>
     <string name="photo_of_person">Photo of the person obtained from chip</string>
     <string name="photo_of_signature">Photo of signature obtained from passport chip</string>
     <string name="mrz_camera">Read Passport MRZ</string>
@@ -38,6 +41,15 @@
     <string name="hg_too_close">Too close! Move away</string>
     <string name="hg_too_far_away">Move closer</string>
     <string name="hg_align_face_and_blink">Align face to begin</string>
-    <string name="mrz_successfully_read">MRZ Read Successfully</string>
+    <string name="mrz_help_text">Ensure sufficient lighting with no reflection or glare on the passport.</string>
+    <string name="tap_anywhere_to_continue">Tap anywhere to continue</string>
+    <string name="mrz_help_title">Capture the MRZ</string>
+    <string name="mrz_successfully_read">Successful MRZ read</string>
     <string name="the_following_fields_were_extracted">The following fields were extracted:</string>
+    <string name="locate_echip_help">Place the phone on the passport and move slowly.\nSTOP moving when eChip is located.</string>
+    <string name="locate_echip">Locate eChip</string>
+    <string name="found_echip_help">eChip located.\nDo NOT move phone.</string>
+    <string name="found_echip">eChip Located</string>
+    <string name="error_echip_help">eChip read interrupted.\nPlease try again making sure to keep the phone still.</string>
+    <string name="error_echip">eChip Not Read</string>
 </resources>

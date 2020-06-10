@@ -23,7 +23,6 @@ import com.acuant.acuantcamera.camera.AcuantCameraOptions
 import com.acuant.acuantcamera.constant.*
 import com.acuant.acuantcamera.helper.MrzResult
 import com.acuant.acuantcommon.exception.AcuantException
-import com.acuant.acuantcommon.helper.Resizer
 import com.acuant.acuantcommon.initializer.AcuantInitializer
 import com.acuant.acuantcommon.initializer.IAcuantPackageCallback
 import com.acuant.acuantcommon.model.*
@@ -322,8 +321,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             })
             croppingTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null)
 
-        }
-        else if (requestCode == Constants.REQUEST_CONFIRMATION && resultCode == Constants.REQUEST_CONFIRMATION) {
+        } else if(requestCode == Constants.REQUEST_HELP_MRZ && resultCode == Constants.REQUEST_HELP_MRZ) {
+            showMrzCaptureCamera()
+        } else if (requestCode == Constants.REQUEST_CONFIRMATION && resultCode == Constants.REQUEST_CONFIRMATION) {
             val isFront = data!!.getBooleanExtra("isFrontImage", true)
             val isConfirmed = data.getBooleanExtra("Confirmed", true)
             if (isConfirmed) {
@@ -418,7 +418,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
         } else if (requestCode == Constants.REQUEST_CAMERA_HG_SELFIE){
             if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
-                capturedSelfieImage = Resizer.resize(FaceCapturedImage.bitmapImage, 720)
+                capturedSelfieImage = FaceCapturedImage.bitmapImage
                 facialLivelinessResultString = "Facial Liveliness: true"
                 processFacialMatch()
             }
@@ -663,7 +663,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 frontCaptured = false
                 cleanUpTransaction()
                 captureWaitTime = 0
-                showMrzCaptureCamera()
+                showMrzHelpScreen()
             }
             else{
                 setProgress(true, "Initializing...")
@@ -675,7 +675,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                             frontCaptured = false
                             cleanUpTransaction()
                             captureWaitTime = 0
-                            showMrzCaptureCamera()
+                            showMrzHelpScreen()
                         }
                     }
 
@@ -697,7 +697,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         }
     }
 
-    fun showMrzCaptureCamera() {
+    private fun showMrzHelpScreen() {
+        val intent = Intent(this, MrzHelpActivity::class.java)
+
+        startActivityForResult(intent, Constants.REQUEST_HELP_MRZ)
+    }
+
+    private fun showMrzCaptureCamera() {
         val cameraIntent = Intent(
                 this@MainActivity,
                 AcuantCameraActivity::class.java

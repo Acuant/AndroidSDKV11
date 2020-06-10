@@ -15,6 +15,12 @@ class DocRectangleView(context: Context, attr: AttributeSet?) : BaseRectangleVie
                 paintBracket.color = paintColorBracketCloser
                 animateTarget = false
             }
+            AcuantBaseCameraFragment.CameraState.NotInFrame -> {
+                setDrawBox(false)
+                paint.color = paintColorCloser
+                paintBracket.color = paintColorBracketCloser
+                animateTarget = false
+            }
             AcuantBaseCameraFragment.CameraState.Hold -> {
                 setDrawBox(true)
                 paint.color = paintColorHold

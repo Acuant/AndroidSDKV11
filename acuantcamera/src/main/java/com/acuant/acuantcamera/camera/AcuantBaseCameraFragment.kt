@@ -44,7 +44,7 @@ import kotlin.math.max
 
 abstract class AcuantBaseCameraFragment : Fragment() {
 
-    enum class CameraState {Align, MoveCloser, Hold, Steady, Capturing, MrzNone, MrzAlign, MrzMoveCloser, MrzReposition, MrzTrying, MrzCapturing}
+    enum class CameraState {Align, MoveCloser, Hold, Steady, Capturing, MrzNone, MrzAlign, MrzMoveCloser, MrzReposition, MrzTrying, MrzCapturing, NotInFrame}
 
     private var captureImageReader: ImageReader? = null
     protected var isProcessing = false
@@ -141,6 +141,8 @@ abstract class AcuantBaseCameraFragment : Fragment() {
      */
     private var sensorOrientation = 0
 
+    private val previewBoundThreshold = 25
+
     protected abstract fun setTextFromState(state: CameraState)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -172,6 +174,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
         }
     }
 
+
     internal fun isDocumentInFrame(points: Array<Point>?) : Boolean{
         if(points != null){
             val startY = 0 //textureView.width.toFloat() / 2 - previewSize.height.toFloat() / 2
@@ -180,10 +183,10 @@ abstract class AcuantBaseCameraFragment : Fragment() {
             val endX = startX + displaySize.y //textureView.height
 
             for (point in points) {
-                if( point.x < startX ||
-                        point.x > endX ||
-                        (textureView.width - point.y) < startY ||
-                        (textureView.width - point.y) > endY) {
+                if( point.x < -previewBoundThreshold ||
+                        point.x > endX + previewBoundThreshold ||
+                        (textureView.width - point.y) < -previewBoundThreshold ||
+                        (textureView.width - point.y) > endY + previewBoundThreshold) {
                     return false
                 }
             }
@@ -201,8 +204,8 @@ abstract class AcuantBaseCameraFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+                              container: ViewGroup?,
+                              savedInstanceState: Bundle?
     ): View? = inflater.inflate(R.layout.fragment_camera2_basic, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -254,8 +257,8 @@ abstract class AcuantBaseCameraFragment : Fragment() {
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
-            permissions: Array<String>,
-            grantResults: IntArray) {
+                                            permissions: Array<String>,
+                                            grantResults: IntArray) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults.size != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 ErrorDialog.newInstance(getString(R.string.request_permission))

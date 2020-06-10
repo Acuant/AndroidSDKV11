@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_mrz_help_layout"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:background="#FFFFFFFF"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:translationZ="2dp">
+
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:id="@+id/main_mrz_image"
+
+        android:layout_marginTop="40dp"
+        android:paddingRight="45dp"
+
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+
+        app:layout_constraintWidth_percent=".9"
+        app:layout_constraintWidth_default="percent"
+
+        app:layout_constraintHeight_percent=".5"
+        app:layout_constraintHeight_default="percent"
+
+        android:src="@drawable/mrz_help_icon"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:id="@+id/main_mrz_title"
+
+        android:paddingBottom="20dp"
+
+        app:layout_constraintTop_toBottomOf="@id/main_mrz_image"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+
+        android:text="@string/mrz_help_title"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        android:gravity="center" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:id="@+id/main_mrz_text"
+
+        android:paddingBottom="35dp"
+        android:paddingRight="30dp"
+        android:paddingLeft="30dp"
+
+        app:layout_constraintTop_toBottomOf="@id/main_mrz_title"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+
+        android:text="@string/mrz_help_text"
+        android:textSize="20sp"
+        android:gravity="center" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+
+        android:paddingRight="30dp"
+        android:paddingLeft="30dp"
+
+        app:layout_constraintTop_toBottomOf="@id/main_mrz_text"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+
+        android:text="@string/tap_anywhere_to_continue"
+        android:textSize="19sp"
+        android:gravity="center" />
+
+</android.support.constraint.ConstraintLayout>

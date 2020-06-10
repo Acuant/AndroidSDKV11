@@ -21,7 +21,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
+
 
         <meta-data
             android:name="com.google.android.gms.vision.DEPENDENCIES"
@@ -46,6 +48,9 @@
             android:screenOrientation="portrait" />
         <activity
             android:name=".NfcResultActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".MrzHelpActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name=".NfcConfirmationActivity"

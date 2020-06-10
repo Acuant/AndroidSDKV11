@@ -94,10 +94,16 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
             }
 
             when {
-                !isDocumentInFrame(detectedPoints) || croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
+                croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
                     unlockFocus()
                     rectangleView.setViewFromState(CameraState.Align)
                     setTextFromState(CameraState.Align)
+                    resetTimer()
+                }
+                !isDocumentInFrame(detectedPoints) -> {
+                    unlockFocus()
+                    rectangleView.setViewFromState(CameraState.NotInFrame)
+                    setTextFromState(CameraState.NotInFrame)
                     resetTimer()
                 }
                 croppedImage.dpi < getTargetDpi(croppedImage.isPassport) -> {
@@ -160,6 +166,13 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
                 textView.layoutParams.width = context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
                 textView.textSize = context?.resources?.getDimension(R.dimen.cam_doc_font) ?: 24f
                 textView.text = getString(R.string.acuant_camera_move_closer)
+                textView.setTextColor(Color.WHITE)
+            }
+            CameraState.NotInFrame -> {
+                textView.background = defaultTextDrawable
+                textView.layoutParams.width = context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
+                textView.textSize = context?.resources?.getDimension(R.dimen.cam_doc_font) ?: 24f
+                textView.text = getString(R.string.acuant_camera_not_in_frame)
                 textView.setTextColor(Color.WHITE)
             }
             CameraState.Hold -> {

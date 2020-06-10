@@ -82,7 +82,8 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
 
         if (options.useGMS) {
             val resultCode = try {
-                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this)
+                val googleApi = GoogleApiAvailability.getInstance()
+                googleApi.isGooglePlayServicesAvailable(this)
             } catch (e: java.lang.Exception) {
                 e.printStackTrace()
                 ConnectionResult.SERVICE_INVALID
@@ -93,7 +94,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
             }
         }
 
-        if (supportCamera2(this) && (isInMrzCapture || options.useGMS)) {
+        if (supportCamera2(this)) {
             setContentView(R.layout.activity_acu_camera)
             hideTopMenu()
 

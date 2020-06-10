@@ -5,5 +5,6 @@ enum class DocumentFeedback {
     SmallDocument,
     BadDocument,
     GoodDocument,
-    Barcode
+    Barcode,
+    NotInFrame
 }

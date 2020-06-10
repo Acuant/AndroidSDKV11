@@ -13,7 +13,6 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
-import com.acuant.acuantcommon.helper.Resizer
 import com.acuant.acuantfacecapture.detector.FaceDetector
 import com.acuant.acuantfacecapture.detector.FaceListener
 import com.acuant.acuantfacecapture.detector.FaceProcessor
@@ -23,6 +22,7 @@ import com.acuant.acuantfacecapture.model.FaceDetails
 import com.acuant.acuantfacecapture.overlays.CameraSourcePreview
 import com.acuant.acuantfacecapture.overlays.FacialGraphic
 import com.acuant.acuantfacecapture.overlays.FacialGraphicOverlay
+import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.vision.CameraSource
@@ -81,7 +81,12 @@ class FaceCaptureActivity : AppCompatActivity(), FaceListener {
         val result = Intent()
         if(data != null) {
             val file = File(applicationContext.cacheDir, "${UUID.randomUUID()}.jpg")
-            saveFile(file, Resizer.resize(data, 720))
+            val bitmap = AcuantImagePreparation.resize(data, 720)
+            if (bitmap != null) {
+                saveFile(file, bitmap)
+            } else {
+                Log.e("Acuant", "resize error")
+            }
             result.putExtra(OUTPUT_URL, file.absolutePath)
         }
         this@FaceCaptureActivity.setResult(RESPONSE_SUCCESS_CODE, result)

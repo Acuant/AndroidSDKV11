@@ -22,9 +22,6 @@ import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
-
 import java.io.IOException
 
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -249,6 +246,8 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 .build()
     }
 
+
+
     private fun isDocumentInPreviewFrame(points: Array<Point>): Boolean {
         points.apply {
             this.forEach { p ->
@@ -292,7 +291,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                         points = fixPoints(points)
 
                         if (!isDocumentInPreviewFrame(points)) {
-                            feedback = DocumentFeedback.NoDocument
+                            feedback = DocumentFeedback.NotInFrame
                         }
                     }
 
@@ -302,6 +301,11 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                             DocumentFeedback.NoDocument -> {
                                 rectangleView.setViewFromState(CameraState.Align)
                                 setTextFromState(CameraState.Align)
+                                resetTimer()
+                            }
+                            DocumentFeedback.NotInFrame -> {
+                                rectangleView.setViewFromState(CameraState.NotInFrame)
+                                setTextFromState(CameraState.NotInFrame)
                                 resetTimer()
                             }
                             DocumentFeedback.SmallDocument -> {
@@ -446,7 +450,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         Log.e(TAG, "Permission not granted: results len = " + grantResults.size +
                 " Result code = " + if (grantResults.isNotEmpty()) grantResults[0] else "(empty)")
 
-        val listener = DialogInterface.OnClickListener { dialog, id -> finish() }
+        DialogInterface.OnClickListener { _, _ -> finish() }
 
     }
 
@@ -457,14 +461,6 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
      */
     @Throws(SecurityException::class)
     private fun startCameraSource() {
-        // check that the device has play services available.
-        val code = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(
-                applicationContext)
-        if (code != ConnectionResult.SUCCESS) {
-            val dlg = GoogleApiAvailability.getInstance().getErrorDialog(this, code, RC_HANDLE_GMS)
-            dlg.show()
-        }
-
         if (documentCameraSource != null) {
             try {
                 mPreview!!.start(documentCameraSource)
@@ -486,6 +482,12 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
             CameraState.MoveCloser -> {
                 instructionView.background = defaultTextDrawable
                 instructionView.text = getString(R.string.acuant_camera_move_closer)
+                instructionView.setTextColor(Color.WHITE)
+                instructionView.textSize = 24f
+            }
+            CameraState.NotInFrame -> {
+                instructionView.background = defaultTextDrawable
+                instructionView.text = getString(R.string.acuant_camera_not_in_frame)
                 instructionView.setTextColor(Color.WHITE)
                 instructionView.textSize = 24f
             }
@@ -555,7 +557,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         return fixedPoints
     }
 
-    protected fun onChanged(lastOrientation: Int, curOrientation: Int) {
+    private fun onChanged(@Suppress("UNUSED_PARAMETER") lastOrientation: Int, curOrientation: Int) {
 
         runOnUiThread {
             if (curOrientation == ORIENTATION_LANDSCAPE_REVERSE) {
@@ -630,9 +632,6 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
     companion object {
         private const val TAG = "Barcode-reader"
-
-        // intent request code to handle updating play services if needed.
-        private const val RC_HANDLE_GMS = 9001
 
         // permission request codes need to be < 256
         private const val RC_HANDLE_CAMERA_PERM = 2
