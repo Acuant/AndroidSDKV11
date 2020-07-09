@@ -94,7 +94,7 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
             }
 
             when {
-                croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
+                 croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
                     unlockFocus()
                     rectangleView.setViewFromState(CameraState.Align)
                     setTextFromState(CameraState.Align)

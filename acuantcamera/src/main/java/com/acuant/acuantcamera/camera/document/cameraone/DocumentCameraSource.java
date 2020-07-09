@@ -857,22 +857,36 @@ public class DocumentCameraSource {
 
     private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
         List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
-
         // The method for selecting the best size is to minimize the sum of the differences between
         // the desired values and the actual values for width and height.  This is certainly not the
         // only way to select the best size, but it provides a decent tradeoff between using the
         // closest aspect ratio vs. using the closest pixel area.
         SizePair selectedPair = null;
         int maxArea = Integer.MIN_VALUE;
+        int maxPict = Integer.MIN_VALUE;
+        int area = Integer.MIN_VALUE;
         for (SizePair sizePair : validPreviewSizes) {
-            Size size = sizePair.previewSize();
-            int area = size.getWidth()*size.getHeight();
-            if (maxArea < area) {
-                selectedPair = sizePair;
-                maxArea = area;
+            Size size_pict = sizePair.pictureSize();
+            int newArea = size_pict.getWidth()*size_pict.getHeight();
+            if (newArea > maxPict) {
+                maxPict = newArea;
+                maxArea = Integer.MIN_VALUE;
+                Size size = sizePair.previewSize();
+                area = size.getWidth()*size.getHeight();
+                if (maxArea < area) {
+                    selectedPair = sizePair;
+                    maxArea = area;
+                }
+            }
+            else if (newArea == maxPict) {
+                Size size = sizePair.previewSize();
+                area = size.getWidth()*size.getHeight();
+                if (maxArea < area) {
+                    selectedPair = sizePair;
+                    maxArea = area;
+                }
             }
         }
-
         return selectedPair;
     }
 

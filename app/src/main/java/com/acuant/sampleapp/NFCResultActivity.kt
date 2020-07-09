@@ -77,11 +77,15 @@ class NfcResultActivity : AppCompatActivity() {
     private fun setData(data: NfcData) {
         var key = "Given name"
         var value = data.firstName
+        var i = value.indexOf("<")
+        if (i > 0) {
+            value = value.substring(0, i)
+        }
         addField(key, value)
 
         key = "Surname"
         value = data.lastName
-        val i = value.indexOf("<")
+        i = value.indexOf("<")
         if (i > 0) {
             value = value.substring(0, i)
         }
@@ -108,7 +112,7 @@ class NfcResultActivity : AppCompatActivity() {
         addField(key, value)
 
         key = "Document type"
-        value = data.documentType.toString() + ""
+        value = data.documentType
         addField(key, value)
 
         key = "Issuing state"

@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.1
-**June 2020**
+# Acuant Android SDK v11.4.2
+**July 2020**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -163,18 +163,18 @@ The SDK includes the following modules:
         	
      - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.1'
-    		implementation 'com.acuant:acuantcamera:11.4.1'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.1'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.1'
-    		implementation 'com.acuant:acuantechipreader:11.4.1'
-    		implementation 'com.acuant:acuantfacematch:11.4.1'
-    		implementation 'com.acuant:acuanthgliveness:11.4.1'
-    		implementation ('com.acuant:acuantipliveness:11.4.1'){
+    		implementation 'com.acuant:acuantcommon:11.4.2'
+    		implementation 'com.acuant:acuantcamera:11.4.2'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.2'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.2'
+    		implementation 'com.acuant:acuantechipreader:11.4.2'
+    		implementation 'com.acuant:acuantfacematch:11.4.2'
+    		implementation 'com.acuant:acuanthgliveness:11.4.2'
+    		implementation ('com.acuant:acuantipliveness:11.4.2'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.1'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.1'
+    		implementation 'com.acuant:acuantfacecapture:11.4.2'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.2'
 		
 	- Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 

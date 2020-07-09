@@ -586,7 +586,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         val image = BitmapFactory.decodeByteArray(data, 0, data.size)
 
         if((image.width > image.height && this.lastOrientation == ORIENTATION_LANDSCAPE_REVERSE) ||
-                 (image.width < image.height && this.lastOrientation == ORIENTATION_LANDSCAPE)){
+                (image.width < image.height && this.lastOrientation == ORIENTATION_LANDSCAPE)){
             val rotated = ImageSaver.rotateImage(image, 180f)
             val stream = ByteArrayOutputStream()
             rotated.compress(Bitmap.CompressFormat.JPEG, 100, stream)

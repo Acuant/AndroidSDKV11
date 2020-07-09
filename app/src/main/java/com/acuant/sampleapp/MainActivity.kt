@@ -1312,7 +1312,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             c.setRequestProperty("Authorization", basicAuth)
             c.useCaches = false
             c.connect()
-            return BitmapFactory.decodeStream(c.inputStream)
+            val img = BitmapFactory.decodeStream(c.inputStream)
+            c.disconnect()
+            return img
         }
         return null
     }
