@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">SampleApp</string>
-    <string name="picture">Picture</string>
+
+    <!--    acuantcamera -->
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission.</string>
     <string name="acuant_camera_error">This device does not support Camera2 API.</string>
@@ -8,9 +9,17 @@
     <string name="acuant_camera_align">ITAPAT SA ID</string>
     <string name="acuant_camera_align_and_tap">ITAPAT AT I-TAP</string>
     <string name="acuant_camera_move_closer">ILAPIT ANG CAMERA</string>
+    <string name="acuant_camera_not_in_frame">MASYADONG MALAPIT!</string>
     <string name="acuant_camera_hold_steady">HUWAG IGALAW</string>
     <string name="acuant_camera_capturing">KINUKUHA</string>
 
+    <string name="acuant_reading_mrz">Sinusuri ang MRZ</string>
+    <string name="acuant_align_mrz">Itapat sa pasaporte</string>
+    <string name="acuant_closer_mrz">Ilapit sa pasaporte</string>
+    <string name="acuant_glare_mrz">Muling ihanay</string>
+    <string name="acuant_read_mrz">Tapos na ang analisis </string>
+
+    <!--    acuantfacecapture/acuantpassiveliveness -->
     <string name="acuant_face_camera_initial">Itapat ang mukha\nupang magsimula</string>
     <string name="acuant_face_camera_face_too_close">Masyadong malapit!\nIlayo ang mukha</string>
     <string name="acuant_face_too_far">Ilapit ang mukha sa screen</string>
@@ -23,6 +32,7 @@
         <item quantity="other">Kinukuha\n%d…</item>
     </plurals>
 
+    <!--    acuanthgliveness -->
     <string name="hg_move_in_frame">Ihanay sa frame</string>
     <string name="hg_hold_steady">Huwag gumalaw</string>
     <string name="hg_blink">Kumurap!</string>
@@ -30,15 +40,7 @@
     <string name="hg_too_far_away">Lumapit sa screen</string>
     <string name="hg_align_face_and_blink">Ihanay ang mukha upang magsimula</string>
 
-    <string name="ok">OK</string>
-    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
-    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
-    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
-    <string name="classification_error">Could not classify the document</string>
-
-    <string name="scan_back_side_id">Kuhanan ng larawan ang likod ng ID</string>
-    <string name="scan_back_side_health_insurance_card">Kuhanan ng larawan ang likod ng health insurance ID</string>
-
+    <!--    acuantipliveness -->
     <string name="iproov__ok">OK</string>
     <string name="iproov__error">Error</string>
     <string name="iproov__prompt_hold_still">Itapat ang mukha sa oblong</string>
@@ -70,7 +72,7 @@
     <string name="iproov__dialog_privacy_disagree_title">Sorry</string>
     <string name="iproov__dialog_privacy_disagree_message">Kinakailangang pumayag sa privacy policy upang magamit ang iProov</string>
     <string name="iproov__iproov_success">Tapos na ang iProov</string>
-    <string name="iproov__scanning">Scanning…</string>
+    <string name="iproov__scanning">Sinusuri…</string>
     <string name="iproov__network_problem_cant_connect">Network problem, can\'t connect</string>
     <string name="iproov__lost_internet_link">Lost internet connection, please try again</string>
     <string name="iproov__cannot_stream_video">Cannot stream video, please try again</string>
@@ -82,4 +84,14 @@
     <string name="iproov__starting_detector">Magsisimula ang detector…</string>
     <string name="iproov__ssl_exception">SSL Exception</string>
     <string name="iproov__too_close">Masyadong malapit</string>
+
+    <!--    SampleApp -->
+    <string name="ok">OK</string>
+    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
+    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
+    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
+    <string name="classification_error">Could not classify the document</string>
+
+    <string name="scan_back_side_id">Kuhanan ng larawan ang likod ng ID</string>
+    <string name="scan_back_side_health_insurance_card">Kuhanan ng larawan ang likod ng health insurance ID</string>
 </resources>

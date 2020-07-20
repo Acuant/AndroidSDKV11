@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
+import android.os.Environment
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -40,6 +41,7 @@ import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
 import com.acuant.acuanthgliveness.model.FaceCapturedImage
+import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.acuant.acuantimagepreparation.initializer.ImageProcessorInitializer
 import com.acuant.acuantipliveness.AcuantIPLiveness
 import com.acuant.acuantipliveness.constant.FacialCaptureConstant
@@ -304,6 +306,17 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
             setProgress(true, "Cropping...")
 
+            //For running with a debug image (also comment out cropping task)
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//            thread {
+//                CapturedImage.acuantImage = Image()
+//                CapturedImage.acuantImage?.image = BitmapFactory.decodeResource(baseContext.resources, R.drawable.test)
+//                CapturedImage.sharpnessScore = AcuantImagePreparation.sharpness(CapturedImage.acuantImage?.image)
+//                CapturedImage.glareScore = AcuantImagePreparation.glare(CapturedImage.acuantImage?.image)
+//                showConfirmation(true, false)
+//            }
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
             val croppingTask = CroppingTask(BitmapFactory.decodeByteArray(bytes, 0, bytes.size), !frontCaptured, object : CroppingTaskListener {
                 override fun croppingFinished(acuantImage: Image?, isFrontImage: Boolean) {
                     this@MainActivity.runOnUiThread {
@@ -315,6 +328,19 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     }
                     else{
                         CapturedImage.acuantImage = acuantImage
+
+                        //Enable for debug saving
+                        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//                        try {
+//                            val output = FileOutputStream(File(Environment.getExternalStorageDirectory().toString(), "test.png"))
+//                            acuantImage?.image?.compress(Bitmap.CompressFormat.PNG, 100, output)
+//                            output.flush()
+//                            output.close()
+//                        } catch (e: Exception) {
+//                            e.printStackTrace()
+//                        }
+                        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
                         showConfirmation(isFrontImage, false)
                     }
                 }
@@ -733,19 +759,20 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     //Show Rear Camera to Capture Image of ID,Passport or Health Insurance Card
     fun showDocumentCaptureCamera() {
+        showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE_KEYLESS)
 
-        CapturedImage.barcodeString = null
-        val cameraIntent = Intent(
-                this@MainActivity,
-                AcuantCameraActivity::class.java
-        )
-        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
-                AcuantCameraOptions
-                        .DocumentCameraOptionsBuilder()
-                        .setAutoCapture(autoCaptureEnabled)
-                        .build()
-        )
-        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
+//        CapturedImage.barcodeString = null
+//        val cameraIntent = Intent(
+//                this@MainActivity,
+//                AcuantCameraActivity::class.java
+//        )
+//        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
+//                AcuantCameraOptions
+//                        .DocumentCameraOptionsBuilder()
+//                        .setAutoCapture(autoCaptureEnabled)
+//                        .build()
+//        )
+//        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
     }
 
     //Show Front Camera to Capture Live Selfie

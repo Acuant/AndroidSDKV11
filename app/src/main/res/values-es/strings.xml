@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">SampleApp</string>
-    <string name="picture">Imagen</string>
+
+    <!--    acuantcamera -->
     <string name="description_info">Informacion</string>
     <string name="request_permission">Esta muestra necesita permiso de la cámara.</string>
     <string name="acuant_camera_error">Este dispositivo no es compatible con la API de Camera2.</string>
@@ -8,9 +9,17 @@
     <string name="acuant_camera_align">ALINEAR</string>
     <string name="acuant_camera_align_and_tap">ALINEAR Y TOCAR</string>
     <string name="acuant_camera_move_closer">MUÉVETE MAS CERCA</string>
+    <string name="acuant_camera_not_in_frame">DEMASIADO CERCA!</string>
     <string name="acuant_camera_hold_steady">MANTENER ESTABLE</string>
     <string name="acuant_camera_capturing">CAPTURA</string>
 
+    <string name="acuant_reading_mrz">Leyendo MRZ</string>
+    <string name="acuant_align_mrz">Alinear</string>
+    <string name="acuant_closer_mrz">Muévete mas cerca</string>
+    <string name="acuant_glare_mrz">Reposicionar</string>
+    <string name="acuant_read_mrz">Leer exitoso</string>
+
+    <!--    acuantfacecapture/acuantpassiveliveness -->
     <string name="acuant_face_camera_initial">Alinear la cara para\ncomenzar</string>
     <string name="acuant_face_camera_face_too_close">¡Demasiado cerca!\nAlejarse</string>
     <string name="acuant_face_too_far">Muévete mas cerca</string>
@@ -23,6 +32,7 @@
         <item quantity="other">Captura\n%d…</item>
     </plurals>
 
+    <!--    acuanthgliveness -->
     <string name="hg_move_in_frame">Moverse en cuadro</string>
     <string name="hg_hold_steady">Mantener estable</string>
     <string name="hg_blink">Parpadeo!</string>
@@ -30,15 +40,7 @@
     <string name="hg_too_far_away">Muévete mas cerca</string>
     <string name="hg_align_face_and_blink">Alinear la cara para comenzar</string>
 
-    <string name="ok">OK</string>
-    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
-    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
-    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
-    <string name="classification_error">Could not classify the document</string>
-
-    <string name="scan_back_side_id">Escanear el reverso del documento.</string>
-    <string name="scan_back_side_health_insurance_card">Capture el reverso de la tarjeta de seguro de salud.</string>
-
+    <!--    acuantipliveness -->
     <string name="iproov__ok">OK</string>
     <string name="iproov__error">Error</string>
     <string name="iproov__prompt_hold_still">Pon tu cara en el óvalo</string>
@@ -82,4 +84,14 @@
     <string name="iproov__starting_detector">Detector de arranque…</string>
     <string name="iproov__ssl_exception">Excepción SSL</string>
     <string name="iproov__too_close">Demasiado cerca</string>
+
+    <!--    SampleApp -->
+    <string name="ok">OK</string>
+    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
+    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
+    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
+    <string name="classification_error">Could not classify the document</string>
+
+    <string name="scan_back_side_id">Escanear el reverso del documento.</string>
+    <string name="scan_back_side_health_insurance_card">Capture el reverso de la tarjeta de seguro de salud.</string>
 </resources>

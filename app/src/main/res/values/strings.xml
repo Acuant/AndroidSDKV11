@@ -3,9 +3,92 @@
     ]>
 <resources>
     <string name="app_name">SampleApp</string>
+
+    <!--    acuantcamera -->
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission.</string>
-    <string name="acuant_camera_error">This device does not support Camera2 API.</string>
+    <string name="acuant_camera_error">This device doesn\'t support Camera2 API.</string>
+
+    <string name="acuant_camera_align">ALIGN</string>
+    <string name="acuant_camera_align_and_tap">ALIGN AND TAP</string>
+    <string name="acuant_camera_move_closer">MOVE CLOSER</string>
+    <string name="acuant_camera_not_in_frame">TOO CLOSE!</string>
+    <string name="acuant_camera_hold_steady">HOLD STEADY</string>
+    <string name="acuant_camera_capturing">CAPTURING</string>
+
+    <string name="acuant_reading_mrz">Reading MRZ</string>
+    <string name="acuant_align_mrz">Align</string>
+    <string name="acuant_closer_mrz">Move Closer</string>
+    <string name="acuant_glare_mrz">Try Repositioning</string>
+    <string name="acuant_read_mrz">Read Successful</string>
+
+    <!--    acuantfacecapture/acuantpassiveliveness -->
+    <string name="acuant_face_camera_initial">Align face to start capture</string>
+    <string name="acuant_face_camera_face_too_close">Too close! Move away</string>
+    <string name="acuant_face_too_far">Move closer</string>
+    <string name="acuant_face_camera_face_has_angle">Face has angle. Do not tilt</string>
+    <string name="acuant_face_camera_face_not_in_frame">Move in frame</string>
+    <string name="acuant_face_camera_face_moved">Hold steady</string>
+    <string name="acuant_face_camera_capturing">Capturing…</string>
+    <plurals name="acuant_face_camera_countdown">
+        <item quantity="one">Capturing\n%d…</item>
+        <item quantity="other">Capturing\n%d…</item>
+    </plurals>
+
+    <!--    acuanthgliveness -->
+    <string name="hg_move_in_frame">Move in frame</string>
+    <string name="hg_hold_steady">Hold steady</string>
+    <string name="hg_blink">Blink!</string>
+    <string name="hg_too_close">Too close! Move away</string>
+    <string name="hg_too_far_away">Move closer</string>
+    <string name="hg_align_face_and_blink">Align face to begin</string>
+
+    <!--    acuantipliveness -->
+    <string name="iproov__ok">OK</string>
+    <string name="iproov__error">Error</string>
+    <string name="iproov__prompt_hold_still">Put your face in the oval</string>
+    <string name="iproov__prompt_loading">Please wait…</string>
+    <string name="iproov__prompt_loading_slow">Connecting, network is slow…</string>
+    <string name="iproov__prompt_connecting">Connecting…</string>
+    <string name="iproov__prompt_connecting_slow">Connecting, network is slow…</string>
+    <string name="iproov__prompt_tap_to_begin">Tap the screen to begin</string>
+    <string name="iproov__prompt_move_closer">Move closer</string>
+    <string name="iproov__prompt_too_bright">Go somewhere shadier</string>
+    <string name="iproov__prompt_too_backlit">You\'re backlit, turn slightly</string>
+    <string name="iproov__prompt_too_backlit_short">You\'re backlit, turn slightly</string>
+    <string name="iproov__prompt_beginning_in">Starting in…</string>
+    <string name="iproov__too_many_faces">Too many faces</string>
+    <string name="iproov__open_your_eyes">Open your eyes</string>
+    <string name="iproov__connected">Connected</string>
+    <string name="iproov__empty_string"></string>
+    <string name="iproov__face_camera">Face the camera directly</string>
+    <string name="iproov__streamer_finished">Finished</string>
+    <string name="iproov__hold_still">Hold still</string>
+    <string name="iproov__progress_streaming">Streaming…</string>
+    <string name="iproov__progress_streaming_slow">Streaming, network is slow…</string>
+    <string name="iproov__progress_processing">Processing…</string>
+    <string name="iproov__dialog_instructions_title">iProov Instructions</string>
+    <string name="iproov__dialog_instructions_message">â€¢ Fill the oval with your face\n\nâ€¢ Tap or wait for the countdown\n\nâ€¢ Stay still during the flashing</string>
+    <string name="iproov__dialog_instructions_skip">Don\'t show this again</string>
+    <string name="iproov__agree">Agree</string>
+    <string name="iproov__disagree">Disagree</string>
+    <string name="iproov__dialog_privacy_disagree_title">Sorry</string>
+    <string name="iproov__dialog_privacy_disagree_message">You must agree to the privacy policy in order to use iProov</string>
+    <string name="iproov__iproov_success">You have iProoved successfully</string>
+    <string name="iproov__scanning">Scanning…</string>
+    <string name="iproov__network_problem_cant_connect">Network problem, can\'t connect</string>
+    <string name="iproov__lost_internet_link">Lost internet connection, please try again</string>
+    <string name="iproov__cannot_stream_video">Cannot stream video, please try again</string>
+    <string name="iproov__device_not_supported">Sorry, your device is currently not supported</string>
+    <string name="iproov__username_already_enrolled">This username has already been enrolled</string>
+    <string name="iproov__unknown_identity">This username is not enrolled, register first</string>
+    <string name="iproov__camera_permission_denied">Camera permission denied</string>
+    <string name="iproov__unknown_error">Unknown Error</string>
+    <string name="iproov__starting_detector">Starting detectorâ€¦</string>
+    <string name="iproov__ssl_exception">SSL Exception</string>
+    <string name="iproov__too_close">Too close</string>
+
+    <!--    SampleApp -->
     <string name="ok">OK</string>
     <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
     <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
@@ -14,6 +97,7 @@
 
     <string name="scan_back_side_id">Scan back side of document.</string>
     <string name="scan_back_side_health_insurance_card">Capture back side of health insurance card.</string>
+
     <string name="classification_error_retry">Retry</string>
     <string name="classification_error_image_preview">Image Preview</string>
     <string name="id_passport_button_text">ID/Passport</string>
@@ -35,12 +119,7 @@
     <string name="photo_of_person">Photo of the person obtained from chip</string>
     <string name="photo_of_signature">Photo of signature obtained from passport chip</string>
     <string name="mrz_camera">Read Passport MRZ</string>
-    <string name="hg_move_in_frame">Move in frame</string>
-    <string name="hg_hold_steady">Hold steady</string>
-    <string name="hg_blink">Blink!</string>
-    <string name="hg_too_close">Too close! Move away</string>
-    <string name="hg_too_far_away">Move closer</string>
-    <string name="hg_align_face_and_blink">Align face to begin</string>
+
     <string name="mrz_help_text">Ensure sufficient lighting with no reflection or glare on the passport.</string>
     <string name="tap_anywhere_to_continue">Tap anywhere to continue</string>
     <string name="mrz_help_title">Capture the MRZ</string>
