@@ -759,20 +759,19 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     //Show Rear Camera to Capture Image of ID,Passport or Health Insurance Card
     fun showDocumentCaptureCamera() {
-        showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE_KEYLESS)
 
-//        CapturedImage.barcodeString = null
-//        val cameraIntent = Intent(
-//                this@MainActivity,
-//                AcuantCameraActivity::class.java
-//        )
-//        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
-//                AcuantCameraOptions
-//                        .DocumentCameraOptionsBuilder()
-//                        .setAutoCapture(autoCaptureEnabled)
-//                        .build()
-//        )
-//        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
+        CapturedImage.barcodeString = null
+        val cameraIntent = Intent(
+                this@MainActivity,
+                AcuantCameraActivity::class.java
+        )
+        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
+                AcuantCameraOptions
+                        .DocumentCameraOptionsBuilder()
+                        .setAutoCapture(autoCaptureEnabled)
+                        .build()
+        )
+        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
     }
 
     //Show Front Camera to Capture Live Selfie
