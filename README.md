@@ -3,6 +3,13 @@
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
+----------
+
+## License
+This software is subject to Acuant's end user license agreement (EULA), which can be found [here](docs/EULA.pdf).
+
+----------
+
 ## Introduction ##
 
 This document provides detailed information about the Acuant Android SDK. The Acuant recommended workflow is described below.
