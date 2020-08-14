@@ -6,7 +6,8 @@ package com.acuant.sampleapp
 class Constants {
     companion object {
         const val REQUEST_CAMERA_PHOTO = 1
-        const val REQUEST_CAMERA_IP_SELFIE = 2
+        //this is the old IP liveness workflow. NOT supported any more, but left in for reference if needed.
+        /*const val REQUEST_CAMERA_IP_SELFIE = 2*/
         const val REQUEST_CONFIRMATION = 3
         const val REQUEST_RETRY = 4
         const val REQUEST_CAMERA_HG_SELFIE = 5

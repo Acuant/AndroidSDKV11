@@ -9,7 +9,6 @@ import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
-import android.os.Environment
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -35,16 +34,16 @@ import com.acuant.acuantdocumentprocessing.service.listener.DeleteListener
 import com.acuant.acuantdocumentprocessing.service.listener.GetDataListener
 import com.acuant.acuantdocumentprocessing.service.listener.UploadImageListener
 import com.acuant.acuantcamera.initializer.MrzCameraInitializer
+import com.acuant.acuantcommon.helper.CredentialHelper
 import com.acuant.acuantechipreader.initializer.EchipInitializer
 import com.acuant.acuantfacecapture.FaceCaptureActivity
 import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
 import com.acuant.acuanthgliveness.model.FaceCapturedImage
-import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.acuant.acuantimagepreparation.initializer.ImageProcessorInitializer
 import com.acuant.acuantipliveness.AcuantIPLiveness
-import com.acuant.acuantipliveness.constant.FacialCaptureConstant
+import com.acuant.acuantipliveness.IPLivenessListener
 import com.acuant.acuantipliveness.facialcapture.model.FacialCaptureResult
 import com.acuant.acuantipliveness.facialcapture.model.FacialSetupResult
 import com.acuant.acuantipliveness.facialcapture.service.FacialCaptureCredentialListener
@@ -54,6 +53,8 @@ import com.acuant.acuantpassiveliveness.AcuantPassiveLiveness
 import com.acuant.acuantpassiveliveness.model.PassiveLivenessData
 import com.acuant.acuantpassiveliveness.model.PassiveLivenessResult
 import com.acuant.acuantpassiveliveness.service.PassiveLivenessListener
+import com.acuant.sampleapp.backgroundtasks.AcuantTokenService
+import com.acuant.sampleapp.backgroundtasks.AcuantTokenServiceListener
 import com.acuant.sampleapp.backgroundtasks.CroppingTask
 import com.acuant.sampleapp.backgroundtasks.CroppingTaskListener
 import com.acuant.sampleapp.utils.CommonUtils
@@ -64,7 +65,7 @@ import java.util.*
 import kotlin.concurrent.thread
 
 
-class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
+class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IPLivenessListener {
     private var progressDialog: LinearLayout? = null
     private var progressText: TextView? = null
     private var capturedFrontImage: Image? = null
@@ -90,6 +91,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var livenessSelected = 0
     private var isKeyless = false
     private var processingFacialLiveness = false
+    private val useTokenInit = true
     private lateinit var livenessSpinner : Spinner
     private lateinit var livenessArrayAdapter: ArrayAdapter<String>
 
@@ -107,7 +109,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         capturingImageData = true
         documentInstanceID = null
         numberOfClassificationAttempts = 0
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,11 +123,11 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         idButton = findViewById(R.id.main_id_passport)
 
         livenessSpinner = findViewById(R.id.livenessSpinner)
-        val list = mutableListOf("No liveness test/face match", "Liveness: Passive Liveness")
+        val list = mutableListOf("No liveness test/face match", "Liveness: Passive Liveness", "tmp")
         livenessArrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, list)
         livenessArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        livenessArrayAdapter
         livenessSpinner.adapter = livenessArrayAdapter
+        loadLastLiveness(true)
         livenessSpinner.onItemSelectedListener = this
 
         val autoCaptureSwitch = findViewById<Switch>(R.id.autoCaptureSwitch)
@@ -152,7 +153,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     setProgress(false)
                     val alert = AlertDialog.Builder(this@MainActivity)
                     alert.setTitle("Error")
-                    alert.setMessage("Could not initialize")
+                    alert.setMessage("Could not initialize.\n"+error[0].errorDescription)
                     alert.setPositiveButton("OK") { dialog, _ ->
                         dialog.dismiss()
                     }
@@ -161,26 +162,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
 
         })
-    }
-
-    override fun onNothingSelected(parent: AdapterView<*>?) {
-        //do nothing
-    }
-
-    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-        livenessSelected = position
-    }
-
-    private fun setProgress(visible : Boolean, text : String = "") {
-        if(visible) {
-            progressDialog?.visibility = View.VISIBLE
-            window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
-        } else {
-            progressDialog?.visibility = View.GONE
-            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
-        }
-        progressText?.text = text
     }
 
     private fun initializeAcuantSdk(callback:IAcuantPackageCallback){
@@ -199,31 +180,74 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             AcuantInitializer.initialize(null, ...proceed as normal from here...
             */
 
-           AcuantInitializer.initialize("acuant.config.xml", this, listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
-                    object: IAcuantPackageCallback{
 
-                        override fun onInitializeSuccess() {
-                            if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
-                                isKeyless = true
-                                livenessSpinner.visibility = View.INVISIBLE
-                                callback.onInitializeSuccess()
-                            }
-                            else{
-                                if(Credential.get().secureAuthorizations.ozoneAuth) {
-                                    findViewById<Button>(R.id.main_mrz_camera).visibility = View.VISIBLE
-                                }
-                                getFacialLivenessCredentials(callback)
-                            }
+            /*
+            * ========================================README========================================
+            *
+            * The following demonstrates how to initialize with both token and credentials,
+            * there is no reason to implement both, pick which one fits your needs and use that one.
+            *
+            * The token initialization workflow also contains a service showing how to get the
+            * token. This should NOT be done in the app, this defeats the purpose of tokens. This
+            * should be done on a separate server then securely passed to the app.
+            *
+            * ======================================================================================
+            * */
+            val initCallback = object: IAcuantPackageCallback{
+
+                override fun onInitializeSuccess() {
+
+                    if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
+                        isKeyless = true
+                        livenessSpinner.visibility = View.INVISIBLE
+                        callback.onInitializeSuccess()
+                    }
+                    else{
+                        if(Credential.get().secureAuthorizations.ozoneAuth) {
+                            findViewById<Button>(R.id.main_mrz_camera).visibility = View.VISIBLE
                         }
+                        getFacialLivenessCredentials(callback)
+                    }
+                }
 
-                        override fun onInitializeFailed(error: List<Error>) {
-                            callback.onInitializeFailed(error)
-                        }
+                override fun onInitializeFailed(error: List<Error>) {
+                    callback.onInitializeFailed(error)
+                }
+            }
+            /*
+            * The initFromXml and AcuantTokenService is just for the sample app, you should be
+            * generating these tokens on one of your secure servers, passing it to the app,
+            * and then calling initializeWithToken passing the config and token.
+            */
+            @Suppress("ConstantConditionIf")
+            if (useTokenInit) {
+                Toast.makeText(this@MainActivity, "Using Token Init", Toast.LENGTH_SHORT).show()
+                Credential.initFromXml("acuant.config.xml", this)
+                AcuantTokenService(Credential.get(), object : AcuantTokenServiceListener {
+                    override fun onSuccess(token: String) {
 
-                    })
+                        AcuantInitializer.initializeWithToken("acuant.config.xml",
+                                token,
+                                this@MainActivity,
+                                listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
+                                initCallback)
 
-        }
-        catch(e: AcuantException){
+                    }
+
+                    override fun onFail(responseCode: Int) {
+                        initCallback.onInitializeFailed(listOf(Error(responseCode, "Error in getToken service.\nCode: $responseCode")))
+                    }
+
+                }).execute()
+            } else {
+                Toast.makeText(this@MainActivity, "Using Credential Init", Toast.LENGTH_SHORT).show()
+                AcuantInitializer.initialize("acuant.config.xml",
+                        this@MainActivity,
+                        listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
+                        initCallback)
+            }
+
+        } catch(e: AcuantException) {
             Log.e("Acuant Error", e.toString())
             setProgress(false)
             val alert = AlertDialog.Builder(this@MainActivity)
@@ -233,30 +257,65 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 dialog.dismiss()
             }
             alert.show()
-
         }
     }
-
-
 
     private fun getFacialLivenessCredentials(callback: IAcuantPackageCallback){
         AcuantIPLiveness.getFacialCaptureCredential(object:FacialCaptureCredentialListener{
             override fun onDataReceived(result: Boolean) {
                 if(result){
                     runOnUiThread{
+                        livenessArrayAdapter.remove("tmp")
                         livenessArrayAdapter.insert("Liveness: Enhanced Liveness",2)
-                        livenessArrayAdapter.notifyDataSetChanged()
+                        loadLastLiveness(true)
                     }
+                } else {
+                    livenessArrayAdapter.remove("tmp")
+                    loadLastLiveness()
                 }
                 callback.onInitializeSuccess()
             }
 
             override fun onError(errorCode: Int, description: String) {
                 Log.e("", description)
+                loadLastLiveness()
                 callback.onInitializeSuccess()
                 //callback.onInitializeFailed(listOf())
             }
         })
+    }
+
+    private fun loadLastLiveness(hasEnhanced: Boolean = false) {
+        val prefs = this.getSharedPreferences("com.acuant.sampleapp", Context.MODE_PRIVATE)
+        val lastSel = prefs.getInt("lastLiveness", 0)
+        if ((hasEnhanced && lastSel == 2) || lastSel < 2) {
+            livenessSpinner.setSelection(lastSel)
+            livenessSelected = lastSel
+            livenessArrayAdapter.notifyDataSetChanged()
+        }
+    }
+
+    override fun onNothingSelected(parent: AdapterView<*>?) {
+        //do nothing
+    }
+
+    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+        livenessSelected = position
+
+        val prefs = this.getSharedPreferences("com.acuant.sampleapp", Context.MODE_PRIVATE)
+        prefs.edit().putInt("lastLiveness", position).apply()
+    }
+
+    private fun setProgress(visible : Boolean, text : String = "") {
+        if(visible) {
+            progressDialog?.visibility = View.VISIBLE
+            window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        } else {
+            progressDialog?.visibility = View.GONE
+            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        }
+        progressText?.text = text
     }
 
     private fun readFromFile(fileUri: String?): ByteArray{
@@ -428,7 +487,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             isRetrying = true
             showDocumentCaptureCamera()
 
-        } else if (requestCode == Constants.REQUEST_CAMERA_IP_SELFIE) {
+        }
+        //this is the old IP liveness workflow. NOT supported any more, but left in for reference if needed.
+        /* else if (requestCode == Constants.REQUEST_CAMERA_IP_SELFIE) {
             when (resultCode) {
                 ErrorCodes.ERROR_CAPTURING_FACIAL -> showFaceCaptureError()
                 ErrorCodes.USER_CANCELED_FACIAL -> {
@@ -442,7 +503,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     startFacialLivelinessRequest(token, userId)
                 }
             }
-        } else if (requestCode == Constants.REQUEST_CAMERA_HG_SELFIE){
+        } */
+        else if (requestCode == Constants.REQUEST_CAMERA_HG_SELFIE){
             if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
                 capturedSelfieImage = FaceCapturedImage.bitmapImage
                 facialLivelinessResultString = "Facial Liveliness: true"
@@ -579,15 +641,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 dialog.dismiss()
             }
             alert.show()
-        }
-        else{
-            if(isInitialized){
+        } else {
+            if ((!useTokenInit && isInitialized) || Credential.get()?.token?.isValid == true) {
                 frontCaptured = false
                 cleanUpTransaction()
                 captureWaitTime = 0
                 showDocumentCaptureCamera()
-            }
-            else{
+            } else {
                 setProgress(true, "Initializing...")
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
@@ -621,7 +681,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     // Health Insurance Clicked
     fun healthInsuranceClicked(@Suppress("UNUSED_PARAMETER") view: View) {
-        if(!hasInternetConnection()){
+        if (!hasInternetConnection()) {
             val alert = AlertDialog.Builder(this@MainActivity)
             alert.setTitle("Error")
             alert.setMessage("No internet connection available.")
@@ -629,16 +689,14 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 dialog.dismiss()
             }
             alert.show()
-        }
-        else{
-            if(isInitialized){
+        } else {
+            if ((!useTokenInit && isInitialized) || Credential.get()?.token?.isValid == true) {
                 frontCaptured = false
                 cleanUpTransaction()
                 isHealthCard = true
                 captureWaitTime = 0
                 showDocumentCaptureCamera()
-            }
-            else{
+            } else {
                 setProgress(true, "Initializing...")
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
@@ -665,10 +723,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                             alert.show()
                         }
                     }
-
                 })
             }
-
         }
     }
 
@@ -683,15 +739,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 dialog.dismiss()
             }
             alert.show()
-        }
-        else{
-            if(isInitialized){
+        } else {
+            if ((!useTokenInit && isInitialized) || Credential.get()?.token?.isValid == true) {
                 frontCaptured = false
                 cleanUpTransaction()
                 captureWaitTime = 0
                 showMrzHelpScreen()
-            }
-            else{
+            } else {
                 setProgress(true, "Initializing...")
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
@@ -717,7 +771,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                             alert.show()
                         }
                     }
-
                 })
             }
         }
@@ -807,8 +860,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 setProgress(false)
                 if (result != null) {
                     result.allowScreenshots = true
-                    val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
-                    startActivityForResult(facialIntent, Constants.REQUEST_CAMERA_IP_SELFIE)
+                    //this is the old IP liveness workflow. NOT supported any more, but left in for reference if needed.
+                    /*val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
+                    startActivityForResult(facialIntent, Constants.REQUEST_CAMERA_IP_SELFIE)*/
+                    AcuantIPLiveness.runFacialCapture(this@MainActivity, result, this@MainActivity)
                 } else {
                     handleInternalError()
                 }
@@ -1333,9 +1388,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     fun loadAssureIDImage(url: String?, credential: Credential?): Bitmap? {
         if (url != null && credential != null) {
             val c = URL(url).openConnection() as HttpURLConnection
-            val userPass = credential.username + ":" + credential.password
-            val basicAuth = "Basic " + String(Base64.encode(userPass.toByteArray(), Base64.NO_WRAP))
-            c.setRequestProperty("Authorization", basicAuth)
+            val auth = CredentialHelper.getAcuantAuthHeader(credential)
+            c.setRequestProperty("Authorization", auth)
             c.useCaches = false
             c.connect()
             val img = BitmapFactory.decodeStream(c.inputStream)
@@ -1359,6 +1413,24 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
         }
         return isBackSideScanRequired
+    }
+
+    override fun onProgress(status: String, progress: Int) {
+        setProgress(true, "$progress%\n$status")
+    }
+
+    override fun onSuccess(userId: String, token: String) {
+        startFacialLivelinessRequest(token, userId)
+    }
+
+    override fun onFail(error: Error) {
+        showFaceCaptureError()
+    }
+
+    override fun onCancel() {
+        setProgress(true, "Getting Data...")
+        capturingSelfieImage = false
+        facialLivelinessResultString = "Facial Liveliness Failed"
     }
 
 }

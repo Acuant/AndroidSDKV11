@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.3
-**July 2020**
+# Acuant Android SDK v11.4.4
+**August 2020**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -19,6 +19,13 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 **Note** The acceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and matches an ID document.
 
 ----------
+
+## Updates
+
+**v11.4.4:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.4.4).
+
+----------
+
 ## Prerequisites ##
 
 - Supports Android SDK versions 21-28
@@ -144,7 +151,7 @@ The SDK includes the following modules:
 
 			//face capture and liveliness
 			implementation project(path: ':acuantipliveness')
-			implementation('com.iproov.sdk:iproov:4.4.0@aar') {
+			implementation('com.iproov.sdk:iproov:5.2.1@aar') {
 				transitive = true
 			}
 
@@ -170,23 +177,23 @@ The SDK includes the following modules:
         	
      - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.3'
-    		implementation 'com.acuant:acuantcamera:11.4.3'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.3'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.3'
-    		implementation 'com.acuant:acuantechipreader:11.4.3'
-    		implementation 'com.acuant:acuantfacematch:11.4.3'
-    		implementation 'com.acuant:acuanthgliveness:11.4.3'
-    		implementation ('com.acuant:acuantipliveness:11.4.3'){
+    		implementation 'com.acuant:acuantcommon:11.4.4'
+    		implementation 'com.acuant:acuantcamera:11.4.4'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.4'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.4'
+    		implementation 'com.acuant:acuantechipreader:11.4.4'
+    		implementation 'com.acuant:acuantfacematch:11.4.4'
+    		implementation 'com.acuant:acuanthgliveness:11.4.4'
+    		implementation ('com.acuant:acuantipliveness:11.4.4'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.3'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.3'
+    		implementation 'com.acuant:acuantfacecapture:11.4.4'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.4'
 		
 	- Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
 
-4. 	Create an xml file with the following tags:
+4. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
 
 		<?xml version="1.0" encoding="UTF-8" ?>
 		<setting>
@@ -228,8 +235,81 @@ The following are the default values based on region:
 5.	Save the file to the application assets directory:
 
 		{PROJECT_ROOT_DIRECTORY} => app => src => main => assets => PATH/TO/CONFIG/FILENAME.XML
-			
+		
+### Initializing the SDK ###
+
+Before you use the SDK, you need to initialize it either by using the credentials saved on the device or by using bearer tokens (provided by an external server).
+
+**Note:** If you are *not* using a configuration file for initialization, then use the following statement (providing appropriate credentials for *username*, *password*, and *subscription ID*) and leave the "PATH/TO/CONFIG/FILENAME.XML" in the initialize method as ""
+	
+		Credential.init("xxxxxxx",
+		"xxxxxxxx",
+		"xxxxxxxxxx",
+		"https://frm.acuant.net",
+		"https://services.assureid.net",
+		"https://medicscan.acuant.net",
+		"https://us.passlive.acuant.net",
+		"https://acas.acuant.net",
+		"https://ozone.acuant.net")
+
+1. Using credentials saved on a device:
+
+		
+		//Specify the path to the previously created XML file, using “assets” as root
+		//Pass in Context from Application
+		//List the packages to initialize; only ImageProcessor is required
+
+		try{
+			AcuantInitializer.initialize("PATH/TO/CONFIG/FILENAME.XML",
+							context,
+							listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer() /\*Exclude the ones you don't use\*/),
+							listener)
+		}
+		catch(e: AcuantException){
+			Log.e("Acuant Error", e.toString())
+		}
+		
+2. Using bearer tokens:	
+
+		
+		//Specify the path to the previously created XML file, using “assets” as root
+		//Pass in Context from Application
+		//List the packages to initialize; only ImageProcessor is required
+		
+		//having received the bearer token from your service
+		try{
+			AcuantInitializer.initializeWithToken("PATH/TO/CONFIG/FILENAME.XML",
+							token,
+							context,
+							listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer() /\*Exclude the ones you don't use\*/),
+							listener)
+		}
+		catch(e: AcuantException){
+			Log.e("Acuant Error", e.toString())
+		}
+
+Here is the interface for the initialize listener:
+
+		interface IAcuantPackageCallback{
+			fun onInitializeSuccess()
+
+			fun onInitializeFailed(error: List<Error>)
+		}
+		
+### Initialization without a Subscription ID ###
+
+**AcuantImagePreparation** may be initialized by providing only a username and a password. However, without providing a Subscription ID, the application can *only* capture an image and get the image. Without a Subscription ID:
+
+1. Only the **AcuantCamera**, **AcuantImagePreparation**, and **AcuantHGLiveness** modules may be used.
+
+2. The SDK can be used to capture identity documents.
+
+3. The captured images can be exported from the SDK. See the **onActivityResult** in the following section.
+
+
 ### Capture a document image using AcuantCamera ###
+
+**Note:**   **AcuantCamera** is dependent on **AcuantImagePreparation** and  **AcuantCommon**.
 
 1. Start camera activity:
 
@@ -268,9 +348,17 @@ Alternatively use the new options object. This method allows you to configure mu
 		
 ### Capture MRZ data using AcuantCamera ###
 
-1. Initialize the MRZ camera by adding MrzCameraInitializer() to the list of initializers in AcuantInitializer.initialize. Important note, by this point the user has to have granted external storage permissions since this initializer is saving OCRB information to the phone. The MRZ camera will not function without this initialization.
+**Note:**   To use the MRZ features, your credentials must be enabled to use Ozone.
 
-2. From here on it works very similarly to document capture, Start camera activity:
+- **Initialization**
+
+	Must have included MrzCameraInitializer() in initialization (See **Initializing the SDK**). Important note, by this point the user has to have granted external storage permissions since this initializer is saving OCRB information to the phone. The MRZ camera will not function without this initialization.
+
+- **Capturing the MRZ data**
+
+Capturing the MRZ data using AcuantCamera is similar to document capture.
+
+1. Start camera activity:
 
 		val cameraIntent = Intent(
 			this@MainActivity,
@@ -287,7 +375,7 @@ Alternatively use the new options object. This method allows you to configure mu
 		
 		startActivityForResult(cameraIntent, REQUEST_CODE)
         
-3. Get activity result:
+2. Get activity result:
 	
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 			super.onActivityResult(requestCode, resultCode, data)
@@ -296,11 +384,6 @@ Alternatively use the new options object. This method allows you to configure mu
 				val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
 			}
 		}
-
-**Note:**   **AcuantCamera** is dependent on **AcuantImagePreparation** and  **AcuantCommon**.
-
-**Note 2:**   To use the MRZ features, your credentials must be enabled to use Ozone.
-
 		 
 #### AcuantImagePreparation ####
 
@@ -308,76 +391,7 @@ This section describes how to use **AcuantImagePreparation**.
 
 - **Initialization**
 
-		class MainActivity : Activity() {
-		
-		    override fun onCreate() {
-		        super.onCreate()
-		        
-		        //Specify the path to the previously created XML file, using “assets” as root
-		        //Pass in Context from Application
-		        //List the packages to initialize; only ImageProcessor is required
-
-				try{
-					AcuantInitializer.initialize("PATH/TO/CONFIG/FILENAME.XML", this, 
-						listOf(ImageProcessorInitializer()), 
-						object: IAcuantPackageCallback{
-							override fun onInitializeSuccess() {
-								//success
-							}
-							
-							override fun onInitializeFailed(error: List<Error>) {
-								//error
-							}
-						})
-				}
-				catch(e: AcuantException){
-					Log.e("Acuant Error", e.toString())
-				}
-		    }
-		}
-
-Here is the interface for the initialize listener:
-
-		interface IAcuantPackageCallback{
-			fun onInitializeSuccess()
-
-			fun onInitializeFailed(error: List<Error>)
-		}
-		
-		
-
-**Note:** If you are *not* using a configuration file for initialization, then use the following statement (providing appropriate credentials for *username*, *password*, and *subscription ID*):
-	
-		Credential.init("xxxxxxx",
-		"xxxxxxxx",
-		"xxxxxxxxxx",
-		"https://frm.acuant.net",
-		"https://services.assureid.net",
-		"https://medicscan.acuant.net",
-		"https://us.passlive.acuant.net",
-		"https://acas.acuant.net",
-		"https://ozone.acuant.net")
-		AcuantInitializer.initialize("", this, listOf(ImageProcessorInitializer()), callback)
-		
-#### Initialization without a Subscription ID ####
-
-**AcuantImagePreparation** may be initialized by providing only a username and a password. However, without providing a Subscription ID, the application can *only* capture an image and get the image. Without a Subscription ID:
-
-1. Only the **AcuantCamera**, **AcuantImagePreparation**, and **AcuantHGLiveness** modules may be used.
-2. The SDK can be used to capture identity documents.
-3. The captured images can be exported from the SDK. See the **onActivityResult** in the **MainActivity** of the sample application.
-
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-			super.onActivityResult(requestCode, resultCode, data)
-			if (requestCode == Constants.REQUEST_CAMERA_PHOTO
-				&& resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
-			
-				val bytes = readFromFile(data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL))
-				val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size);
-				capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
-			}
-			...
-		}
+	Must have included ImageProcessorInitializer() in initialization (See **Initializing the SDK**).
 
 - **Crop** 
 
@@ -444,15 +458,24 @@ After you capture a document image is captured, use the following steps to proce
 		
 ### AcuantIPLiveness ###
 
+**Important Note:** The following must be in your root level gradle in the android{} section otherwise a runtime failure may occur:
+
+		compileOptions {
+			sourceCompatibility JavaVersion.VERSION_1_8
+			targetCompatibility JavaVersion.VERSION_1_8
+		}
+		kotlinOptions {
+			jvmTarget = "1.8"
+		}
+
 1. Get the setup from the controller and begin Activity:
 
 		AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
 			override fun onDataReceived(result: FacialSetupResult?) {
 				if(result != null) {
 					//start face capture activity
-					val facialIntent = AcuantIPLiveness.getFacialCaptureIntent(this@MainActivity, result)
-					facialIntent.allowScreenshots = false //Set to false by default; set to true to enable allowScreenshots
-					startActivityForResult(facialIntent, REQUEST_CODE)
+                    result.allowScreenshots = true //Set to false by default; set to true to enable allowScreenshots
+                    AcuantIPLiveness.runFacialCapture(context, result, listener)
 				}
 				else {
 					//handle error
@@ -464,29 +487,19 @@ After you capture a document image is captured, use the following steps to proce
 			}
 		})
         
-2. Get the Activity result:
-		
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-			super.onActivityResult(requestCode, resultCode, data)
+2. Get the result:
 
-			if (requestCode == REQUEST_CODE) {
-				if(resultCode == ErrorCodes.ERROR_CAPTURING_FACIAL) {
-					//handle capture error
-				}
-				else if (resultCode == ErrorCodes.USER_CANCELED_FACIAL) {
-					//user canceled activity
-				}
-				else {
-					//success capturing. now get the result with parameters.
-					val userId = data?.getStringExtra(FacialCaptureConstant.ACUANT_USERID_KEY)!!
-					val token = data?.getStringExtra(FacialCaptureConstant.ACUANT_TOKEN_KEY)!!
-				}
-			}
+		//implement the following listener
+		interface IPLivenessListener {
+			fun onProgress(status: String, progress: Int) // for displaying the progress of liveness analysis after capture, progress = 0 to 100, status = text description of current step
+			fun onSuccess(userId: String, token: String)
+			fun onFail(error: Error)
+			fun onCancel() // called when no error occurred but user canceled/backed out of the process
 		}
 		
-3. Get the facial capture result:
+3. Get the facial capture result (call after onSuccess in IPLivenessListener):
 		
-		//isPassed = true if face is live. false if face is not live.
+		//isPassed = true if face is live; otherwise false
 		//frame contains the base64 encoded image
 		data class FacialCaptureResult (isPassed: Boolean, frame: String) 
 
@@ -502,7 +515,7 @@ After you capture a document image is captured, use the following steps to proce
 					//handle error
 				}
 			}
-		)	
+		)
 
 		
 ### AcuantHGLiveness ###
@@ -547,19 +560,21 @@ This module is used to match two facial images:
 
 ### AcuantEChipReader ###
 
-1. **AcuantEChipreader** needs to be initialized in the same way as **AcuantImagePreparation**. If you are using this module, go back to the initialization step, and add EchipInitializer() to the list of initializers to use.
 
-2. Check that the permission is provided in the manifest file:
+- **Initialization**
+
+	Must include EchipInitializer() in initialization (See **Initializing the SDK**).
+
+1. Check that the permission is provided in the manifest file:
 
 		<uses-permission android:name="android.permission.NFC" />
 
-3. Make sure that the NFC sensor on the device is turned on.
+2. Make sure that the NFC sensor on the device is turned on.
 
-4. Initialize the Android NFC Adapter:
-
+3. Initialize the Android NFC Adapter:
 		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 
-5. Use the SDK API to listen to NFC tags available in an e-Passport:
+4. Use the SDK API to listen to NFC tags available in an e-Passport:
 
 		AcuantEchipReader.listenNfc(this, nfcAdapter)
 		
@@ -580,6 +595,8 @@ This module is used to match two facial images:
 
 			fun tagReadStatus(status: String)
 		}
+		
+**Important Note:** All the data in nfcData is directly read from the passport chip except for *age* and *isExpired*. These two fields are extrapolated from the data read from the chip and the current date (obtained via Calendar.getInstance().time). This can potentially lead to inaccuracy due to either the device time being wrong or the DOB or DOE being calculated incorrectly from the data on the chip. This is an unfortunate restraint of passport chips as the DOE and DOB are stored in YYMMDD format and therefore suffers from the y2k issue (given a year of 22 we can not with 100% certainty determine if it stands for 1922 or 2022 or even theoretically 2122). The way we work around this is as follows: For age we use the current year as the breakpoint (eg. in 2020, 25 would be interpreted as 1925 but in 2030 25 would be interpreted as 2025). For isExpired we do the same but going forward 20 years from the current year.
 
 ### AcuantFaceCapture ###
 
@@ -592,7 +609,7 @@ This module is used to automate capturing an image of a face appropriate for use
 			FaceCaptureActivity::class.java
 		)
 
-		/*Optional, should only be used if you are changing some of the options, pointless to pass default options */
+		/\*Optional, should only be used if you are changing some of the options, pointless to pass default options \*/
 		cameraIntent.putExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS, FaceCaptureOptions())
 
 		startActivityForResult(cameraIntent, YOUR_REQUEST_CODE)

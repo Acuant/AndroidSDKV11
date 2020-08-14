@@ -91,6 +91,12 @@ class NfcResultActivity : AppCompatActivity() {
         value = data.dateOfBirth
         addField(key, value)
 
+        if (data.age != null) {
+            key = "Age"
+            value = data.age.toString()
+            addField(key, value)
+        }
+
         key = "Nationality"
         value = data.nationality
         addField(key, value)
@@ -98,6 +104,11 @@ class NfcResultActivity : AppCompatActivity() {
         key = "Expiration date"
         value = data.documentExpiryDate
         addField(key, value)
+
+        if (data.isExpired != null) {
+            key = "Is expired"
+            addBooleanField(key, data.isExpired!!)
+        }
 
         key = "Document code"
         value = data.documentCode

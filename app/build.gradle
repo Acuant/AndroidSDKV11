@@ -39,7 +39,14 @@ android {
         }
     }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 
     project.ext.versionCodes = ['armeabi': 1, 'armeabi-v7a': 2, 'arm64-v8a': 3, 'x86': 4, 'x86_64': 5]
 
@@ -97,7 +104,7 @@ dependencies {
 
 
     //iproov
-    implementation('com.iproov.sdk:iproov:4.4.0@aar') {
+    implementation('com.iproov.sdk:iproov:5.2.1@aar') {
         transitive = true
     }
 
