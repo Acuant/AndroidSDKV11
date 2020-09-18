@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.4
-**August 2020**
+# Acuant Android SDK v11.4.5
+**September 2020**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -16,7 +16,7 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ![](https://i.imgur.com/KR0J94S.png)
 
-**Note** The acceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and matches an ID document.
+**Note:** The acceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and matches an ID document.
 
 ----------
 
@@ -26,9 +26,21 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ----------
 
+## AndroidX Support
+
+In order to maintain backward compatibility, the Acuant SDK is currently not compiled using AndroidX support libraries. However, the SDK may be used with AndroidX by using [Jetifier](https://developer.android.com/jetpack/androidx/migrate).
+
+**Note:** This should be enabled by default when you migrate your project to AndroidX.
+
+- If you are using Acuant’s compiled AAR files, or if you get the SDK from Maven, no additional action is required (aside from verifying that Jetifier is enabled).
+
+- If you are customizing any of Acuant’s open modules, you will need to build the library into an AAR file, and then use that AAR file in your app along with Jetifier.
+
+----------
+
 ## Prerequisites ##
 
-- Supports Android SDK versions 21-28
+- Supports Android SDK versions 21-29
 
 
 ## Modules ##
@@ -171,26 +183,26 @@ The SDK includes the following modules:
 3. Add the Acuant SDK dependency in **build.gradle** if using Maven:
 
 	- Add the following Maven URL
-	
-		maven { url 'https://dl.bintray.com/acuant/Acuant' }
-        	maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
-        	
-     - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.4'
-    		implementation 'com.acuant:acuantcamera:11.4.4'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.4'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.4'
-    		implementation 'com.acuant:acuantechipreader:11.4.4'
-    		implementation 'com.acuant:acuantfacematch:11.4.4'
-    		implementation 'com.acuant:acuanthgliveness:11.4.4'
-    		implementation ('com.acuant:acuantipliveness:11.4.4'){
+    		maven { url 'https://dl.bintray.com/acuant/Acuant' }
+    		maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
+        	
+   - Add the following dependencies
+
+    		implementation 'com.acuant:acuantcommon:11.4.5'
+    		implementation 'com.acuant:acuantcamera:11.4.5'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.5'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.5'
+    		implementation 'com.acuant:acuantechipreader:11.4.5'
+    		implementation 'com.acuant:acuantfacematch:11.4.5'
+    		implementation 'com.acuant:acuanthgliveness:11.4.5'
+    		implementation ('com.acuant:acuantipliveness:11.4.5'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.4'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.4'
+    		implementation 'com.acuant:acuantfacecapture:11.4.5'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.5'
 		
-	- Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
+   - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
 
 4. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
@@ -387,34 +399,43 @@ Capturing the MRZ data using AcuantCamera is similar to document capture.
 		 
 #### AcuantImagePreparation ####
 
+**Note:**   **AcuantImagePreparation** uses @Keep annotations. These are supported by the default Android configuration. If you override or modify the Android ProGuard file, then support for these annotations must be included.
+
 This section describes how to use **AcuantImagePreparation**.
 
 - **Initialization**
 
 	Must have included ImageProcessorInitializer() in initialization (See **Initializing the SDK**).
 
-- **Crop** 
+- **Crop, Sharpness, and Glare** 
 
-	After an image is captured, it is sent to the cropping library for cropping.
-
-
-		//CroppingData & Image are part of AcuantCommon
+	After an image is captured, it is cropped, and checked for sharpness and glare. This is done using the evaluateImage of **AcuantImagePreparation**.
 	
-		val data = CroppingData()
-		data.image = image
-		acuantImage = AcuantImagePreparation.crop(data)
- 		
-- **Sharpness**
-
-	This method returns the sharpness value of an image. If the sharpness value is greater than 50, then the image is considered sharp.
-
-		public static Integer sharpness(Bitmap image)
+		evaluateImage(context: Context, croppingData: CroppingData, listener: EvaluateImageListener)
+	
+	passing in the cropping data:
+	
+		class CroppingData(Bitmap image)
+	
+	and a callback listener:
+	
+		interface EvaluateImageListener {
+			fun onSuccess(image: AcuantImage)
+			fun onError(error: Error)
+		}
 		
-- **Glare**
-
-	This method returns the glare value of an image. If glare value is greater than 50, then the image does not have glare.
-
-		public static Integer glare(Bitmap image)
+	The AcuantImage can be used to verify the crop, sharpness, and glare as well as upload in the next step:
+	
+		class AcuantImage {
+			val image: Bitmap
+			val dpi: Int
+			val sharpness: Int
+			val glare: Int
+			val isCorrectAspectRatio: Boolean
+			val isPassport: Boolean
+			val aspectRatio: Float
+			val rawBytes: ByteArray
+		}
 		
 ### AcuantDocumentProcessing ###
 
@@ -432,11 +453,18 @@ After you capture a document image is captured, use the following steps to proce
 		
 2. Upload an image:
 
-		public static void uploadImage(String instanceID, IdData idData, IdOptions options, UploadImageListener listener)
+		public static void uploadImage(String instanceID, EvaluatedImageData imageData, IdOptions options, UploadImageListener listener)
+		
+		class EvaluatedImageData (
+			val imageBytes: ByteArray,
+			val barcodeString: String? = null
+		)
 		
 		public interface UploadImageListener {
 			void imageUploaded(Error error, Classification classification);
 		}
+		
+**Important Note:** The image bytes in EvaluatedImageData should be the bytes from AcuantImage.rawBytes not the bytes from the bitmap stored within. Similarly if you are not using **AcuantDocumentProcessing** and uploading the image in some other way you should also be uploading these bytes.
 		
 3. Get the data:
 		
@@ -563,18 +591,29 @@ This module is used to match two facial images:
 
 - **Initialization**
 
-	Must include EchipInitializer() in initialization (See **Initializing the SDK**).
+Must include EchipInitializer() in initialization (See **Initializing the SDK**).
+	
+1. If you are using ProGuard, then you must add the the following to the configuration file (otherwise the echip read will fail at runtime):
 
-1. Check that the permission is provided in the manifest file:
+		-keep class org.bouncycastle.jcajce.provider.** {
+			<fields>;
+			<methods>;
+		}
+		-keep class net.sf.scuba.** {
+			<fields>;
+			<methods>;
+		}
+
+2. Check that the permission is included in the manifest:
 
 		<uses-permission android:name="android.permission.NFC" />
+	
+3. Make sure that the NFC sensor on the device is turned on.
 
-2. Make sure that the NFC sensor on the device is turned on.
-
-3. Initialize the Android NFC Adapter:
+4. Initialize the Android NFC Adapter:
 		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 
-4. Use the SDK API to listen to NFC tags available in an e-Passport:
+5. Use the SDK to listen to NFC tags available in an ePassport:
 
 		AcuantEchipReader.listenNfc(this, nfcAdapter)
 		

@@ -45,6 +45,7 @@ class AcuantTokenService(private val credential: Credential,
                 PrintWriter(OutputStreamWriter(outputStream, charset), true)
                 val settingJsonObject = JSONObject()
                 settingJsonObject.put("grant_type", "client_credentials")
+//                settingJsonObject.put("expires_in", "10") //for testing with token expiry
                 val dataBytes = settingJsonObject.toString().toByteArray()
                 outputStream.write(dataBytes, 0, dataBytes.size)
                 outputStream.flush()

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.ImageView
-import com.acuant.acuantcamera.CapturedImage
 
 class ClassificationFailureActivity : AppCompatActivity() {
 
@@ -14,10 +13,10 @@ class ClassificationFailureActivity : AppCompatActivity() {
         setContentView(R.layout.activity_classification_failure)
 
         val image = findViewById<ImageView>(R.id.classificationErrorImage)
-        image.setImageBitmap(CapturedImage.acuantImage!!.image)
+        image.setImageBitmap(MainActivity.image)
     }
 
-    fun retryClassificationClicked(view: View) {
+    fun retryClassificationClicked(@Suppress("UNUSED_PARAMETER") view: View) {
         val result = Intent()
         this@ClassificationFailureActivity.setResult(Constants.REQUEST_RETRY, result)
         this@ClassificationFailureActivity.finish()

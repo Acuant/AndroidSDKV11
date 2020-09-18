@@ -13,8 +13,6 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import com.acuant.acuantcamera.CapturedImage
-import com.acuant.acuantcommon.model.ErrorCodes
 
 
 class ConfirmationActivity : AppCompatActivity() {
@@ -22,6 +20,11 @@ class ConfirmationActivity : AppCompatActivity() {
     private var isFrontImage: Boolean = true
     private var isBarcode: Boolean = false
     private var isHealthCard: Boolean = false
+    private var barcodeString: String? = null
+    private var image: Bitmap? = null
+    private var sharpness = -1
+    private var glare = -1
+    private var dpi = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,52 +32,65 @@ class ConfirmationActivity : AppCompatActivity() {
         isFrontImage = intent.getBooleanExtra("isFrontImage", true)
         isHealthCard = intent.getBooleanExtra("isHealthCard", false)
         isBarcode = intent.getBooleanExtra("isBarcode", false)
+        barcodeString = intent.getStringExtra("barcode")
+        sharpness = intent.getIntExtra("sharpness", -1)
+        glare = intent.getIntExtra("glare", -1)
+        dpi = intent.getIntExtra("dpi", -1)
+        image = MainActivity.image
 
-        if(CapturedImage.barcodeString != null){
+        if(barcodeString != null){
             val barcodeText = findViewById<TextView>(R.id.barcodeText)
-            barcodeText.text = "Barcode :${CapturedImage.barcodeString!!.substring(0, (CapturedImage.barcodeString!!.length * 0.2).toInt())}..."
+            barcodeText.text = "Barcode :${barcodeString!!.substring(0, (barcodeString!!.length * 0.2).toInt())}..."
         }
 
-        if (CapturedImage.acuantImage != null && (CapturedImage.acuantImage!!.error == null || (CapturedImage.acuantImage!!.error != null && CapturedImage.acuantImage!!.error.errorCode == ErrorCodes.ERROR_LowResolutionImage))) {
+        if (image != null) {
 
             val generalMessageText = findViewById<TextView>(R.id.generalMessageText)
-            if (generalMessageText != null && CapturedImage.acuantImage!!.image != null) {
+            if (generalMessageText != null) {
                 generalMessageText.text = "Ensure all texts are visible."
-            } else if (CapturedImage.acuantImage!!.image == null) {
-                generalMessageText.text = "Could not crop image."
             }
 
 
-            if (CapturedImage.acuantImage != null) {
+            if (image != null) {
                 val sharpnessText = findViewById<TextView>(R.id.sharpnessText)
-                val isBlurry = CapturedImage.sharpnessScore < SHARPNESS_THRESHOLD
-                if (sharpnessText != null && CapturedImage.acuantImage!!.image != null) {
+                val isBlurry = sharpness < SHARPNESS_THRESHOLD
+                if (sharpnessText != null) {
                     if (isBlurry) {
-                        sharpnessText.text = "It is a blurry image. Sharpness Grade : ${CapturedImage.sharpnessScore}"
+                        sharpnessText.text = "It is a blurry image. Sharpness Grade : $sharpness"
                     } else {
-                        sharpnessText.text = "It is a sharp image. Sharpness Grade : ${CapturedImage.sharpnessScore}"
+                        sharpnessText.text = "It is a sharp image. Sharpness Grade : $sharpness"
                     }
                 }
 
                 val glareText = findViewById<TextView>(R.id.glareText)
-                val hasGlare = CapturedImage.glareScore < GLARE_THRESHOLD
-                if (glareText != null && CapturedImage.acuantImage!!.image != null) {
+                val hasGlare = glare < GLARE_THRESHOLD
+                if (glareText != null && image != null) {
                     if (hasGlare) {
-                        glareText.text = "Image has glare. Glare Grade : ${CapturedImage.glareScore}"
+                        glareText.text = "Image has glare. Glare Grade : $glare"
                     } else {
-                        glareText.text = "Image doesn't have glare. Glare Grade : ${CapturedImage.glareScore}"
+                        glareText.text = "Image doesn't have glare. Glare Grade : $glare"
                     }
                 }
             }
 
             val dpiText = findViewById<TextView>(R.id.dpiText)
-            if (dpiText != null && CapturedImage.acuantImage!!.image != null) {
-                dpiText.text = "DPI : ${CapturedImage.acuantImage!!.dpi}"
+            if (dpiText != null) {
+                when {
+                    dpi < 550 -> {
+                        dpiText.text = "DPI is low: $dpi"
+                    }
+                    dpi < 600 -> {
+                        dpiText.text = "DPI is slightly low: $dpi"
+                    }
+                    else -> {
+                        dpiText.text = "DPI: $dpi"
+                    }
+                }
             }
 
             val confirmationImage = findViewById<ImageView>(R.id.confrimationImage)
-            if (confirmationImage != null && CapturedImage.acuantImage != null && CapturedImage.acuantImage!!.image != null) {
-                confirmationImage.setImageBitmap(CapturedImage.acuantImage!!.image)
+            if (confirmationImage != null && image != null) {
+                confirmationImage.setImageBitmap(image)
                 confirmationImage.scaleType = ImageView.ScaleType.FIT_CENTER
 
                 val displayMetrics = DisplayMetrics()

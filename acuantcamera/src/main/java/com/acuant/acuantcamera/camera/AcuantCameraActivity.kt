@@ -78,6 +78,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
             unserializedOptions as AcuantCameraOptions
         }
 
+        @Suppress("DEPRECATION")
         isInMrzCapture = options.isMrzMode
 
         if (options.useGMS) {

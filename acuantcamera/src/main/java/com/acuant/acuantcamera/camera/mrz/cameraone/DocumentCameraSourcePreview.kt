@@ -19,11 +19,13 @@ import android.Manifest
 import android.content.Context
 import android.content.res.Configuration
 import android.support.annotation.RequiresPermission
+import android.support.v7.app.AlertDialog
 import android.util.AttributeSet
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.ViewGroup
+import com.acuant.acuantcamera.R
 
 
 import java.io.IOException
@@ -103,6 +105,13 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
                 Log.e(TAG, "Do not have permission to start the camera", se)
             } catch (e: IOException) {
                 Log.e(TAG, "Could not start camera source.", e)
+                val dialogBuilder = AlertDialog.Builder(context)
+                dialogBuilder.setMessage(R.string.error_starting_cam)
+                        .setPositiveButton(R.string.ok
+                        ) { dialog, _ ->
+                            dialog.dismiss()
+                        }
+                dialogBuilder.create().show()
             }
 
         }
@@ -148,6 +157,7 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
         for (i in 0 until childCount) {
             getChildAt(i).layout(0, 0, childWidth, layoutHeight)
         }
+
         try {
             startIfReady()
         } catch (e: Exception) {

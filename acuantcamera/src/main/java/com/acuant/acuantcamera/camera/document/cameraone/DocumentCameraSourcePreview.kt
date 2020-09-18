@@ -19,11 +19,14 @@ import android.Manifest
 import android.content.Context
 import android.content.res.Configuration
 import android.support.annotation.RequiresPermission
+import android.support.v7.app.AlertDialog
 import android.util.AttributeSet
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.ViewGroup
+import com.acuant.acuantcamera.R
+import com.acuant.acuantcamera.camera.mrz.cameraone.DocumentCameraSourcePreview
 
 
 import java.io.IOException
@@ -95,6 +98,7 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
     }
 
     private inner class SurfaceCallback : SurfaceHolder.Callback {
+
         override fun surfaceCreated(surface: SurfaceHolder) {
             mSurfaceAvailable = true
             try {
@@ -103,6 +107,14 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
                 Log.e(TAG, "Do not have permission to start the camera", se)
             } catch (e: IOException) {
                 Log.e(TAG, "Could not start camera source.", e)
+                val dialogBuilder = AlertDialog.Builder(context)
+                dialogBuilder.setMessage(R.string.error_starting_cam)
+                        .setPositiveButton(R.string.ok
+                        ) { dialog, _ ->
+                            dialog.dismiss()
+
+                        }
+                dialogBuilder.create().show()
             }
 
         }
@@ -157,6 +169,6 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
     }
 
     companion object {
-        private val TAG = "CameraSourcePreview"
+        private const val TAG = "CameraSourcePreview"
     }
 }

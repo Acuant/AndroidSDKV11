@@ -362,7 +362,12 @@ public class DocumentCameraSource {
                 return this;
             }
 
-            mCamera = createCamera();
+            try {
+                mCamera = createCamera();
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                throw new IOException();
+            }
             mCamera.setPreviewDisplay(surfaceHolder);
             mCamera.startPreview();
 

@@ -5,7 +5,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -71,23 +70,22 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
 
         val permissions = arrayOf(Manifest.permission.CAMERA)
 
-        if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
-            return
-        }
-
-        val thisActivity = this
-
-        val listener = View.OnClickListener {
-            ActivityCompat.requestPermissions(thisActivity, permissions,
-                    RC_HANDLE_CAMERA_PERM)
-        }
-
-        Snackbar.make(mFacialGraphicOverlay!!, R.string.permission_camera_rationale,
-                Snackbar.LENGTH_INDEFINITE)
-                .setAction(R.string.ok, listener)
-                .show()
+        val builder = AlertDialog.Builder(this)
+        builder.setMessage("The camera is required to capture faces. If the permission has been declined you will need to manually go to the app settings to enable it.")
+                .setOnCancelListener {
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                                    Manifest.permission.CAMERA)) {
+                        ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
+                    } }
+                .setPositiveButton("OK"
+                ) { dialog, _ ->
+                    dialog.dismiss()
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                                    Manifest.permission.CAMERA)) {
+                        ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
+                    }
+                }
+        builder.create().show()
     }
 
     /**
@@ -161,7 +159,7 @@ class FacialLivenessActivity : AppCompatActivity(), LiveFaceListener {
         val listener = DialogInterface.OnClickListener { _, _ -> finish() }
 
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("Face Tracker sample")
+        builder.setTitle(R.string.camera_load_error)
                 .setMessage(R.string.no_camera_permission)
                 .setPositiveButton(R.string.ok, listener)
                 .show()

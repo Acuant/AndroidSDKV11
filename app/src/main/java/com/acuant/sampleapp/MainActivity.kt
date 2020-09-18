@@ -2,12 +2,12 @@ package com.acuant.sampleapp
 
 import android.Manifest
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
-import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
@@ -17,7 +17,6 @@ import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
-import com.acuant.acuantcamera.CapturedImage
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
 import com.acuant.acuantcamera.constant.*
@@ -28,20 +27,24 @@ import com.acuant.acuantcommon.initializer.IAcuantPackageCallback
 import com.acuant.acuantcommon.model.*
 import com.acuant.acuantcommon.type.CardSide
 import com.acuant.acuantdocumentprocessing.AcuantDocumentProcessor
-import com.acuant.acuantdocumentprocessing.model.*
 import com.acuant.acuantdocumentprocessing.service.listener.CreateInstanceListener
 import com.acuant.acuantdocumentprocessing.service.listener.DeleteListener
 import com.acuant.acuantdocumentprocessing.service.listener.GetDataListener
 import com.acuant.acuantdocumentprocessing.service.listener.UploadImageListener
 import com.acuant.acuantcamera.initializer.MrzCameraInitializer
 import com.acuant.acuantcommon.helper.CredentialHelper
+import com.acuant.acuantdocumentprocessing.model.*
 import com.acuant.acuantechipreader.initializer.EchipInitializer
 import com.acuant.acuantfacecapture.FaceCaptureActivity
 import com.acuant.acuantfacematchsdk.AcuantFaceMatch
 import com.acuant.acuantfacematchsdk.model.FacialMatchData
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
 import com.acuant.acuanthgliveness.model.FaceCapturedImage
+import com.acuant.acuantimagepreparation.AcuantImagePreparation
+import com.acuant.acuantimagepreparation.background.EvaluateImageListener
 import com.acuant.acuantimagepreparation.initializer.ImageProcessorInitializer
+import com.acuant.acuantimagepreparation.model.AcuantImage
+import com.acuant.acuantimagepreparation.model.CroppingData
 import com.acuant.acuantipliveness.AcuantIPLiveness
 import com.acuant.acuantipliveness.IPLivenessListener
 import com.acuant.acuantipliveness.facialcapture.model.FacialCaptureResult
@@ -55,8 +58,6 @@ import com.acuant.acuantpassiveliveness.model.PassiveLivenessResult
 import com.acuant.acuantpassiveliveness.service.PassiveLivenessListener
 import com.acuant.sampleapp.backgroundtasks.AcuantTokenService
 import com.acuant.sampleapp.backgroundtasks.AcuantTokenServiceListener
-import com.acuant.sampleapp.backgroundtasks.CroppingTask
-import com.acuant.sampleapp.backgroundtasks.CroppingTaskListener
 import com.acuant.sampleapp.utils.CommonUtils
 import java.io.*
 import java.net.HttpURLConnection
@@ -68,8 +69,8 @@ import kotlin.concurrent.thread
 class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IPLivenessListener {
     private var progressDialog: LinearLayout? = null
     private var progressText: TextView? = null
-    private var capturedFrontImage: Image? = null
-    private var capturedBackImage: Image? = null
+    private var capturedFrontImage: AcuantImage? = null
+    private var capturedBackImage: AcuantImage? = null
     private var capturedSelfieImage: Bitmap? = null
     private var capturedFaceImage: Bitmap? = null
     private var capturedBarcodeString: String? = null
@@ -92,10 +93,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
     private var isKeyless = false
     private var processingFacialLiveness = false
     private val useTokenInit = true
+    private var recentImage: AcuantImage? = null
     private lateinit var livenessSpinner : Spinner
     private lateinit var livenessArrayAdapter: ArrayAdapter<String>
 
     fun cleanUpTransaction() {
+        capturedFrontImage?.destroy()
+        capturedBackImage?.destroy()
         facialResultString = null
         capturedFrontImage = null
         capturedBackImage = null
@@ -143,24 +147,15 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         initializeAcuantSdk(object: IAcuantPackageCallback{
             override fun onInitializeSuccess() {
                 this@MainActivity.runOnUiThread {
-                    isInitialized = true
                     setProgress(false)
                 }
             }
 
             override fun onInitializeFailed(error: List<Error>) {
                 this@MainActivity.runOnUiThread {
-                    setProgress(false)
-                    val alert = AlertDialog.Builder(this@MainActivity)
-                    alert.setTitle("Error")
-                    alert.setMessage("Could not initialize.\n"+error[0].errorDescription)
-                    alert.setPositiveButton("OK") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    alert.show()
+                    showAcuDialog("Could not initialize.\n"+error[0].errorDescription)
                 }
             }
-
         })
     }
 
@@ -197,6 +192,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
                 override fun onInitializeSuccess() {
 
+                    isInitialized = true
                     if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
                         isKeyless = true
                         livenessSpinner.visibility = View.INVISIBLE
@@ -226,11 +222,19 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                 AcuantTokenService(Credential.get(), object : AcuantTokenServiceListener {
                     override fun onSuccess(token: String) {
 
-                        AcuantInitializer.initializeWithToken("acuant.config.xml",
-                                token,
-                                this@MainActivity,
-                                listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
-                                initCallback)
+                        if (!isInitialized) {
+                            AcuantInitializer.initializeWithToken("acuant.config.xml",
+                                    token,
+                                    this@MainActivity,
+                                    listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
+                                    initCallback)
+                        } else {
+                            if(Credential.setToken(token)) {
+                                initCallback.onInitializeSuccess()
+                            } else {
+                                initCallback.onInitializeFailed(listOf(Error(-2, "Error in setToken\nBad/expired token")))
+                            }
+                        }
 
                     }
 
@@ -249,15 +253,35 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
         } catch(e: AcuantException) {
             Log.e("Acuant Error", e.toString())
-            setProgress(false)
-            val alert = AlertDialog.Builder(this@MainActivity)
-            alert.setTitle("Error")
-            alert.setMessage(e.toString())
+            showAcuDialog(e.toString())
+        }
+    }
+
+    private fun showAcuDialog(message: Int, @Suppress("SameParameterValue") title: String = "Error",
+                              yesOnClick: DialogInterface.OnClickListener? = null,
+                              noOnClick: DialogInterface.OnClickListener? = null) {
+        showAcuDialog(getString(message), title, yesOnClick, noOnClick)
+    }
+
+    private fun showAcuDialog(message: String, title: String = "Error",
+                              yesOnClick: DialogInterface.OnClickListener? = null,
+                              noOnClick: DialogInterface.OnClickListener? = null) {
+
+        setProgress(false)
+        val alert = AlertDialog.Builder(this@MainActivity)
+        alert.setTitle(title)
+        alert.setMessage(message)
+        if (yesOnClick != null) {
+            alert.setPositiveButton("YES", yesOnClick)
+            if (noOnClick != null) {
+                alert.setNegativeButton("NO", noOnClick)
+            }
+        } else {
             alert.setPositiveButton("OK") { dialog, _ ->
                 dialog.dismiss()
             }
-            alert.show()
         }
+        alert.show()
     }
 
     private fun getFacialLivenessCredentials(callback: IAcuantPackageCallback){
@@ -325,35 +349,30 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             val buf = BufferedInputStream(FileInputStream(file))
             buf.read(bytes, 0, bytes.size)
             buf.close()
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
         } catch (e: Exception){
             e.printStackTrace()
         }
+        file.delete()
         return bytes
     }
 
-    private fun handleKeyless(acuantImage: Image?){
-        if(acuantImage == null || acuantImage.isPassport || frontCaptured){
+    private fun handleKeyless(acuantImage: AcuantImage?) {
+        handleKeyless(acuantImage?.isPassport)
+    }
+
+    private fun handleKeyless(isPassport: Boolean?){
+        if(isPassport == true || frontCaptured){
             showHGLiveness(Constants.REQUEST_CAMERA_HG_SELFIE_KEYLESS)
         }
         else{
             this@MainActivity.runOnUiThread {
-                val alert = AlertDialog.Builder(this@MainActivity)
-                alert.setTitle("Message")
-                alert.setMessage(R.string.scan_back_side_id)
-                alert.setPositiveButton("OK") { dialog, _ ->
+                showAcuDialog(R.string.scan_back_side_id, "Message",
+                        DialogInterface.OnClickListener { dialog, _ ->
                     frontCaptured = true
-                    dialog.dismiss()
+                    dialog?.dismiss()
                     captureWaitTime = 2
                     showDocumentCaptureCamera()
-                }
-                alert.setNegativeButton("CANCEL") { dialog, _ ->
-                    dialog.dismiss()
-                }
-                alert.show()
+                }, DialogInterface.OnClickListener { dialog, _ -> dialog?.dismiss() })
             }
         }
     }
@@ -361,32 +380,14 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == Constants.REQUEST_CAMERA_PHOTO && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
-            val bytes = readFromFile(data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL))
+            val url = data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL)
             capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
-            setProgress(true, "Cropping...")
+            if (url != null) {
+                setProgress(true, "Cropping...")
+                val bytes = readFromFile(url)
+                AcuantImagePreparation.evaluateImage(this, CroppingData(BitmapFactory.decodeByteArray(bytes, 0, bytes.size)), object : EvaluateImageListener {
 
-            //For running with a debug image (also comment out cropping task)
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//            thread {
-//                CapturedImage.acuantImage = Image()
-//                CapturedImage.acuantImage?.image = BitmapFactory.decodeResource(baseContext.resources, R.drawable.test)
-//                CapturedImage.sharpnessScore = AcuantImagePreparation.sharpness(CapturedImage.acuantImage?.image)
-//                CapturedImage.glareScore = AcuantImagePreparation.glare(CapturedImage.acuantImage?.image)
-//                showConfirmation(true, false)
-//            }
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-            val croppingTask = CroppingTask(BitmapFactory.decodeByteArray(bytes, 0, bytes.size), !frontCaptured, object : CroppingTaskListener {
-                override fun croppingFinished(acuantImage: Image?, isFrontImage: Boolean) {
-                    this@MainActivity.runOnUiThread {
-                        setProgress(false)
-                    }
-
-                    if(isKeyless){
-                        handleKeyless(acuantImage)
-                    }
-                    else{
-                        CapturedImage.acuantImage = acuantImage
+                    override fun onSuccess(image: AcuantImage) {
 
                         //Enable for debug saving
                         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -399,13 +400,23 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 //                            e.printStackTrace()
 //                        }
                         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        setProgress(false)
+                        if (isKeyless) {
+                            handleKeyless(image)
+                        } else {
+                            recentImage = image
 
-                        showConfirmation(isFrontImage, false)
+                            showConfirmation(!frontCaptured, false)
+                        }
                     }
-                }
-            })
-            croppingTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null)
 
+                    override fun onError(error: Error) {
+                        showAcuDialog(error.errorDescription)
+                    }
+                })
+            } else {
+                showAcuDialog("Camera failed to return valid image path")
+            }
         } else if(requestCode == Constants.REQUEST_HELP_MRZ && resultCode == Constants.REQUEST_HELP_MRZ) {
             showMrzCaptureCamera()
         } else if (requestCode == Constants.REQUEST_CONFIRMATION && resultCode == Constants.REQUEST_CONFIRMATION) {
@@ -413,28 +424,23 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             val isConfirmed = data.getBooleanExtra("Confirmed", true)
             if (isConfirmed) {
                 if (isFront) {
-                    capturedFrontImage = CapturedImage.acuantImage
+                    capturedFrontImage = recentImage
                     if (isHealthCard) {
                         frontCaptured = true
-                        val alert = AlertDialog.Builder(this@MainActivity)
-                        alert.setTitle("Message")
-                        //alert.setMessage("Capture back side of Health insurance card")
-                        alert.setMessage(R.string.scan_back_side_health_insurance_card)
-                        alert.setPositiveButton("OK") { dialog, _ ->
-                            dialog.dismiss()
-                            showDocumentCaptureCamera()
-                        }
-                        alert.setNegativeButton("SKIP") { dialog, _ ->
-                            dialog.dismiss()
-                            uploadHealthCard()
-                        }
-                        alert.show()
+                        showAcuDialog(R.string.scan_back_side_health_insurance_card, "Message",
+                                DialogInterface.OnClickListener { dialog, _ ->
+                                    dialog.dismiss()
+                                    showDocumentCaptureCamera()
+                                }, DialogInterface.OnClickListener { dialog, _ ->
+                                    dialog.dismiss()
+                                    uploadHealthCard()
+                                })
 
                     } else {
                         processFrontOfDocument()
                     }
                 } else {
-                    capturedBackImage = CapturedImage.acuantImage
+                    capturedBackImage = recentImage
                     if (!isHealthCard) {
                         val alert = AlertDialog.Builder(this@MainActivity)
                         alert.setTitle("Message")
@@ -450,8 +456,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                                         + "Barcode String :\n\n"
                                         + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt()))
                             }
-                        }
-                        else{
+                        } else {
                             if (livenessSelected != 0) {
                                 alert.setMessage("Capture Selfie Image now.")
                             } else {
@@ -486,7 +491,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         } else if (requestCode == Constants.REQUEST_RETRY && resultCode == Constants.REQUEST_RETRY) {
             isRetrying = true
             showDocumentCaptureCamera()
-
         }
         //this is the old IP liveness workflow. NOT supported any more, but left in for reference if needed.
         /* else if (requestCode == Constants.REQUEST_CAMERA_IP_SELFIE) {
@@ -505,12 +509,11 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             }
         } */
         else if (requestCode == Constants.REQUEST_CAMERA_HG_SELFIE){
-            if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
+            if (resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE) {
                 capturedSelfieImage = FaceCapturedImage.bitmapImage
                 facialLivelinessResultString = "Facial Liveliness: true"
                 processFacialMatch()
-            }
-            else{
+            } else {
                 showFaceCaptureError()
             }
         } else if (requestCode == Constants.REQUEST_CAMERA_FACE_CAPTURE) {
@@ -559,43 +562,32 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             confirmNFCDataActivity.putExtra("COUNTRY", result.country)
 
             this.startActivity(confirmNFCDataActivity)
-
         }
     }
 
-    private fun showFaceCaptureError(){
-        val alert = AlertDialog.Builder(this@MainActivity)
-        alert.setTitle("Error Capturing Face")
-        alert.setMessage("Would you like to retry?")
-        alert.setPositiveButton("YES") { dialog, _ ->
+    private fun showFaceCaptureError() {
+        showAcuDialog("Would you like to retry?", "Error Capturing Face", DialogInterface.OnClickListener { dialog, _ ->
             dialog.dismiss()
             showFrontCamera()
-        }
-        alert.setNegativeButton("NO") { dialog, _ ->
+        }, DialogInterface.OnClickListener { dialog, _ ->
             dialog.dismiss()
             capturingSelfieImage = false
             facialLivelinessResultString = "Facial Liveliness Failed"
-        }
-        alert.show()
+        })
     }
 
-    private fun showFaceCaptureCanceled(){
-        val alert = AlertDialog.Builder(this@MainActivity)
-        alert.setTitle("User Canceled Face Capture")
-        alert.setMessage("Would you like to retry?")
-        alert.setPositiveButton("YES") { dialog, _ ->
+    private fun showFaceCaptureCanceled() {
+        showAcuDialog("Would you like to retry?", "User Canceled Face Capture", DialogInterface.OnClickListener { dialog, _ ->
             dialog.dismiss()
             showFrontCamera()
-        }
-        alert.setNegativeButton("NO") { dialog, _ ->
+        }, DialogInterface.OnClickListener { dialog, _ ->
             dialog.dismiss()
             capturingSelfieImage = false
             facialLivelinessResultString = "Facial Liveliness Failed"
-        }
-        alert.show()
+        })
     }
 
-    private fun startFacialLivelinessRequest(token: String, userId:String){
+    private fun startFacialLivelinessRequest(token: String, userId:String) {
         setProgress(true, "Getting Data...")
         AcuantIPLiveness.getFacialLiveness(
                 token,
@@ -611,21 +603,14 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
                     override fun onError(errorCode:Int, errorDescription: String) {
                         capturingSelfieImage = false
-                        setProgress(false)
                         facialLivelinessResultString = "Facial Liveliness Failed"
-                        val alert = AlertDialog.Builder(this@MainActivity)
-                        alert.setTitle("Error Retreiving Facial Data")
-                        alert.setMessage(errorDescription)
-                        alert.setPositiveButton("OK") { dialog, _ ->
-                            dialog.dismiss()
-                        }
-                        alert.show()
+                        showAcuDialog(errorDescription, "Error Retreiving Facial Data")
                     }
                 }
         )
     }
 
-    private fun hasInternetConnection():Boolean{
+    private fun hasInternetConnection(): Boolean {
         val connectivityManager= this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo=connectivityManager.activeNetworkInfo
         return networkInfo!=null && networkInfo.isConnected
@@ -633,16 +618,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
     // ID/Passport Clicked
     fun idPassPortClicked(@Suppress("UNUSED_PARAMETER") view: View) {
-        if(!hasInternetConnection()){
-            val alert = AlertDialog.Builder(this@MainActivity)
-            alert.setTitle("Error")
-            alert.setMessage("No internet connection available.")
-            alert.setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-            alert.show()
+        if (!hasInternetConnection()) {
+            showAcuDialog("No internet connection available.")
         } else {
-            if ((!useTokenInit && isInitialized) || Credential.get()?.token?.isValid == true) {
+            if (isInitialized && (!useTokenInit || Credential.get()?.token?.isValid == true)) {
                 frontCaptured = false
                 cleanUpTransaction()
                 captureWaitTime = 0
@@ -652,7 +631,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
                         this@MainActivity.runOnUiThread {
-                            isInitialized = true
                             setProgress(false)
                             frontCaptured = false
                             cleanUpTransaction()
@@ -663,17 +641,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
                     override fun onInitializeFailed(error: List<Error>) {
                         this@MainActivity.runOnUiThread {
-                            setProgress(false)
-                            val alert = AlertDialog.Builder(this@MainActivity)
-                            alert.setTitle("Error")
-                            alert.setMessage("Could not initialize")
-                            alert.setPositiveButton("OK") { dialog, _ ->
-                                dialog.dismiss()
-                            }
-                            alert.show()
+                            showAcuDialog("Could not initialize")
                         }
                     }
-
                 })
             }
         }
@@ -682,15 +652,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
     // Health Insurance Clicked
     fun healthInsuranceClicked(@Suppress("UNUSED_PARAMETER") view: View) {
         if (!hasInternetConnection()) {
-            val alert = AlertDialog.Builder(this@MainActivity)
-            alert.setTitle("Error")
-            alert.setMessage("No internet connection available.")
-            alert.setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-            alert.show()
+            showAcuDialog("No internet connection available.")
         } else {
-            if ((!useTokenInit && isInitialized) || Credential.get()?.token?.isValid == true) {
+            if (isInitialized && (!useTokenInit || Credential.get()?.token?.isValid == true)) {
                 frontCaptured = false
                 cleanUpTransaction()
                 isHealthCard = true
@@ -701,7 +665,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
                         this@MainActivity.runOnUiThread {
-                            isInitialized = true
                             frontCaptured = false
                             cleanUpTransaction()
                             isHealthCard = true
@@ -713,14 +676,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
                     override fun onInitializeFailed(error: List<Error>) {
                         this@MainActivity.runOnUiThread {
-                            setProgress(false)
-                            val alert = AlertDialog.Builder(this@MainActivity)
-                            alert.setTitle("Error")
-                            alert.setMessage("Could not initialize")
-                            alert.setPositiveButton("OK") { dialog, _ ->
-                                dialog.dismiss()
-                            }
-                            alert.show()
+                            showAcuDialog("Could not initialize")
                         }
                     }
                 })
@@ -731,16 +687,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
     fun readMrzClicked(@Suppress("UNUSED_PARAMETER") view: View) {
 
-        if(!hasInternetConnection()){
-            val alert = AlertDialog.Builder(this@MainActivity)
-            alert.setTitle("Error")
-            alert.setMessage("No internet connection available.")
-            alert.setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-            alert.show()
+        if (!hasInternetConnection()) {
+            showAcuDialog("No internet connection available.")
         } else {
-            if ((!useTokenInit && isInitialized) || Credential.get()?.token?.isValid == true) {
+            if (isInitialized && (!useTokenInit || Credential.get()?.token?.isValid == true)) {
                 frontCaptured = false
                 cleanUpTransaction()
                 captureWaitTime = 0
@@ -750,7 +700,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                 initializeAcuantSdk(object: IAcuantPackageCallback{
                     override fun onInitializeSuccess() {
                         this@MainActivity.runOnUiThread {
-                            isInitialized = true
                             setProgress(false)
                             frontCaptured = false
                             cleanUpTransaction()
@@ -761,14 +710,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
                     override fun onInitializeFailed(error: List<Error>) {
                         this@MainActivity.runOnUiThread {
-                            setProgress(false)
-                            val alert = AlertDialog.Builder(this@MainActivity)
-                            alert.setTitle("Error")
-                            alert.setMessage("Could not initialize")
-                            alert.setPositiveButton("OK") { dialog, _ ->
-                                dialog.dismiss()
-                            }
-                            alert.show()
+                            showAcuDialog("Could not initialize")
                         }
                     }
                 })
@@ -813,7 +755,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
     //Show Rear Camera to Capture Image of ID,Passport or Health Insurance Card
     fun showDocumentCaptureCamera() {
 
-        CapturedImage.barcodeString = null
+        capturedBarcodeString = null
         val cameraIntent = Intent(
                 this@MainActivity,
                 AcuantCameraActivity::class.java
@@ -829,7 +771,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
     //Show Front Camera to Capture Live Selfie
     fun showFrontCamera() {
-        try{
+        try {
 
             when (livenessSelected) {
                 2 -> {
@@ -847,8 +789,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                 }
             }
 
-        }
-        catch(e: Exception){
+        } catch(e: Exception) {
             e.printStackTrace()
         }
     }
@@ -890,19 +831,14 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
     fun handleInternalError() {
         runOnUiThread {
-            val alert = AlertDialog.Builder(this@MainActivity)
-            alert.setTitle("Internal Error")
-            alert.setMessage("Would you like to retry?")
-            alert.setNegativeButton("Proceed") { dialog, _ ->
+            showAcuDialog("Would you like to retry?", "Internal Error", DialogInterface.OnClickListener { dialog, _ ->
+                dialog.dismiss()
+                showFrontCamera()
+            }, DialogInterface.OnClickListener { dialog, _ ->
                 dialog.dismiss()
                 capturingSelfieImage = false
                 facialLivelinessResultString = "Facial Liveliness Failed"
-            }
-            alert.setPositiveButton("Retry") { dialog, _ ->
-                dialog.dismiss()
-                showFrontCamera()
-            }
-            alert.show()
+            })
         }
     }
 
@@ -915,8 +851,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         idOptions.cardSide = CardSide.Front
         idOptions.isHealthCard = true
         idOptions.isRetrying = false
-        val idData = IdData()
-        idData.image = capturedFrontImage!!.image
+        val frontData = if (capturedFrontImage?.rawBytes != null) {
+            EvaluatedImageData(capturedFrontImage!!.rawBytes)
+        } else {
+            showAcuDialog("Image bytes were null.")
+            return
+        }
 
         AcuantDocumentProcessor.createInstance(idOptions, object : CreateInstanceListener {
             override fun instanceCreated(instanceId: String?, error: Error?) {
@@ -924,66 +864,44 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                     // Success : Instance Created
                     documentInstanceID = instanceId
                     // Upload front image
-                    AcuantDocumentProcessor.uploadImage(documentInstanceID,idData,idOptions, object : UploadImageListener {
+                    AcuantDocumentProcessor.uploadImage(documentInstanceID,frontData,idOptions, object : UploadImageListener {
                         override fun imageUploaded(error: Error?,classification: Classification?) {
                             if (error == null) {
-                                if (capturedBackImage!=null && capturedBackImage!!.image != null) {
+                                if (capturedBackImage != null) {
                                     // Upload back image
-                                    idData.image = capturedBackImage!!.image
+                                    val backData = if (capturedBackImage?.rawBytes != null) {
+                                        EvaluatedImageData(capturedBackImage!!.rawBytes)
+                                    } else {
+                                        showAcuDialog("Image bytes were null.")
+                                        return
+                                    }
                                     idOptions.cardSide = CardSide.Back
-                                    AcuantDocumentProcessor.uploadImage(documentInstanceID, idData, idOptions, object: UploadImageListener {
+                                    AcuantDocumentProcessor.uploadImage(documentInstanceID, backData, idOptions, object: UploadImageListener {
                                         override fun imageUploaded(error: Error?,classification: Classification?) {
                                             if (error == null) {
                                                 getHealthCardData()
                                             } else {
-                                                setProgress(false)
-                                                val alert = AlertDialog.Builder(this@MainActivity)
-                                                alert.setTitle("Error")
-                                                alert.setMessage(error.errorDescription)
-                                                alert.setPositiveButton("OK") { dialog, _ ->
-                                                    dialog.dismiss()
-                                                }
-                                                alert.show()
+                                                showAcuDialog(error.errorDescription)
                                             }
                                         }
 
                                     })
-                                }else{
+                                } else {
                                     getHealthCardData()
                                 }
-                            }else {
-                                setProgress(false)
-                                val alert = AlertDialog.Builder(this@MainActivity)
-                                alert.setTitle("Error")
-                                alert.setMessage(error.errorDescription)
-                                alert.setPositiveButton("OK") { dialog, _ ->
-                                    dialog.dismiss()
-                                }
-                                alert.show()
-
+                            } else {
+                                showAcuDialog(error.errorDescription)
                             }
                         }
-
                     })
-
                 } else {
                     // Failure
                     this@MainActivity.runOnUiThread {
-                        setProgress(false)
-                        val alert = AlertDialog.Builder(this@MainActivity)
-                        alert.setTitle("Error")
-                        alert.setMessage(error.errorDescription)
-                        alert.setPositiveButton("OK") { dialog, _ ->
-                            dialog.dismiss()
-                        }
-                        alert.show()
+                        showAcuDialog(error.errorDescription)
                     }
-
                 }
             }
-
         })
-
     }
 
     // health card data
@@ -995,18 +913,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                     setProgress(false)
                 }
                 if (result == null || result.error != null) {
-                    val alert = AlertDialog.Builder(this@MainActivity)
-                    alert.setTitle("Error")
-                    if (result != null) {
-                        alert.setMessage(result.error.errorDescription)
-                    } else {
-                        alert.setMessage(ErrorDescriptions.ERROR_DESC_CouldNotGetHealthCardData)
-                    }
-                    alert.setPositiveButton("OK") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    alert.show()
-
+                    showAcuDialog(result?.error?.errorDescription ?: ErrorDescriptions.ERROR_DESC_CouldNotGetHealthCardData)
                 } else {
                     val healthCardResult = result as HealthInsuranceCardResult
                     val resultStr = CommonUtils.stringFromResult(healthCardResult)
@@ -1018,12 +925,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                                 Log.d("DELETE", "Medical Card Instance Deleted successfully")
                             }
                         }
-
                     })
-
                 }
             }
-
         })
     }
 
@@ -1039,34 +943,29 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         idOptions.isHealthCard = false
         idOptions.isRetrying = isRetrying
 
-        val idData = IdData()
-        idData.image = capturedFrontImage!!.image
+        val frontData = if (capturedFrontImage?.rawBytes != null) {
+            EvaluatedImageData(capturedFrontImage!!.rawBytes)
+        } else {
+            showAcuDialog("Image bytes were null.")
+            return
+        }
 
         if (isRetrying) {
-            //CommonUtils.saveImage(idData.image,"second")
-            uploadFrontImageOfDocument(documentInstanceID!!, idData, idOptions)
+            uploadFrontImageOfDocument(documentInstanceID!!, frontData, idOptions)
 
         } else {
-            AcuantDocumentProcessor.createInstance(idOptions, object: CreateInstanceListener{
+            AcuantDocumentProcessor.createInstance(idOptions, object: CreateInstanceListener {
                 override fun instanceCreated(instanceId: String?, error: Error?) {
                     if (error == null) {
                         // Success : Instance Created
                         documentInstanceID = instanceId
-                        uploadFrontImageOfDocument(instanceId!!, idData, idOptions)
+                        uploadFrontImageOfDocument(instanceId!!, frontData, idOptions)
 
                     } else {
                         // Failure
                         this@MainActivity.runOnUiThread {
-                            setProgress(false)
-                            val alert = AlertDialog.Builder(this@MainActivity)
-                            alert.setTitle("Error")
-                            alert.setMessage(error.errorDescription)
-                            alert.setPositiveButton("OK") { dialog, _ ->
-                                dialog.dismiss()
-                            }
-                            alert.show()
+                            showAcuDialog(error.errorDescription)
                         }
-
                     }
                 }
             })
@@ -1074,11 +973,11 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
     }
 
     // Upload front Image of Driving License
-    fun uploadFrontImageOfDocument(instanceId: String, idData: IdData, idOptions: IdOptions) {
+    fun uploadFrontImageOfDocument(instanceId: String, frontData: EvaluatedImageData, idOptions: IdOptions) {
         numberOfClassificationAttempts += 1
         // Upload front Image of DL
-        Log.d("InstanceId:",instanceId)
-        AcuantDocumentProcessor.uploadImage(instanceId, idData, idOptions, object:UploadImageListener{
+        Log.d("InstanceId:", instanceId)
+        AcuantDocumentProcessor.uploadImage(instanceId, frontData, idOptions, object : UploadImageListener {
                 override fun imageUploaded(error: Error?, classification: Classification?) {
                     if (error == null) {
                         // Successfully uploaded
@@ -1086,19 +985,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                         frontCaptured = true
                         if (isBackSideRequired(classification)) {
                             this@MainActivity.runOnUiThread {
-                                val alert = AlertDialog.Builder(this@MainActivity)
-                                alert.setTitle("Message")
-                                //alert.setMessage("Scan back side of document.")
-                                alert.setMessage(R.string.scan_back_side_id)
-                                alert.setPositiveButton("OK") { dialog, _ ->
+                                showAcuDialog(R.string.scan_back_side_id, "Message", DialogInterface.OnClickListener { dialog, _ ->
                                     dialog.dismiss()
                                     captureWaitTime = 2
                                     showDocumentCaptureCamera()
-                                }
-                                alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                }, DialogInterface.OnClickListener { dialog, _ ->
                                     dialog.dismiss()
-                                }
-                                alert.show()
+                                })
                             }
                         } else {
                             val alert = AlertDialog.Builder(this@MainActivity)
@@ -1132,19 +1025,11 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                             if (error.errorCode == ErrorCodes.ERROR_CouldNotClassifyDocument) {
                                 showClassificationError()
                             } else {
-                                setProgress(false)
-                                val alert = AlertDialog.Builder(this@MainActivity)
-                                alert.setTitle("Error")
-                                alert.setMessage(error.errorDescription)
-                                alert.setPositiveButton("OK") { dialog, _ ->
-                                    dialog.dismiss()
-                                }
-                                alert.show()
+                                showAcuDialog(error.errorDescription)
                             }
                         }
                     }
                 }
-
             })
     }
 
@@ -1157,11 +1042,14 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         idOptions.isHealthCard = false
         idOptions.isRetrying = false
 
-        val idData = IdData()
-        idData.image = capturedBackImage!!.image
-        idData.barcodeString = capturedBarcodeString
+        val backData = if (capturedBackImage?.rawBytes != null) {
+            EvaluatedImageData(capturedBackImage!!.rawBytes, capturedBarcodeString)
+        } else {
+            showAcuDialog("Image bytes were null.")
+            return
+        }
 
-        AcuantDocumentProcessor.uploadImage(documentInstanceID, idData, idOptions, object:UploadImageListener{
+        AcuantDocumentProcessor.uploadImage(documentInstanceID, backData, idOptions, object : UploadImageListener {
             override fun imageUploaded(error: Error?, classification: Classification?) {
                 if (error == null) {
                     getData()
@@ -1176,33 +1064,14 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             override fun processingResultReceived(result: ProcessingResult?) {
                 if (result == null || result.error != null) {
                     this@MainActivity.runOnUiThread {
-                        setProgress(false)
+                        showAcuDialog(result?.error?.errorDescription ?: ErrorDescriptions.ERROR_DESC_CouldNotGetConnectData)
                     }
-                    val alert = AlertDialog.Builder(this@MainActivity)
-                    alert.setTitle("Error")
-                    if (result != null) {
-                        alert.setMessage(result.error.errorDescription)
-                    } else {
-                        alert.setMessage(ErrorDescriptions.ERROR_DESC_CouldNotGetConnectData)
-                    }
-                    alert.setPositiveButton("OK") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    alert.show()
                     return
                 } else if ((result as IDResult).fields == null || result.fields.dataFieldReferences == null) {
                     this@MainActivity.runOnUiThread {
-                        setProgress(false)
+                        showAcuDialog("Unknown error happened.\nCould not extract data")
                     }
-                    val alert = AlertDialog.Builder(this@MainActivity)
-                    alert.setTitle("Error")
-                    alert.setMessage("Unknown error happened.Could not extract data")
-                    alert.setPositiveButton("OK") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    alert.show()
                     return
-
                 }
                 var docNumber = ""
                 var cardType = "ID1"
@@ -1283,16 +1152,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                     AcuantFaceMatch.processFacialMatch(facialMatchData, FacialMatchListener { result ->
                         this@MainActivity.runOnUiThread {
                             if (result!!.error == null) {
-                                val resultStr = CommonUtils.stringFromFacialMatchResult(result)
-                                facialResultString = resultStr
+                                //this code bugs with proguard and messes with the order, not sure why it was used but the following three lines seem to replace it just fine
+                                //val resultStr = CommonUtils.stringFromFacialMatchResult(result)
+                                facialResultString = "isMatch: ${result.isMatch}\n"
+                                facialResultString += "score: ${result.score}\n"
+                                facialResultString += "transactionId: ${result.transactionId}\n"
                             } else {
-                                val alert = AlertDialog.Builder(this@MainActivity)
-                                alert.setTitle("Error")
-                                alert.setMessage(result.error.errorDescription)
-                                alert.setPositiveButton("OK") { dialog, _ ->
-                                    dialog.dismiss()
-                                }
-                                alert.show()
+                                showAcuDialog(result.error.errorDescription)
                             }
                         }
                         capturingSelfieImage = false
@@ -1315,6 +1181,13 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         )
         confirmationIntent.putExtra("isFrontImage", isFrontImage)
         confirmationIntent.putExtra("isBarcode", isBarcode)
+        if (recentImage != null) {
+            image = recentImage!!.image
+            confirmationIntent.putExtra("sharpness", recentImage!!.sharpness)
+            confirmationIntent.putExtra("glare", recentImage!!.glare)
+            confirmationIntent.putExtra("dpi", recentImage!!.dpi)
+            confirmationIntent.putExtra("barcode", capturedBarcodeString)
+        }
         startActivityForResult(confirmationIntent, Constants.REQUEST_CONFIRMATION)
     }
 
@@ -1324,6 +1197,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                 this@MainActivity,
                 ClassificationFailureActivity::class.java
         )
+        if (recentImage != null) {
+            image = recentImage!!.image
+        }
         startActivityForResult(classificationErrorIntent, Constants.REQUEST_RETRY)
     }
 
@@ -1431,6 +1307,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         setProgress(true, "Getting Data...")
         capturingSelfieImage = false
         facialLivelinessResultString = "Facial Liveliness Failed"
+    }
+
+    companion object {
+        var image: Bitmap? = null
     }
 
 }

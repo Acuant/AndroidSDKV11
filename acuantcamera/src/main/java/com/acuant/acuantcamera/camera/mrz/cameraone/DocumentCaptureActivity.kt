@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.acuant.acuantcamera.camera.mrz.cameraone
 
 import android.Manifest
@@ -10,7 +12,6 @@ import android.content.pm.PackageManager
 import android.graphics.Point
 import android.hardware.Camera
 import android.media.AudioManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -33,6 +34,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.widget.ImageView
 import com.acuant.acuantcamera.R
@@ -65,6 +67,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     private var waitTime = 2
     private var autoCapture = false
     private lateinit var documentProcessor: LiveDocumentProcessor
+    private var permissionNotGranted = false
     private var documentDetector: DocumentDetector? = null
 
     private lateinit var instructionView: TextView
@@ -267,9 +270,10 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         // permission is not granted yet, request permission.
         val rc = ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
         if (rc == PackageManager.PERMISSION_GRANTED) {
-            createCameraSource(autoFocus = true, useFlash = false)
+            createCameraSource(useFlash = false)
         } else {
             requestCameraPermission()
+            permissionNotGranted = true
         }
 
         mOrientationEventListener = object : OrientationEventListener(this.applicationContext) {
@@ -303,18 +307,27 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         val permissions = arrayOf(Manifest.permission.CAMERA)
 
-        if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
-            return
-        }
-
-        val thisActivity = this
-
-        View.OnClickListener {
-            ActivityCompat.requestPermissions(thisActivity, permissions, RC_HANDLE_CAMERA_PERM)
-        }
-
+        val builder = AlertDialog.Builder(this)
+        builder.setMessage(R.string.cam_perm_request_text)
+                .setOnCancelListener {
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                                    Manifest.permission.CAMERA)) {
+                        ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
+                    } else {
+                        finish()
+                    }
+                }
+                .setPositiveButton(R.string.ok
+                ) { dialog, _ ->
+                    dialog.dismiss()
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                                    Manifest.permission.CAMERA)) {
+                        ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
+                    } else {
+                        finish()
+                    }
+                }
+        builder.create().show()
     }
 
     /**
@@ -328,7 +341,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
      */
     @Suppress("SameParameterValue")
     @SuppressLint("InlinedApi")
-    private fun createCameraSource(autoFocus: Boolean, useFlash: Boolean) {
+    private fun createCameraSource(useFlash: Boolean) {
         // Creates and starts the camera.  Note that this uses a higher resolution in comparison
         // to other detection examples to enable the barcode detector to detect small barcodes
         // at long distances.
@@ -339,10 +352,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 .setRequestedFps(60.0f)
 
         // make sure that auto focus is an available option
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            builder = builder.setFocusMode(
-                    if (autoFocus) Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE else Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)
-        }
+        builder = builder.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)
 
         documentCameraSource = builder
                 .setFlashMode(if (useFlash) Camera.Parameters.FLASH_MODE_TORCH else Camera.Parameters.FLASH_MODE_OFF)
@@ -387,7 +397,9 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
      */
     override fun onDestroy() {
         super.onDestroy()
-        documentProcessor.stop()
+        if (!permissionNotGranted) {
+            documentProcessor.stop()
+        }
         if (mPreview != null) {
             mPreview!!.release()
         }
@@ -421,14 +433,21 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Camera permission granted - initialize the camera source")
-            createCameraSource(autoFocus = true, useFlash = false)
+            permissionNotGranted = false
+            createCameraSource(useFlash = false)
             return
         }
 
         Log.e(TAG, "Permission not granted: results len = " + grantResults.size +
                 " Result code = " + if (grantResults.isNotEmpty()) grantResults[0] else "(empty)")
 
-        DialogInterface.OnClickListener { _, _ -> finish() }
+        val listener = DialogInterface.OnClickListener { _, _ -> finish() }
+
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.camera_load_error)
+                .setMessage(R.string.no_camera_permission)
+                .setPositiveButton(R.string.ok, listener)
+                .show()
 
     }
 
@@ -455,16 +474,14 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 documentCameraSource!!.release()
                 documentCameraSource = null
             }
-
         }
     }
+
     override fun onBackPressed() {
         this@DocumentCaptureActivity.finish()
     }
 
-    private fun onChanged(lastOrientation: Int, curOrientation: Int) {
-
-        //TODO fix side of help text
+    private fun onChanged(@Suppress("UNUSED_PARAMETER") lastOrientation: Int, curOrientation: Int) {
 
         runOnUiThread {
             if (curOrientation == ORIENTATION_LANDSCAPE_REVERSE) {

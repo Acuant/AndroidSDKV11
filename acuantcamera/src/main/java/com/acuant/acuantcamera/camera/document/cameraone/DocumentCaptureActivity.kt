@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.acuant.acuantcamera.camera.document.cameraone
 
 import android.Manifest
@@ -9,7 +11,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Point
 import android.hardware.Camera
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
@@ -30,6 +31,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
@@ -52,13 +54,12 @@ import kotlin.math.sqrt
  * size, and ID of each barcode.
  */
 class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.PictureCallback, DocumentCameraSource.ShutterCallback {
-    private val ORIENTATION_PORTRAIT_REVERSE = 4
-    private val ORIENTATION_LANDSCAPE_REVERSE = 3
     private var documentCameraSource: DocumentCameraSource? = null
     private var mPreview: DocumentCameraSourcePreview? = null
     private var capturing = false
     private var autoCapture = false
     private lateinit var documentProcessor: LiveDocumentProcessor
+    private var permissionNotGranted = false
     private var documentDetector: DocumentDetector? = null
 
     private lateinit var instructionView: TextView
@@ -123,9 +124,10 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         // permission is not granted yet, request permission.
         val rc = ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
         if (rc == PackageManager.PERMISSION_GRANTED) {
-            createCameraSource(autoFocus = true, useFlash = false)
+            createCameraSource(useFlash = false)
         } else {
             requestCameraPermission()
+            permissionNotGranted = true
         }
 
         setOptions(intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions? ?: AcuantCameraOptions())
@@ -200,19 +202,27 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         val permissions = arrayOf(Manifest.permission.CAMERA)
 
-        if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
-            return
-        }
-
-        val thisActivity = this
-
-        val listener = View.OnClickListener {
-            ActivityCompat.requestPermissions(thisActivity, permissions,
-                    RC_HANDLE_CAMERA_PERM)
-        }
-
+        val builder = AlertDialog.Builder(this)
+        builder.setMessage(R.string.cam_perm_request_text)
+                .setOnCancelListener {
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                                    Manifest.permission.CAMERA)) {
+                        ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
+                    } else {
+                        finish()
+                    }
+                }
+                .setPositiveButton(R.string.ok
+                ) { dialog, _ ->
+                    dialog.dismiss()
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                                    Manifest.permission.CAMERA)) {
+                        ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM)
+                    } else {
+                        finish()
+                    }
+                }
+        builder.create().show()
     }
 
     /**
@@ -224,8 +234,9 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
      * Suppressing InlinedApi since there is a check that the minimum version is met before using
      * the constant.
      */
+    @Suppress("SameParameterValue")
     @SuppressLint("InlinedApi")
-    private fun createCameraSource(autoFocus: Boolean, useFlash: Boolean) {
+    private fun createCameraSource(useFlash: Boolean) {
         // Creates and starts the camera.  Note that this uses a higher resolution in comparison
         // to other detection examples to enable the barcode detector to detect small barcodes
         // at long distances.
@@ -235,14 +246,10 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 .setRequestedPreviewSize(1600, 1200)
                 .setRequestedFps(60.0f)
 
-        // make sure that auto focus is an available option
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            builder = builder.setFocusMode(
-                    if (autoFocus) Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE else "")
-        }
+        builder = builder.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)
 
         documentCameraSource = builder
-                .setFlashMode(if (useFlash) Camera.Parameters.FLASH_MODE_TORCH else "")
+                .setFlashMode(if (useFlash) Camera.Parameters.FLASH_MODE_TORCH else Camera.Parameters.FLASH_MODE_OFF)
                 .build()
     }
 
@@ -409,7 +416,9 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
      */
     override fun onDestroy() {
         super.onDestroy()
-        documentProcessor.stop()
+        if (!permissionNotGranted) {
+            documentProcessor.stop()
+        }
         if (mPreview != null) {
             mPreview!!.release()
         }
@@ -443,15 +452,21 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Camera permission granted - initialize the camera source")
-            createCameraSource(autoFocus = true, useFlash = false)
+            permissionNotGranted = false
+            createCameraSource(useFlash = false)
             return
         }
 
         Log.e(TAG, "Permission not granted: results len = " + grantResults.size +
                 " Result code = " + if (grantResults.isNotEmpty()) grantResults[0] else "(empty)")
 
-        DialogInterface.OnClickListener { _, _ -> finish() }
+        val listener = DialogInterface.OnClickListener { _, _ -> finish() }
 
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.camera_load_error)
+                .setMessage(R.string.no_camera_permission)
+                .setPositiveButton(R.string.ok, listener)
+                .show()
     }
 
     /**
@@ -635,5 +650,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         // permission request codes need to be < 256
         private const val RC_HANDLE_CAMERA_PERM = 2
+        private const val ORIENTATION_PORTRAIT_REVERSE = 4
+        private const val ORIENTATION_LANDSCAPE_REVERSE = 3
     }
 }

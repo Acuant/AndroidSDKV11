@@ -168,6 +168,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
             rectangleView.paintColorBracketCapturing = options.colorBracketCapturing
             rectangleView.paintColorBracketCloser = options.colorBracketCloser
             rectangleView.paintColorBracketHold = options.colorBracketHold
+            @Suppress("DEPRECATION")
             rectangleView.cardRatio = options.cardRatio
         } else {
             rectangleView.allowBox = isBorderEnabled
@@ -218,7 +219,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        file = File(activity!!.getExternalFilesDir(null),  "${UUID.randomUUID()}.jpg")
+        file = File(activity!!.externalCacheDir,  "${UUID.randomUUID()}.jpg")
     }
 
     override fun onResume() {
