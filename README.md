@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.6
-**October 2020**
+# Acuant Android SDK v11.4.7
+**November 2020**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -109,7 +109,7 @@ The SDK includes the following modules:
     	    android:value="barcode,face"
     	    tools:replace="android:value"/>
     
-2. Add the Acuant SDK dependency in **build.gradle**:
+1. Add the Acuant SDK dependency in **build.gradle**:
 
 		repositories {
 			//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveness
@@ -180,7 +180,7 @@ The SDK includes the following modules:
 			implementation project(path: ':acuantpassiveliveness')
   		}
   		
-3. Add the Acuant SDK dependency in **build.gradle** if using Maven:
+1. Add the Acuant SDK dependency in **build.gradle** if using Maven:
 
 	- Add the following Maven URL
 
@@ -189,23 +189,23 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.6'
-    		implementation 'com.acuant:acuantcamera:11.4.6'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.6'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.6'
-    		implementation 'com.acuant:acuantechipreader:11.4.6'
-    		implementation 'com.acuant:acuantfacematch:11.4.6'
-    		implementation 'com.acuant:acuanthgliveness:11.4.6'
-    		implementation ('com.acuant:acuantipliveness:11.4.6'){
+    		implementation 'com.acuant:acuantcommon:11.4.7'
+    		implementation 'com.acuant:acuantcamera:11.4.7'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.7'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.7'
+    		implementation 'com.acuant:acuantechipreader:11.4.7'
+    		implementation 'com.acuant:acuantfacematch:11.4.7'
+    		implementation 'com.acuant:acuanthgliveness:11.4.7'
+    		implementation ('com.acuant:acuantipliveness:11.4.7'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.6'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.6'
+    		implementation 'com.acuant:acuantfacecapture:11.4.7'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.7'
 		
    - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
 
-4. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
+1. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
 
 		<?xml version="1.0" encoding="UTF-8" ?>
 		<setting>
@@ -220,7 +220,17 @@ The SDK includes the following modules:
 		    <ozone_endpoint></ozone_endpoint>
 		</setting>
 		
-The following are the default values based on region:
+	The following are the default values for testing purposes:
+	
+		PREVIEW	
+		<frm_endpoint>https://preview.face.acuant.net</frm_endpoint>
+		<med_endpoint>https://preview.medicscan.acuant.net</med_endpoint>
+		<assureid_endpoint>https://preview.assureid.acuant.net</assureid_endpoint>
+		<passive_liveness_endpoint>https://preview.passlive.acuant.net</passive_liveness_endpoint>
+		<acas_endpoint>https://preview.acas.acuant.net</acas_endpoint>
+		<ozone_endpoint>https://preview.ozone.acuant.net</ozone_endpoint>
+		
+	The following are the default values based on region:
 
 		USA
 		<frm_endpoint>https://frm.acuant.net</frm_endpoint>
@@ -244,7 +254,7 @@ The following are the default values based on region:
 		<acas_endpoint>https://aus.acas.acuant.net</acas_endpoint>
 		<ozone_endpoint>https://aus.ozone.acuant.net</ozone_endpoint>
 
-5.	Save the file to the application assets directory:
+1.	Save the file to the application assets directory:
 
 		{PROJECT_ROOT_DIRECTORY} => app => src => main => assets => PATH/TO/CONFIG/FILENAME.XML
 		
@@ -407,9 +417,9 @@ This section describes how to use **AcuantImagePreparation**.
 
 	Must have included ImageProcessorInitializer() in initialization (See **Initializing the SDK**).
 
-- **Crop, Sharpness, and Glare** 
+- **Cropping, Sharpness, and Glare** 
 
-	After an image is captured, it is cropped, and checked for sharpness and glare. This is done using the evaluateImage of **AcuantImagePreparation**.
+	After an image is captured, it is cropped and checked for sharpness and glare. This is done using the evaluateImage of **AcuantImagePreparation**.
 	
 		evaluateImage(context: Context, croppingData: CroppingData, listener: EvaluateImageListener)
 	
