@@ -78,17 +78,19 @@ class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
                             data.image = frame
                             val frameSize = Size(data.image.width, data.image.height)
                             try {
+                                val startTime = System.currentTimeMillis()
                                 val acuantImage = AcuantImagePreparation.detect(data)
+                                val elapsed = System.currentTimeMillis() - startTime
                                 var feedback: AcuantDocumentFeedback? = null
 
                                 feedback = if (acuantImage?.points == null || acuantImage.dpi < 20) {
-                                    AcuantDocumentFeedback(DocumentFeedback.NoDocument, null, frameSize)
+                                    AcuantDocumentFeedback(DocumentFeedback.NoDocument, null, frameSize, null, elapsed)
                                 } else if ((!acuantImage.isPassport && acuantImage.dpi < (SMALL_DOC_DPI_SCALE_VALUE * frame!!.width)) || (acuantImage.isPassport && acuantImage.dpi < (LARGE_DOC_DPI_SCALE_VALUE * frame!!.width))) {
-                                    AcuantDocumentFeedback(DocumentFeedback.SmallDocument, acuantImage.points, frameSize)
+                                    AcuantDocumentFeedback(DocumentFeedback.SmallDocument, acuantImage.points, frameSize, null, elapsed)
                                 } else if (!acuantImage.isCorrectAspectRatio) {
-                                    AcuantDocumentFeedback(DocumentFeedback.BadDocument, acuantImage.points, frameSize)
+                                    AcuantDocumentFeedback(DocumentFeedback.BadDocument, acuantImage.points, frameSize, null, elapsed)
                                 } else {
-                                    AcuantDocumentFeedback(DocumentFeedback.GoodDocument, acuantImage.points, frameSize)
+                                    AcuantDocumentFeedback(DocumentFeedback.GoodDocument, acuantImage.points, frameSize, null, elapsed)
                                 }
 
                                 feedbackListener?.let { it(feedback) }

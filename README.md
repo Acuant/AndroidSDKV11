@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.7
-**November 2020**
+# Acuant Android SDK v11.4.8
+**December 2020**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -90,9 +90,9 @@ The SDK includes the following modules:
 
 - Processes a single photo using our web service to determine liveness.
 
+----------
 
-
-### Setup ###
+## Setup ##
 
 1. Specify the permissions in the App manifest file:
 	
@@ -189,18 +189,18 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.7'
-    		implementation 'com.acuant:acuantcamera:11.4.7'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.7'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.7'
-    		implementation 'com.acuant:acuantechipreader:11.4.7'
-    		implementation 'com.acuant:acuantfacematch:11.4.7'
-    		implementation 'com.acuant:acuanthgliveness:11.4.7'
-    		implementation ('com.acuant:acuantipliveness:11.4.7'){
+    		implementation 'com.acuant:acuantcommon:11.4.8'
+    		implementation 'com.acuant:acuantcamera:11.4.8'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.8'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.8'
+    		implementation 'com.acuant:acuantechipreader:11.4.8'
+    		implementation 'com.acuant:acuantfacematch:11.4.8'
+    		implementation 'com.acuant:acuanthgliveness:11.4.8'
+    		implementation ('com.acuant:acuantipliveness:11.4.8'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.7'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.7'
+    		implementation 'com.acuant:acuantfacecapture:11.4.8'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.8'
 		
    - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
@@ -257,8 +257,10 @@ The SDK includes the following modules:
 1.	Save the file to the application assets directory:
 
 		{PROJECT_ROOT_DIRECTORY} => app => src => main => assets => PATH/TO/CONFIG/FILENAME.XML
+
+----------
 		
-### Initializing the SDK ###
+## Initializing the SDK ##
 
 Before you use the SDK, you need to initialize it either by using the credentials saved on the device or by using bearer tokens (provided by an external server).
 
@@ -328,9 +330,11 @@ Here is the interface for the initialize listener:
 
 3. The captured images can be exported from the SDK. See the **onActivityResult** in the following section.
 
+----------
 
-### Capture a document image using AcuantCamera ###
+## AcuantCamera ##
 
+### Capturing a document ###
 **Note:**   **AcuantCamera** is dependent on **AcuantImagePreparation** and  **AcuantCommon**.
 
 1. Start camera activity:
@@ -342,7 +346,7 @@ Here is the interface for the initialize listener:
 
 		startActivityForResult(cameraIntent, REQUEST_CODE)
 	   
-Alternatively use the new options object. This method allows you to configure much more about the camera (see **AcuantCameraOptions**):
+	Alternatively use the new options object. This method allows you to configure much more about the camera (see **AcuantCameraOptions**):
         
 		val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
 
@@ -356,8 +360,12 @@ Alternatively use the new options object. This method allows you to configure mu
 		)
 
 		startActivityForResult(cameraIntent, REQUEST_CODE) 
-        
-2. Get activity result:
+**Note:**  When the camera is launched, the image processing speed is automatically checked.
+
+	- Live document detection and auto capture features are enabled if the device supports a speed of at least 130ms.
+	- For devices that don't meet the processing threshold, tap to capture will be enabled. Live document detection and auto capture features are disabled and switched to tap to capture. The user will have to manually capture the document. 
+ 
+1. Get activity result:
 	
 		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 			super.onActivityResult(requestCode, resultCode, data)
@@ -368,46 +376,48 @@ Alternatively use the new options object. This method allows you to configure mu
 			}
 		}
 		
-### Capture MRZ data using AcuantCamera ###
+### Capturing MRZ data in a passport document ###
 
 **Note:**   To use the MRZ features, your credentials must be enabled to use Ozone.
 
 - **Initialization**
 
-	Must have included MrzCameraInitializer() in initialization (See **Initializing the SDK**). Important note, by this point the user has to have granted external storage permissions since this initializer is saving OCRB information to the phone. The MRZ camera will not function without this initialization.
+	**MrzCameraInitializer()** must be included in initialization (see **Initializing the SDK**).
+
+	**Important Note:** You must grant external storage permissions in order to save the OCRB information to the phone. Otherwise, the MRZ camera will not function.
 
 - **Capturing the MRZ data**
 
-Capturing the MRZ data using AcuantCamera is similar to document capture.
+	Capturing the MRZ data using AcuantCamera is similar to document capture.
 
-1. Start camera activity:
+  	1. Start camera activity:
 
-		val cameraIntent = Intent(
-			this@MainActivity,
-			AcuantCameraActivity::class.java
-		)
-		
-		cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
-			AcuantCameraOptions
-				.MrzCameraOptionsBuilder()
-				.build()
-				/*Please note that this uses a different builder than the document camera.
-				 * This is how the camera knows that it is being launched in MRZ mode.*/
-		)
-		
-		startActivityForResult(cameraIntent, REQUEST_CODE)
-        
-2. Get activity result:
-	
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-			super.onActivityResult(requestCode, resultCode, data)
+			val cameraIntent = Intent(
+				this@MainActivity,
+				AcuantCameraActivity::class.java
+			)
 			
-			if (requestCode == REQUEST_CODE && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
-				val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
+			cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
+				AcuantCameraOptions
+					.MrzCameraOptionsBuilder()
+					.build()
+					/*Please note that this uses a different builder than the document camera.
+					 * This is how the camera knows that it is being launched in MRZ mode.*/
+			)
+			
+			startActivityForResult(cameraIntent, REQUEST_CODE)
+        
+  	1. Get activity result:
+
+			override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+				super.onActivityResult(requestCode, resultCode, data)
+				
+				if (requestCode == REQUEST_CODE && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
+					val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
+				}
 			}
-		}
 		 
-#### AcuantImagePreparation ####
+## AcuantImagePreparation ##
 
 **Note:**   **AcuantImagePreparation** uses @Keep annotations. These are supported by the default Android configuration. If you override or modify the Android ProGuard file, then support for these annotations must be included.
 
@@ -447,7 +457,9 @@ This section describes how to use **AcuantImagePreparation**.
 			val rawBytes: ByteArray
 		}
 		
-### AcuantDocumentProcessing ###
+-------------------------------------
+
+## AcuantDocumentProcessing ##
 
 After you capture a document image is captured, use the following steps to process the image.
 
@@ -493,8 +505,9 @@ After you capture a document image is captured, use the following steps to proce
 			public void instanceDeleted(boolean success);
 		}
 		
-		
-### AcuantIPLiveness ###
+-------------------------------------
+
+## AcuantIPLiveness ##
 
 **Important Note:** The following must be in your root level gradle in the android{} section otherwise a runtime failure may occur:
 
@@ -555,6 +568,7 @@ After you capture a document image is captured, use the following steps to proce
 			}
 		)
 
+-------------------------------------
 		
 ### AcuantHGLiveness ###
 
@@ -586,7 +600,7 @@ This module checks for liveness (whether the subject is a live person) by using 
 		}
 
 	
-### AcuantFaceMatch ###
+## AcuantFaceMatch ##
 
 This module is used to match two facial images:
 
@@ -596,10 +610,11 @@ This module is used to match two facial images:
 			public void facialMatchFinished(FacialMatchResult result);
 		}
 
-### AcuantEChipReader ###
+-------------------------------------
 
+## AcuantEChipReader ##
 
-- **Initialization**
+**Initialization**
 
 Must include EchipInitializer() in initialization (See **Initializing the SDK**).
 	
@@ -647,7 +662,9 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 		
 **Important Note:** All the data in nfcData is directly read from the passport chip except for *age* and *isExpired*. These two fields are extrapolated from the data read from the chip and the current date (obtained via Calendar.getInstance().time). This can potentially lead to inaccuracy due to either the device time being wrong or the DOB or DOE being calculated incorrectly from the data on the chip. This is an unfortunate restraint of passport chips as the DOE and DOB are stored in YYMMDD format and therefore suffers from the y2k issue (given a year of 22 we can not with 100% certainty determine if it stands for 1922 or 2022 or even theoretically 2122). The way we work around this is as follows: For age we use the current year as the breakpoint (eg. in 2020, 25 would be interpreted as 1925 but in 2030 25 would be interpreted as 2025). For isExpired we do the same but going forward 20 years from the current year.
 
-### AcuantFaceCapture ###
+-------------------------------------
+
+## AcuantFaceCapture ##
 
 This module is used to automate capturing an image of a face appropriate for use with passive liveness.
 
@@ -684,8 +701,10 @@ This module is used to automate capturing an image of a face appropriate for use
 				}
 			}
 		}
+		
+-------------------------------------
 
-### AcuantPassiveLiveness ###
+## AcuantPassiveLiveness ##
 
 This module is used to determine liveness from a single selfie image.
 
@@ -734,6 +753,7 @@ Relevant Enums:
 			InternalError,
 			InvalidJson
 		}
+-------------------------------------
 
 ### Error codes ###
 
@@ -874,6 +894,7 @@ Relevant Enums:
 				public AuthenticationSensitivity authenticationSensitivity;
 			}
 
+-------------------------------------
 
 ## Frequently Asked Questions ##
 

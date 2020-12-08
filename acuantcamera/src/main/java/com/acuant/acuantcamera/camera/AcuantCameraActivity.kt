@@ -143,7 +143,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
         when(requestCode){
             DOC_REQUEST -> {
                 if(resultCode == RESULT_SUCCESS_CODE && data != null){
-                    onActivityFinish(data.getStringExtra(ACUANT_EXTRA_IMAGE_URL), data.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE))
+                    onActivityFinish(data.getStringExtra(ACUANT_EXTRA_IMAGE_URL) ?: "-1", data.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE))
                 }
                 else{
                     this@AcuantCameraActivity.finish()

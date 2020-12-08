@@ -30,6 +30,8 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
     private var redTransparent: Int = 0
     private var grayTransparent: Int = 0
     private var greenTransparent: Int = 0
+    private var firstThreeTimings: Array<Long> = arrayOf(-1, -1, -1)
+    private var hasFinishedTest = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,71 +89,96 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
      */
     override fun onDetected(croppedImage: com.acuant.acuantcommon.model.Image?, cropDuration: Long) {
         activity?.runOnUiThread {
-            var detectedPoints = croppedImage?.points
 
-            if(detectedPoints != null && croppedImage?.points != null){
-                detectedPoints = DocRectangleView.fixPoints(scalePoints(croppedImage.points))
-            }
-
-            when {
-                 croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
-                    unlockFocus()
-                    rectangleView.setViewFromState(CameraState.Align)
-                    setTextFromState(CameraState.Align)
-                    resetTimer()
-                }
-                !isDocumentInFrame(detectedPoints) -> {
-                    unlockFocus()
-                    rectangleView.setViewFromState(CameraState.NotInFrame)
-                    setTextFromState(CameraState.NotInFrame)
-                    resetTimer()
-                }
-                croppedImage.dpi < getTargetDpi(croppedImage.isPassport) -> {
-                    unlockFocus()
-                    rectangleView.setViewFromState(CameraState.MoveCloser)
-                    setTextFromState(CameraState.MoveCloser)
-                    resetTimer()
-                }
-                !croppedImage.isCorrectAspectRatio -> {
-                    unlockFocus()
-                    rectangleView.setViewFromState(CameraState.Align)
-                    setTextFromState(CameraState.Align)
-                    resetTimer()
-                }
-                else -> {
-                    if(System.currentTimeMillis() - lastTime > (digitsToShow - currentDigit + 2) * timeInMsPerDigit)
-                        --currentDigit
-
-                    var dist = 0
-                    if(oldPoints != null && oldPoints!!.size == 4 && detectedPoints != null && detectedPoints.size == 4) {
-                        for (i in 0..3) {
-                            dist += sqrt( ((oldPoints!![i].x-detectedPoints[i].x).toDouble().pow(2) + (oldPoints!![i].y - detectedPoints[i].y).toDouble().pow(2) )).toInt()
-                        }
+            if (!hasFinishedTest) {
+                for (i in firstThreeTimings.indices) {
+                    if (firstThreeTimings[i] == (-1).toLong()) {
+                        firstThreeTimings[i] = cropDuration
+                        break
                     }
-
-                    when {
-                        dist > TOO_MUCH_MOVEMENT -> {
-                            rectangleView.setViewFromState(CameraState.Steady)
-                            setTextFromState(CameraState.Steady)
-                            resetTimer()
-                        }
-                        System.currentTimeMillis() - lastTime < digitsToShow * timeInMsPerDigit -> {
-                            rectangleView.setViewFromState(CameraState.Hold)
-                            setTextFromState(CameraState.Hold)
-                        }
-                        else -> {
-                            this.isCapturing = true
-                            rectangleView.setViewFromState(CameraState.Capturing)
-                            setTextFromState(CameraState.Capturing)
-                            lockFocus()
-                        }
+                }
+                if (!firstThreeTimings.contains((-1).toLong())) {
+                    hasFinishedTest = true
+                    if (firstThreeTimings.min() ?: (TOO_SLOW_FOR_AUTO_THRESHOLD + 10) > TOO_SLOW_FOR_AUTO_THRESHOLD) {
+                        isAutoCapture = false
+                        setTapToCapture()
                     }
                 }
             }
-            oldPoints = detectedPoints
-            drawBorder(detectedPoints)
 
-            this.isProcessing = false
+            if (!hasFinishedTest) {
+                rectangleView.setViewFromState(CameraState.Align)
+                setTextFromState(CameraState.Align)
+                this.isProcessing = false
+            }
+
+            if (hasFinishedTest && isAutoCapture) {
+                var detectedPoints = croppedImage?.points
+
+                if (detectedPoints != null && croppedImage?.points != null) {
+                    detectedPoints = DocRectangleView.fixPoints(scalePoints(croppedImage.points))
+                }
+
+                when {
+                    croppedImage == null || croppedImage.dpi < MINIMUM_DPI -> {
+                        unlockFocus()
+                        rectangleView.setViewFromState(CameraState.Align)
+                        setTextFromState(CameraState.Align)
+                        resetTimer()
+                    }
+                    !isDocumentInFrame(detectedPoints) -> {
+                        unlockFocus()
+                        rectangleView.setViewFromState(CameraState.NotInFrame)
+                        setTextFromState(CameraState.NotInFrame)
+                        resetTimer()
+                    }
+                    croppedImage.dpi < getTargetDpi(croppedImage.isPassport) -> {
+                        unlockFocus()
+                        rectangleView.setViewFromState(CameraState.MoveCloser)
+                        setTextFromState(CameraState.MoveCloser)
+                        resetTimer()
+                    }
+                    !croppedImage.isCorrectAspectRatio -> {
+                        unlockFocus()
+                        rectangleView.setViewFromState(CameraState.Align)
+                        setTextFromState(CameraState.Align)
+                        resetTimer()
+                    }
+                    else -> {
+                        if (System.currentTimeMillis() - lastTime > (digitsToShow - currentDigit + 2) * timeInMsPerDigit)
+                            --currentDigit
+
+                        var dist = 0
+                        if (oldPoints != null && oldPoints!!.size == 4 && detectedPoints != null && detectedPoints.size == 4) {
+                            for (i in 0..3) {
+                                dist += sqrt(((oldPoints!![i].x - detectedPoints[i].x).toDouble().pow(2) + (oldPoints!![i].y - detectedPoints[i].y).toDouble().pow(2))).toInt()
+                            }
+                        }
+
+                        when {
+                            dist > TOO_MUCH_MOVEMENT -> {
+                                rectangleView.setViewFromState(CameraState.Steady)
+                                setTextFromState(CameraState.Steady)
+                                resetTimer()
+                            }
+                            System.currentTimeMillis() - lastTime < digitsToShow * timeInMsPerDigit -> {
+                                rectangleView.setViewFromState(CameraState.Hold)
+                                setTextFromState(CameraState.Hold)
+                            }
+                            else -> {
+                                this.isCapturing = true
+                                rectangleView.setViewFromState(CameraState.Capturing)
+                                setTextFromState(CameraState.Capturing)
+                                lockFocus()
+                            }
+                        }
+                    }
+                }
+                oldPoints = detectedPoints
+                drawBorder(detectedPoints)
+
+                this.isProcessing = false
+            }
         }
     }
 
@@ -255,6 +282,8 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
 
     companion object {
 
+        internal const val TOO_SLOW_FOR_AUTO_THRESHOLD: Long = 130
+
         /**
          * Conversion from screen rotation to JPEG orientation.
          */
@@ -271,7 +300,7 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
         /**
          * How much total x/y movement between frames is too much
          */
-        private const val TOO_MUCH_MOVEMENT = 350
+        internal const val TOO_MUCH_MOVEMENT = 350
 
         @JvmStatic fun newInstance(): AcuantDocCameraFragment = AcuantDocCameraFragment()
     }

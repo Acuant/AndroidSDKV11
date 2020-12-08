@@ -14,11 +14,6 @@ import android.hardware.Camera
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
-import android.view.Gravity
-import android.view.OrientationEventListener
-import android.view.View
-import android.view.Window
-import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
@@ -33,6 +28,7 @@ import android.graphics.drawable.Drawable
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.view.*
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
@@ -40,6 +36,7 @@ import com.acuant.acuantcamera.constant.*
 import java.io.ByteArrayOutputStream
 import com.acuant.acuantcamera.overlay.DocRectangleView
 import com.acuant.acuantcamera.camera.AcuantBaseCameraFragment.CameraState
+import com.acuant.acuantcamera.camera.document.AcuantDocCameraFragment
 import com.acuant.acuantcamera.detector.ImageSaver
 import java.io.File
 import java.io.FileOutputStream
@@ -78,6 +75,9 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     private var digitsToShow: Int = 2
     private lateinit var displaySize: Point
     private var lastOrientation = ORIENTATION_LANDSCAPE
+    private var firstThreeTimings: Array<Long> = arrayOf(-1, -1, -1)
+    private var hasFinishedTest = false
+    private lateinit var parent: RelativeLayout
 
     /**
      * Initializes the UI and creates the detector pipeline.
@@ -90,7 +90,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         supportActionBar?.title = ""
         supportActionBar?.hide()
-        val parent = RelativeLayout(this)
+        parent = RelativeLayout(this)
         parent.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
         parent.keepScreenOn = true
 
@@ -132,15 +132,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
 
         setOptions(intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions? ?: AcuantCameraOptions())
 
-        if (!autoCapture) {
-            instructionView.text = getString(R.string.acuant_camera_align_and_tap)
-            parent.setOnClickListener {
-                instructionView.setBackgroundColor(getColorWithAlpha(Color.GREEN, .50f))
-                instructionView.text = getString(R.string.acuant_camera_capturing)
-                capturing = true
-                lockFocus()
-            }
-        }
+        setTapToCapture(parent)
 
         displaySize = Point()
         this.windowManager.defaultDisplay.getSize(displaySize)
@@ -171,6 +163,18 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                     onChanged(lastOrientation, curOrientation)
                     lastOrientation = curOrientation
                 }
+            }
+        }
+    }
+
+    private fun setTapToCapture(parent: RelativeLayout) {
+        if (!autoCapture) {
+            instructionView.text = getString(R.string.acuant_camera_align_and_tap)
+            parent.setOnClickListener {
+                instructionView.setBackgroundColor(getColorWithAlpha(Color.GREEN, .50f))
+                instructionView.text = getString(R.string.acuant_camera_capturing)
+                capturing = true
+                lockFocus()
             }
         }
     }
@@ -288,82 +292,100 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 this.capturedbarcodeString = it.barcode
             } else {
                 runOnUiThread {
-                    var points = it.point
-                    val frameSize = it.frameSize!!
-                    var feedback = it.feedback
-                    rectangleView.setWidth(mPreview!!.mSurfaceView.width.toFloat())
-                    if (points != null && points.size == 4) {
 
-                        points = scalePoints(points, frameSize)
-                        points = fixPoints(points)
-
-                        if (!isDocumentInPreviewFrame(points)) {
-                            feedback = DocumentFeedback.NotInFrame
+                    if (!hasFinishedTest) {
+                        for (i in firstThreeTimings.indices) {
+                            if (firstThreeTimings[i] == (-1).toLong()) {
+                                firstThreeTimings[i] = it.detectTime
+                                break
+                            }
+                        }
+                        if (!firstThreeTimings.contains((-1).toLong())) {
+                            hasFinishedTest = true
+                            if (firstThreeTimings.min() ?: (AcuantDocCameraFragment.TOO_SLOW_FOR_AUTO_THRESHOLD + 10) > AcuantDocCameraFragment.TOO_SLOW_FOR_AUTO_THRESHOLD) {
+                                autoCapture = false
+                                setTapToCapture(parent)
+                            }
                         }
                     }
 
+                    if (hasFinishedTest && autoCapture) {
+                        var points = it.point
+                        val frameSize = it.frameSize!!
+                        var feedback = it.feedback
+                        rectangleView.setWidth(mPreview!!.mSurfaceView.width.toFloat())
+                        if (points != null && points.size == 4) {
 
-                    if (!capturing && autoCapture) {
-                        when (feedback) {
-                            DocumentFeedback.NoDocument -> {
-                                rectangleView.setViewFromState(CameraState.Align)
-                                setTextFromState(CameraState.Align)
-                                resetTimer()
-                            }
-                            DocumentFeedback.NotInFrame -> {
-                                rectangleView.setViewFromState(CameraState.NotInFrame)
-                                setTextFromState(CameraState.NotInFrame)
-                                resetTimer()
-                            }
-                            DocumentFeedback.SmallDocument -> {
-                                rectangleView.setViewFromState(CameraState.MoveCloser)
-                                setTextFromState(CameraState.MoveCloser)
-                                resetTimer()
-                            }
-                            DocumentFeedback.BadDocument -> {
-                                rectangleView.setViewFromState(CameraState.Align)
-                                setTextFromState(CameraState.MoveCloser)
-                                resetTimer()
-                            }
-                            else -> {
+                            points = scalePoints(points, frameSize)
+                            points = fixPoints(points)
 
-                                if (System.currentTimeMillis() - lastTime > (digitsToShow - currentDigit + 2) * timeInMsPerDigit)
-                                    --currentDigit
-
-                                var dist = 0
-                                if (oldPoints != null && oldPoints!!.size == 4 && points != null && points.size == 4) {
-                                    for (i in 0..3) {
-                                        dist += sqrt(((oldPoints!![i].x - points[i].x).toDouble().pow(2) + (oldPoints!![i].y - points[i].y).toDouble().pow(2))).toInt()
-                                    }
-                                }
-
-                                when {
-                                    dist > 350 -> {
-                                        rectangleView.setViewFromState(CameraState.Steady)
-                                        setTextFromState(CameraState.Steady)
-                                        resetTimer()
-
-                                    }
-                                    System.currentTimeMillis() - lastTime < digitsToShow * timeInMsPerDigit -> {
-                                        rectangleView.setViewFromState(CameraState.Hold)
-                                        setTextFromState(CameraState.Hold)
-                                    }
-                                    else -> {
-                                        rectangleView.setViewFromState(CameraState.Capturing)
-                                        setTextFromState(CameraState.Capturing)
-                                        capturing = true
-                                        lockFocus()
-                                    }
-                                }
+                            if (!isDocumentInPreviewFrame(points)) {
+                                feedback = DocumentFeedback.NotInFrame
                             }
                         }
-                        oldPoints = points
-                        rectangleView.setAndDrawPoints(points)
-                    }
 
+
+                        if (!capturing && autoCapture) {
+                            when (feedback) {
+                                DocumentFeedback.NoDocument -> {
+                                    rectangleView.setViewFromState(CameraState.Align)
+                                    setTextFromState(CameraState.Align)
+                                    resetTimer()
+                                }
+                                DocumentFeedback.NotInFrame -> {
+                                    rectangleView.setViewFromState(CameraState.NotInFrame)
+                                    setTextFromState(CameraState.NotInFrame)
+                                    resetTimer()
+                                }
+                                DocumentFeedback.SmallDocument -> {
+                                    rectangleView.setViewFromState(CameraState.MoveCloser)
+                                    setTextFromState(CameraState.MoveCloser)
+                                    resetTimer()
+                                }
+                                DocumentFeedback.BadDocument -> {
+                                    rectangleView.setViewFromState(CameraState.Align)
+                                    setTextFromState(CameraState.MoveCloser)
+                                    resetTimer()
+                                }
+                                else -> {
+
+                                    if (System.currentTimeMillis() - lastTime > (digitsToShow - currentDigit + 2) * timeInMsPerDigit)
+                                        --currentDigit
+
+                                    var dist = 0
+                                    if (oldPoints != null && oldPoints!!.size == 4 && points != null && points.size == 4) {
+                                        for (i in 0..3) {
+                                            dist += sqrt(((oldPoints!![i].x - points[i].x).toDouble().pow(2) + (oldPoints!![i].y - points[i].y).toDouble().pow(2))).toInt()
+                                        }
+                                    }
+
+                                    when {
+                                        dist > AcuantDocCameraFragment.TOO_MUCH_MOVEMENT -> {
+                                            rectangleView.setViewFromState(CameraState.Steady)
+                                            setTextFromState(CameraState.Steady)
+                                            resetTimer()
+
+                                        }
+                                        System.currentTimeMillis() - lastTime < digitsToShow * timeInMsPerDigit -> {
+                                            rectangleView.setViewFromState(CameraState.Hold)
+                                            setTextFromState(CameraState.Hold)
+                                        }
+                                        else -> {
+                                            rectangleView.setViewFromState(CameraState.Capturing)
+                                            setTextFromState(CameraState.Capturing)
+                                            capturing = true
+                                            lockFocus()
+                                        }
+                                    }
+                                }
+                            }
+                            oldPoints = points
+                            rectangleView.setAndDrawPoints(points)
+                        }
+
+                    }
                 }
             }
-
         }
 
     }

@@ -1128,7 +1128,7 @@ public class DocumentCameraSource {
          */
         @SuppressLint("Assert")
         void release() {
-            assert (mProcessingThread.getState() == State.TERMINATED);
+            assert mProcessingThread == null || mProcessingThread.getState() == State.TERMINATED;
             mDetector.release();
             mDetector = null;
         }
