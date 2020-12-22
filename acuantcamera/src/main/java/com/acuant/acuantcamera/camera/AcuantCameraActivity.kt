@@ -128,7 +128,7 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
             } else {
                 val cameraIntent = Intent(
                         this@AcuantCameraActivity,
-                        com.acuant.acuantcamera.camera.mrz.cameraone.DocumentCaptureActivity::class.java
+                        com.acuant.acuantcamera.camera.mrz.cameraone.MrzCaptureActivity::class.java
                 )
 
                 cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, options)

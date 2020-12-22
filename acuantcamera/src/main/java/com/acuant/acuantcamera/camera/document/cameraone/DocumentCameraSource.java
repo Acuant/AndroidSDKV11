@@ -18,7 +18,6 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
-
 import com.google.android.gms.common.images.Size;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.Frame;
@@ -330,15 +329,8 @@ public class DocumentCameraSource {
 
             mCamera = createCamera();
 
-            // SurfaceTexture was introduced in Honeycomb (11), so if we are running and
-            // old version of Android. fall back to use SurfaceView.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                mDummySurfaceTexture = new SurfaceTexture(DUMMY_TEXTURE_NAME);
-                mCamera.setPreviewTexture(mDummySurfaceTexture);
-            } else {
-                mDummySurfaceView = new SurfaceView(mContext);
-                mCamera.setPreviewDisplay(mDummySurfaceView.getHolder());
-            }
+            mDummySurfaceTexture = new SurfaceTexture(DUMMY_TEXTURE_NAME);
+            mCamera.setPreviewTexture(mDummySurfaceTexture);
             mCamera.startPreview();
 
             mProcessingThread = new Thread(mFrameProcessor);
@@ -348,15 +340,8 @@ public class DocumentCameraSource {
         return this;
     }
 
-    /**
-     * Opens the camera and starts sending preview frames to the underlying detector.  The supplied
-     * surface holder is used for the preview so frames can be displayed to the user.
-     *
-     * @param surfaceHolder the surface holder to use for the preview frames
-     * @throws IOException if the supplied surface holder could not be used as the preview display
-     */
     @RequiresPermission(Manifest.permission.CAMERA)
-    public DocumentCameraSource start(SurfaceHolder surfaceHolder) throws IOException {
+    public DocumentCameraSource start(SurfaceHolder surfaceHolder, DocumentCameraSourcePreview preview) throws IOException {
         synchronized (mCameraLock) {
             if (mCamera != null) {
                 return this;
@@ -371,9 +356,15 @@ public class DocumentCameraSource {
             mCamera.setPreviewDisplay(surfaceHolder);
             mCamera.startPreview();
 
+            if (preview != null) {
+                preview.requestLayout();
+            }
+
             mProcessingThread = new Thread(mFrameProcessor);
             mFrameProcessor.setActive(true);
             mProcessingThread.start();
+
+
         }
         return this;
     }
@@ -382,7 +373,7 @@ public class DocumentCameraSource {
      * Closes the camera and stops sending frames to the underlying frame detector.
      * <p/>
      * This camera source may be restarted again by calling {@link #start()} or
-     * {@link #start(SurfaceHolder)}.
+     * {@link #start(SurfaceHolder, DocumentCameraSourcePreview)}.
      * <p/>
      * Call {@link #release()} instead to completely shut down this camera source and release the
      * resources of the underlying detector.
@@ -409,17 +400,7 @@ public class DocumentCameraSource {
                 mCamera.stopPreview();
                 mCamera.setPreviewCallbackWithBuffer(null);
                 try {
-                    // We want to be compatible back to Gingerbread, but SurfaceTexture
-                    // wasn't introduced until Honeycomb.  Since the interface cannot use a SurfaceTexture, if the
-                    // developer wants to display a preview we must use a SurfaceHolder.  If the developer doesn't
-                    // want to display a preview we use a SurfaceTexture if we are running at least Honeycomb.
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                        mCamera.setPreviewTexture(null);
-
-                    } else {
-                        mCamera.setPreviewDisplay(null);
-                    }
+                    mCamera.setPreviewTexture(null);
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to clear camera preview: " + e);
                 }
@@ -479,7 +460,7 @@ public class DocumentCameraSource {
 
     /**
      * Initiates taking a picture, which happens asynchronously.  The camera source should have been
-     * activated previously with {@link #start()} or {@link #start(SurfaceHolder)}.  The camera
+     * activated previously with {@link #start()} or {@link #start(SurfaceHolder, DocumentCameraSourcePreview)}.  The camera
      * preview is suspended while the picture is being taken, but will resume once picture taking is
      * done.
      *
@@ -584,7 +565,7 @@ public class DocumentCameraSource {
     /**
      * Starts camera auto-focus and registers a callback function to run when
      * the camera is focused.  This method is only valid when preview is active
-     * (between {@link #start()} or {@link #start(SurfaceHolder)} and before {@link #stop()} or {@link #release()}).
+     * (between {@link #start()} or {@link #start(SurfaceHolder, DocumentCameraSourcePreview)} and before {@link #stop()} or {@link #release()}).
      * <p/>
      * <p>Callers should check
      * {@link #getFocusMode()} to determine if
@@ -794,6 +775,8 @@ public class DocumentCameraSource {
 
         camera.setParameters(parameters);
 
+
+
         // Four frame buffers are needed for working with the camera:
         //
         //   one for the frame that is currently being executed upon in doing detection
@@ -825,6 +808,41 @@ public class DocumentCameraSource {
         return -1;
     }
 
+//    private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
+//        List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
+//        // The method for selecting the best size is to minimize the sum of the differences between
+//        // the desired values and the actual values for width and height.  This is certainly not the
+//        // only way to select the best size, but it provides a decent tradeoff between using the
+//        // closest aspect ratio vs. using the closest pixel area.
+//        SizePair selectedPair = null;
+//        int maxArea = Integer.MIN_VALUE;
+//        int maxPict = Integer.MIN_VALUE;
+//        int area = Integer.MIN_VALUE;
+//        for (SizePair sizePair : validPreviewSizes) {
+//            Size size_pict = sizePair.pictureSize();
+//            int newArea = size_pict.getWidth()*size_pict.getHeight();
+//            if (newArea > maxPict) {
+//                maxPict = newArea;
+//                maxArea = Integer.MIN_VALUE;
+//                Size size = sizePair.previewSize();
+//                area = size.getWidth()*size.getHeight();
+//                if (maxArea < area) {
+//                    selectedPair = sizePair;
+//                    maxArea = area;
+//                }
+//            }
+//            else if (newArea == maxPict) {
+//                Size size = sizePair.previewSize();
+//                area = size.getWidth()*size.getHeight();
+//                if (maxArea < area) {
+//                    selectedPair = sizePair;
+//                    maxArea = area;
+//                }
+//            }
+//        }
+//        return selectedPair;
+//    }
+
     /**
      * Selects the most suitable preview and picture size, given the desired width and height.
      * <p/>
@@ -838,9 +856,11 @@ public class DocumentCameraSource {
      * @param desiredHeight the desired height of the camera preview frames
      * @return the selected preview and picture size pair
      */
-    /*private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
+    private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
         List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
-
+        long expectedSize = desiredWidth*desiredHeight;
+        int desiredShortSide = Math.min(desiredHeight, desiredWidth);
+        int desiredLongSide = Math.max(desiredHeight, desiredWidth);
         // The method for selecting the best size is to minimize the sum of the differences between
         // the desired values and the actual values for width and height.  This is certainly not the
         // only way to select the best size, but it provides a decent tradeoff between using the
@@ -849,51 +869,56 @@ public class DocumentCameraSource {
         int minDiff = Integer.MAX_VALUE;
         for (SizePair sizePair : validPreviewSizes) {
             Size size = sizePair.previewSize();
-            int diff = Math.abs(size.getWidth() - desiredWidth) +
-                    Math.abs(size.getHeight() - desiredHeight);
-            if (diff < minDiff) {
+
+
+            int currentShortSide = Math.min(size.getWidth(), size.getHeight());
+            int currentLongSide = Math.max(size.getWidth(), size.getHeight());
+            float change = Math.min(Math.min((float) desiredShortSide / currentShortSide, (float) desiredLongSide / currentLongSide), 2f);
+            currentLongSide *= change;
+            currentShortSide *= change;
+
+
+            int diff = Math.abs(currentShortSide - desiredShortSide) +
+                    Math.abs(currentLongSide - desiredLongSide);
+            if ((!(currentLongSide > desiredLongSide) && !(currentShortSide > desiredShortSide)) && diff < minDiff && (sizePair.pictureSize().getWidth()*sizePair.pictureSize().getHeight() >= expectedSize * 0.6f)) {
                 selectedPair = sizePair;
                 minDiff = diff;
             }
         }
 
-        return selectedPair;
-    }*/
-
-    private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
-        List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
-        // The method for selecting the best size is to minimize the sum of the differences between
-        // the desired values and the actual values for width and height.  This is certainly not the
-        // only way to select the best size, but it provides a decent tradeoff between using the
-        // closest aspect ratio vs. using the closest pixel area.
-        SizePair selectedPair = null;
-        int maxArea = Integer.MIN_VALUE;
-        int maxPict = Integer.MIN_VALUE;
-        int area = Integer.MIN_VALUE;
-        for (SizePair sizePair : validPreviewSizes) {
-            Size size_pict = sizePair.pictureSize();
-            int newArea = size_pict.getWidth()*size_pict.getHeight();
-            if (newArea > maxPict) {
-                maxPict = newArea;
-                maxArea = Integer.MIN_VALUE;
-                Size size = sizePair.previewSize();
-                area = size.getWidth()*size.getHeight();
-                if (maxArea < area) {
-                    selectedPair = sizePair;
-                    maxArea = area;
-                }
-            }
-            else if (newArea == maxPict) {
-                Size size = sizePair.previewSize();
-                area = size.getWidth()*size.getHeight();
-                if (maxArea < area) {
-                    selectedPair = sizePair;
-                    maxArea = area;
-                }
-            }
+        if (selectedPair != null) {
+            return selectedPair;
+        } else if (validPreviewSizes.size() > 0){
+            return validPreviewSizes.get(0);
+        } else {
+            return null;
         }
-        return selectedPair;
     }
+
+//    private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
+//        List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
+//
+//        int desiredSize = desiredHeight * desiredWidth;
+//        float sizeRatio = 0.6f;
+//
+//        SizePair selectedPair = null;
+//
+//        do {
+//            float desiredRatio = (float) Math.max(desiredWidth, desiredHeight) / Math.min(desiredWidth, desiredHeight);
+//            float minDiff = Integer.MAX_VALUE;
+//            for (SizePair sizePair : validPreviewSizes) {
+//                Size size = sizePair.previewSize();
+//                float diff = Math.abs((float) Math.max(size.getWidth(), size.getHeight()) / Math.min(size.getWidth(), size.getHeight()) - desiredRatio);
+//                if (diff < minDiff && size.getWidth()*size.getHeight() > desiredSize*sizeRatio) {
+//                    selectedPair = sizePair;
+//                    minDiff = diff;
+//                }
+//            }
+//            sizeRatio -= 0.1f;
+//        } while (selectedPair == null);
+//
+//        return selectedPair;
+//    }
 
     /**
      * Stores a preview size and a corresponding same-aspect-ratio picture size.  To avoid distorted

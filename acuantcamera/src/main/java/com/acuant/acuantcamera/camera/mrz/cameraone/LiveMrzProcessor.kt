@@ -2,15 +2,16 @@ package com.acuant.acuantcamera.camera.mrz.cameraone
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import com.acuant.acuantcamera.detector.ocr.AcuantOcrDetector
 import com.google.android.gms.vision.MultiProcessor
 import com.google.android.gms.vision.barcode.Barcode
 import com.google.android.gms.vision.barcode.BarcodeDetector
 
 
-class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
+class LiveMrzProcessor : MrzGraphicTracker.BarcodeUpdateListener {
     private var finishedCapturing = false
-    private var documentDetector: DocumentDetector? = null
+    private var mrzDetector: MrzDetector? = null
     private var ocrDetector: AcuantOcrDetector? = null
     var frame: Bitmap? = null
 
@@ -18,31 +19,32 @@ class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
         ocrDetector = detector
     }
 
-    fun getDetector(context: Context): DocumentDetector {
+    fun getDetector(context: Context): MrzDetector {
         val barcodeDetectorDelagte = BarcodeDetector.Builder(context).setBarcodeFormats(Barcode.PDF417).build()
-        val barcodeFactory = DocumentTrackerFactory(this)
+        val barcodeFactory = MrzTrackerFactory(this)
         val processor = MultiProcessor.Builder(barcodeFactory).build()
-        documentDetector = DocumentDetector(barcodeDetectorDelagte)
-        documentDetector!!.setProcessor(processor)
+        mrzDetector = MrzDetector(barcodeDetectorDelagte)
+        mrzDetector!!.setProcessor(processor)
 
         provideFeedback()
 
-        return documentDetector as DocumentDetector
+        return mrzDetector as MrzDetector
     }
 
     fun stop(){
         finishedCapturing = true
         thread?.join()
-        documentDetector?.release()
+        mrzDetector?.release()
         thread = null
-        documentDetector = null
+        mrzDetector = null
        // thread = null
     }
 
     private var thread : Thread? = null
 
     private fun provideFeedback() {
-        if(ocrDetector == null) {
+        if (ocrDetector == null) {
+            Log.e("ocrDetector", "OCR detector can not be null")
             //TODO: return error
         }
         thread = Thread(object : Runnable {
@@ -52,7 +54,7 @@ class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
                 while (flag) {
                     if (!processing) {
                         processing = true
-                        frame = documentDetector?.frame
+                        frame = mrzDetector?.frame
                         if (frame != null) {
                             ocrDetector?.detect(frame)
 

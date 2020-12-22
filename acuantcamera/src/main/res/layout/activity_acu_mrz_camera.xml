@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cam1_mrz_parent"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:keepScreenOn="true"
+    android:background="@color/black">
+
+    <com.acuant.acuantcamera.camera.mrz.cameraone.MrzCameraSourcePreview
+        android:id="@+id/cam1_mrz_preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/black" />
+
+    <com.acuant.acuantcamera.overlay.MrzRectangleView
+        android:id="@+id/cam1_mrz_rect"
+        android:layout_centerInParent="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/cam1_mrz_text"
+        android:layout_centerInParent="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:typeface="monospace"
+        android:rotation="90"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:paddingLeft="60dp"
+        android:paddingRight="60dp"
+        />
+
+    <ImageView
+        android:id="@+id/cam1_mrz_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:layout_centerInParent="true"
+        android:src="@drawable/camera_overlay"
+        android:gravity="center"
+        android:rotation="90"
+        android:visibility="invisible"
+        tools:ignore="ContentDescription" />
+
+</RelativeLayout>

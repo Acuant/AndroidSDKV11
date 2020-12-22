@@ -14,7 +14,7 @@ import com.google.android.gms.vision.barcode.Barcode
 
 import java.io.ByteArrayOutputStream
 
-class DocumentDetector(private val mDelegate: Detector<Barcode>) : Detector<Barcode>() {
+class MrzDetector(private val mDelegate: Detector<Barcode>) : Detector<Barcode>() {
     var frame: Bitmap? = null
         private set
 

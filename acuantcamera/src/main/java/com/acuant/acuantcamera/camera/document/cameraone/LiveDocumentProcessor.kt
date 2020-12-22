@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.util.Log
 import android.util.Size
+import com.acuant.acuantcamera.camera.document.AcuantDocCameraFragment
 
 import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.acuant.acuantimagepreparation.model.CroppingData
@@ -43,7 +45,7 @@ class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
             val hasLowStorage = context.registerReceiver(null, lowstorageFilter) != null
 
             if (hasLowStorage) {
-
+                Log.d("Live Doc Processor", "Received low storage warning")
             }
         }
         provideFeedback()
@@ -81,11 +83,11 @@ class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
                                 val startTime = System.currentTimeMillis()
                                 val acuantImage = AcuantImagePreparation.detect(data)
                                 val elapsed = System.currentTimeMillis() - startTime
-                                var feedback: AcuantDocumentFeedback? = null
+                                var feedback: AcuantDocumentFeedback?
 
-                                feedback = if (acuantImage?.points == null || acuantImage.dpi < 20) {
+                                feedback = if (acuantImage.points == null || acuantImage.dpi < 20) {
                                     AcuantDocumentFeedback(DocumentFeedback.NoDocument, null, frameSize, null, elapsed)
-                                } else if ((!acuantImage.isPassport && acuantImage.dpi < (SMALL_DOC_DPI_SCALE_VALUE * frame!!.width)) || (acuantImage.isPassport && acuantImage.dpi < (LARGE_DOC_DPI_SCALE_VALUE * frame!!.width))) {
+                                } else if (!AcuantDocCameraFragment.isAcceptableDistance(acuantImage.points, frameSize)) {
                                     AcuantDocumentFeedback(DocumentFeedback.SmallDocument, acuantImage.points, frameSize, null, elapsed)
                                 } else if (!acuantImage.isCorrectAspectRatio) {
                                     AcuantDocumentFeedback(DocumentFeedback.BadDocument, acuantImage.points, frameSize, null, elapsed)
@@ -109,17 +111,7 @@ class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
 
         thread!!.start()
     }
-    /**
-     * Target DPI for preview size 1920x1080 = 350
-     * SMALL_DOC_DPI_SCALE_VALUE = target_dpi/preview_size_width
-     */
-    private  val SMALL_DOC_DPI_SCALE_VALUE = .18229
 
-    /**
-     * Target DPI for preview size 1920x1080 = 225
-     * LARGE_DOC_DPI_SCALE_VALUE = target_dpi/preview_size_width
-     */
-    private  val LARGE_DOC_DPI_SCALE_VALUE = .11719
     override fun onBarcodeDetected(barcode: Barcode?) {
         if(barcode?.rawValue != null){
             feedbackListener?.let { it(AcuantDocumentFeedback(DocumentFeedback.Barcode, null, null, barcode.rawValue)) }

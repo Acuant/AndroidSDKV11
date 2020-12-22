@@ -1,6 +1,6 @@
 package com.acuant.acuantcamera.camera.mrz.cameraone
 
-enum class DocumentFeedback {
+enum class MrzFeedback {
     NoDocument,
     SmallDocument,
     BadDocument,

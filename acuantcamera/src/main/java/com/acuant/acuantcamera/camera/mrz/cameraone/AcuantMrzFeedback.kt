@@ -3,12 +3,12 @@ package com.acuant.acuantcamera.camera.mrz.cameraone
 import android.graphics.Point
 import android.util.Size
 
-data class AcuantDocumentFeedback(val feedback: DocumentFeedback, val point: Array<Point>?, val frameSize: Size?, val barcode: String? = null) {
+data class AcuantMrzFeedback(val feedback: MrzFeedback, val point: Array<Point>?, val frameSize: Size?, val barcode: String? = null) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as AcuantDocumentFeedback
+        other as AcuantMrzFeedback
 
         if (feedback != other.feedback) return false
         if (point != null) {

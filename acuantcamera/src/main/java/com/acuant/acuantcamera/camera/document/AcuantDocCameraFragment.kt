@@ -4,6 +4,7 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.os.*
 import android.support.v4.app.ActivityCompat
+import android.util.Size
 import android.util.SparseIntArray
 import android.view.*
 import com.acuant.acuantcamera.R
@@ -15,9 +16,7 @@ import com.acuant.acuantcamera.detector.barcode.AcuantBarcodeDetectorHandler
 import com.acuant.acuantcamera.detector.document.AcuantDocumentDetectorHandler
 import com.acuant.acuantcamera.detector.document.AcuantDocumentDetector
 import com.acuant.acuantcamera.overlay.DocRectangleView
-import kotlin.math.pow
-import kotlin.math.roundToInt
-import kotlin.math.sqrt
+import kotlin.math.*
 
 class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
         ActivityCompat.OnRequestPermissionsResultCallback, AcuantDocumentDetectorHandler, AcuantBarcodeDetectorHandler {
@@ -52,31 +51,26 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
         holdTextDrawable = activity!!.getDrawable(R.drawable.camera_text_config_hold)
     }
 
-    private fun getTargetDpi(isPassport : Boolean): Int{
-        return if(isPassport){
-            targetLargeDocDpi
-        }
-        else{
-            targetSmallDocDpi
-        }
-    }
-
     private fun scalePoints(points: Array<Point>) : Array<Point> {
         val scaledPoints = points.copyOf()
         val scaledPointY = textureView.height.toFloat() / previewSize.width.toFloat()
         val scaledPointX = textureView.width.toFloat() / previewSize.height.toFloat()
         rectangleView.setWidth(textureView.width.toFloat())
 
-        scaledPoints.forEach {
-            it.x = (it.x * scaledPointY).toInt()
-            it.y = (it.y * scaledPointX).toInt()
+        points.apply {
+            this.forEach {
+                it.x = (it.x * scaledPointY).toInt()
+                it.y = (it.y * scaledPointX).toInt()
+                it.y -= pointYOffset
+                it.x += pointXOffset
+            }
         }
 
         return scaledPoints
     }
 
     private fun drawBorder(points: Array<Point>?){
-        if(points != null){
+        if(points != null) {
             rectangleView.setAndDrawPoints(points)
         }
         else{
@@ -132,7 +126,7 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
                         setTextFromState(CameraState.NotInFrame)
                         resetTimer()
                     }
-                    croppedImage.dpi < getTargetDpi(croppedImage.isPassport) -> {
+                    !isAcceptableDistance(detectedPoints, Size(textureView.width, textureView.height)) -> {
                         unlockFocus()
                         rectangleView.setViewFromState(CameraState.MoveCloser)
                         setTextFromState(CameraState.MoveCloser)
@@ -283,6 +277,24 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
     companion object {
 
         internal const val TOO_SLOW_FOR_AUTO_THRESHOLD: Long = 130
+
+        fun isAcceptableDistance(points: Array<Point>?, screenSize: Size): Boolean {
+            if (points != null) {
+                val shortSide = min(distance(points[0], points[1]), distance(points[0], points[3]))
+                val largeSide = max(distance(points[0], points[1]), distance(points[0], points[3]))
+                val screenShortSide = min(screenSize.width, screenSize.height).toFloat()
+                val screenLargeSide = max(screenSize.width, screenSize.height).toFloat()
+
+                if (shortSide > 0.75 * screenShortSide || largeSide > 0.75 * screenLargeSide) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        private fun distance(pointA: Point, pointB: Point): Float {
+            return sqrt( (pointA.x - pointB.x).toFloat().pow(2) + (pointA.y - pointB.y).toFloat().pow(2))
+        }
 
         /**
          * Conversion from screen rotation to JPEG orientation.

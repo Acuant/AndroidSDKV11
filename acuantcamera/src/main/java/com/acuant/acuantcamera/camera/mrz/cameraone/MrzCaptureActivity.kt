@@ -14,13 +14,10 @@ import android.hardware.Camera
 import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
 import android.view.OrientationEventListener
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
-import android.widget.LinearLayout
-import android.widget.RelativeLayout
 import android.widget.TextView
 
 import com.google.android.gms.common.ConnectionResult
@@ -30,12 +27,12 @@ import java.io.IOException
 
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
-import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.util.DisplayMetrics
 import android.widget.ImageView
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.*
@@ -60,15 +57,15 @@ import kotlin.math.sqrt
  * rear facing camera. During detection overlay graphics are drawn to indicate the position,
  * size, and ID of each barcode.
  */
-class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.PictureCallback, DocumentCameraSource.ShutterCallback, AcuantOcrDetectorHandler {
+class MrzCaptureActivity : AppCompatActivity(), MrzCameraSource.PictureCallback, MrzCameraSource.ShutterCallback, AcuantOcrDetectorHandler {
 
-    private var documentCameraSource: DocumentCameraSource? = null
-    private var mPreview: DocumentCameraSourcePreview? = null
+    private var mrzCameraSource: MrzCameraSource? = null
+    private var mPreview: MrzCameraSourcePreview? = null
     private var waitTime = 2
     private var autoCapture = false
-    private lateinit var documentProcessor: LiveDocumentProcessor
+    private lateinit var mrzProcessor: LiveMrzProcessor
     private var permissionNotGranted = false
-    private var documentDetector: DocumentDetector? = null
+    private var mrzDetector: MrzDetector? = null
 
     private lateinit var instructionView: TextView
     private lateinit var imageView: ImageView
@@ -76,7 +73,6 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     private var capturedbarcodeString: String? = null
 
     private lateinit var rectangleView: MrzRectangleView
-    private lateinit var tvlp: RelativeLayout.LayoutParams
 
     private var capturingTextDrawable: Drawable? = null
     private var defaultTextDrawable: Drawable? = null
@@ -92,13 +88,16 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         runOnUiThread {
             if (points != null) {
                 if (points.size == 4) {
-                    val scaledPointY = mPreview!!.mSurfaceView.height.toFloat() / (documentDetector?.frame?.width?.toFloat() ?: mPreview!!.mSurfaceView.height.toFloat())
-                    val scaledPointX = mPreview!!.mSurfaceView.width.toFloat() / (documentDetector?.frame?.height?.toFloat() ?: mPreview!!.mSurfaceView.width.toFloat())
+                    val scaledPointY = mPreview!!.mSurfaceView.height.toFloat() / (mrzDetector?.frame?.width?.toFloat() ?: mPreview!!.mSurfaceView.height.toFloat())
+                    val scaledPointX = mPreview!!.mSurfaceView.width.toFloat() / (mrzDetector?.frame?.height?.toFloat() ?: mPreview!!.mSurfaceView.width.toFloat())
                     rectangleView.setWidth(mPreview!!.mSurfaceView.width.toFloat())
+
                     points.apply {
                         this.forEach {
                             it.x = (it.x * scaledPointY).toInt()
                             it.y = (it.y * scaledPointX).toInt()
+                            it.y += mPreview?.pointXOffset ?: 0
+                            it.x -= mPreview?.pointYOffset ?: 0
                         }
                     }
 
@@ -222,49 +221,20 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         supportActionBar?.title = ""
         supportActionBar?.hide()
-        val parent = RelativeLayout(this)
-        parent.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-        parent.keepScreenOn = true
-
-        setContentView(parent)
-        mPreview = DocumentCameraSourcePreview(this, null)
-        parent.addView(mPreview)
 
         capturingTextDrawable = this.getDrawable(R.drawable.camera_text_config_capturing)
         defaultTextDrawable = this.getDrawable(R.drawable.camera_text_config_default)
 
-        val vfvp = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT)
-        rectangleView = MrzRectangleView(this, null)
-        rectangleView.layoutParams = vfvp
-        parent.addView(rectangleView)
+        setContentView(R.layout.activity_acu_mrz_camera)
+
+        mPreview = findViewById(R.id.cam1_mrz_preview)
+        rectangleView = findViewById(R.id.cam1_mrz_rect)
+        instructionView = findViewById(R.id.cam1_mrz_text)
+        imageView = findViewById(R.id.cam1_mrz_image)
 
         setOptions(options)
 
-        // UI Customization
-        tvlp = RelativeLayout.LayoutParams(resources.getDimension(R.dimen.cam_error_width).toInt(), resources.getDimension(R.dimen.cam_mrz_height).toInt())
-        tvlp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE)
-        instructionView = TextView(this)
-
-        instructionView.setPadding(60, 15, 60, 15)
-        instructionView.gravity = Gravity.CENTER
-        instructionView.rotation = 90.0f
-        instructionView.layoutParams = tvlp
-        instructionView.typeface = Typeface.MONOSPACE
-        instructionView.id = R.id.acu_display_text
-
-        val tvlp2 = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT)
-        tvlp2.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE)
-        imageView = ImageView(this)
-        imageView.rotation = 90.0f
-        imageView.setImageResource(R.drawable.camera_overlay)
-        imageView.layoutParams = tvlp2
-        imageView.id = R.id.acu_help_image
-
         setTextFromState(this, AcuantBaseCameraFragment.CameraState.Align, instructionView, imageView)
-        parent.addView(instructionView, tvlp)
-        parent.addView(imageView, tvlp2)
 
         // Check for the camera permission before accessing the camera.  If the
         // permission is not granted yet, request permission.
@@ -345,24 +315,29 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         // Creates and starts the camera.  Note that this uses a higher resolution in comparison
         // to other detection examples to enable the barcode detector to detect small barcodes
         // at long distances.
-        documentDetector = createDocumentDetector()
-        var builder: DocumentCameraSource.Builder = DocumentCameraSource.Builder(applicationContext, documentDetector)
-                .setFacing(DocumentCameraSource.CAMERA_FACING_BACK)
-                .setRequestedPreviewSize(1600, 1200)
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val height: Int = displayMetrics.heightPixels
+        val width: Int = displayMetrics.widthPixels
+
+        mrzDetector = createDocumentDetector()
+        var builder: MrzCameraSource.Builder = MrzCameraSource.Builder(applicationContext, mrzDetector)
+                .setFacing(MrzCameraSource.CAMERA_FACING_BACK)
+                .setRequestedPreviewSize(width, height)
                 .setRequestedFps(60.0f)
 
         // make sure that auto focus is an available option
         builder = builder.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)
 
-        documentCameraSource = builder
+        mrzCameraSource = builder
                 .setFlashMode(if (useFlash) Camera.Parameters.FLASH_MODE_TORCH else Camera.Parameters.FLASH_MODE_OFF)
                 .build()
     }
 
-    private fun createDocumentDetector(): DocumentDetector {
-        documentProcessor = LiveDocumentProcessor()
-        documentProcessor.setOcrDetector(AcuantOcrDetector(this, this))
-        return documentProcessor.getDetector(applicationContext)
+    private fun createDocumentDetector(): MrzDetector {
+        mrzProcessor = LiveMrzProcessor()
+        mrzProcessor.setOcrDetector(AcuantOcrDetector(this, this))
+        return mrzProcessor.getDetector(applicationContext)
 
     }
 
@@ -398,7 +373,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     override fun onDestroy() {
         super.onDestroy()
         if (!permissionNotGranted) {
-            documentProcessor.stop()
+            mrzProcessor.stop()
         }
         if (mPreview != null) {
             mPreview!!.release()
@@ -466,19 +441,19 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
             dlg.show()
         }
 
-        if (documentCameraSource != null) {
+        if (mrzCameraSource != null) {
             try {
-                mPreview!!.start(documentCameraSource)
+                mPreview!!.start(mrzCameraSource)
             } catch (e: IOException) {
                 Log.e(TAG, "Unable to start camera source.", e)
-                documentCameraSource!!.release()
-                documentCameraSource = null
+                mrzCameraSource!!.release()
+                mrzCameraSource = null
             }
         }
     }
 
     override fun onBackPressed() {
-        this@DocumentCaptureActivity.finish()
+        this@MrzCaptureActivity.finish()
     }
 
     private fun onChanged(@Suppress("UNUSED_PARAMETER") lastOrientation: Int, curOrientation: Int) {
@@ -507,7 +482,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         Thread(Runnable {
             val mgr = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             mgr.setStreamMute(AudioManager.STREAM_SYSTEM, false)
-            this@DocumentCaptureActivity.runOnUiThread {
+            this@MrzCaptureActivity.runOnUiThread {
                 val result = Intent()
                 val file = File(this.getExternalFilesDir(null),  "${UUID.randomUUID()}.jpg")
                 saveFile(file, data)

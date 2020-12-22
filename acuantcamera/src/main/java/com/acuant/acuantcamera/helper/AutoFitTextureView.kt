@@ -3,7 +3,6 @@ package com.acuant.acuantcamera.helper
 import android.content.Context
 import android.util.AttributeSet
 import android.view.TextureView
-import android.view.View
 
 /**
  * A [TextureView] that can be adjusted to a specified aspect ratio.
@@ -14,10 +13,9 @@ class AutoFitTextureView @JvmOverloads constructor(
         defStyle: Int = 0
 ) : TextureView(context, attrs, defStyle) {
 
-    private var ratioWidth = 0
-    private var ratioHeight = 0
-    private var maxWidth = 0
-    private var maxHeight = 0
+    private var mRatioWidth = 0
+    private var mRatioHeight = 0
+
     /**
      * Sets the aspect ratio for this view. The size of the view will be measured based on the ratio
      * calculated from the parameters. Note that the actual sizes of parameters don't matter, that
@@ -27,38 +25,24 @@ class AutoFitTextureView @JvmOverloads constructor(
      * @param height Relative vertical size
      */
     fun setAspectRatio(width: Int, height: Int) {
-        if (width < 0 || height < 0) {
-            throw IllegalArgumentException("Size cannot be negative.")
-        }
-        ratioWidth = width
-        ratioHeight = height
+        require(!(width < 0 || height < 0)) { "Size cannot be negative." }
+        mRatioWidth = width
+        mRatioHeight = height
         requestLayout()
     }
 
-    fun setMax(width: Int, height: Int) {
-        if (width < 0 || height < 0) {
-            throw IllegalArgumentException("Size cannot be negative.")
-        }
-        maxWidth = width
-        maxHeight = height
-    }
-
-
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        val width = View.MeasureSpec.getSize(widthMeasureSpec)
-        val height = View.MeasureSpec.getSize(heightMeasureSpec)
-        if (ratioWidth == 0 || ratioHeight == 0) {
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        val height = MeasureSpec.getSize(heightMeasureSpec)
+        if (0 == mRatioWidth || 0 == mRatioHeight) {
             setMeasuredDimension(width, height)
-        }
-        else {
-            if((height * ratioWidth / ratioHeight) <= maxWidth ){
-                setMeasuredDimension(width, (width *  ratioHeight/ratioWidth.toFloat()).toInt())
-            }
-            else{
-                setMeasuredDimension((height * ratioWidth / ratioHeight.toFloat()).toInt(), height)
+        } else {
+            if (width/mRatioWidth.toFloat() < height/mRatioHeight.toFloat()) {
+                setMeasuredDimension(width, (mRatioHeight * width/mRatioWidth.toFloat()).toInt())
+            } else {
+                setMeasuredDimension((mRatioWidth * height/mRatioHeight.toFloat()).toInt(), height)
             }
         }
     }
-
 }

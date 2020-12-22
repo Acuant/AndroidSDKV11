@@ -8,38 +8,38 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.Point
-import android.hardware.Camera
-import android.os.Bundle
-import android.util.Log
-import android.util.Size
-import android.widget.LinearLayout
-import android.widget.RelativeLayout
-import android.widget.TextView
-
-import java.io.IOException
-
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.Point
 import android.graphics.drawable.Drawable
+import android.hardware.Camera
+import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.util.DisplayMetrics
+import android.util.Log
+import android.util.Size
 import android.view.*
+import android.widget.RelativeLayout
+import android.widget.TextView
 import com.acuant.acuantcamera.R
+import com.acuant.acuantcamera.camera.AcuantBaseCameraFragment.CameraState
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
-import com.acuant.acuantcamera.constant.*
-import java.io.ByteArrayOutputStream
-import com.acuant.acuantcamera.overlay.DocRectangleView
-import com.acuant.acuantcamera.camera.AcuantBaseCameraFragment.CameraState
 import com.acuant.acuantcamera.camera.document.AcuantDocCameraFragment
+import com.acuant.acuantcamera.constant.ACUANT_EXTRA_CAMERA_OPTIONS
+import com.acuant.acuantcamera.constant.ACUANT_EXTRA_IMAGE_URL
+import com.acuant.acuantcamera.constant.ACUANT_EXTRA_PDF417_BARCODE
 import com.acuant.acuantcamera.detector.ImageSaver
+import com.acuant.acuantcamera.overlay.DocRectangleView
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -90,35 +90,19 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         supportActionBar?.title = ""
         supportActionBar?.hide()
-        parent = RelativeLayout(this)
-        parent.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-        parent.keepScreenOn = true
-
-        setContentView(parent)
-        mPreview = DocumentCameraSourcePreview(this, null)
-        parent.addView(mPreview)
 
         capturingTextDrawable = this.getDrawable(R.drawable.camera_text_config_capturing)
         defaultTextDrawable = this.getDrawable(R.drawable.camera_text_config_default)
         holdTextDrawable = this.getDrawable(R.drawable.camera_text_config_hold)
 
-        val vfvp = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT)
-        rectangleView = DocRectangleView(this, null)
-        rectangleView.layoutParams = vfvp
-        parent.addView(rectangleView)
+        setContentView(R.layout.activity_acu_document_camera)
 
-        // UI Customization
-        val tvlp = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
-        tvlp.addRule(RelativeLayout.CENTER_IN_PARENT)
-        instructionView = TextView(this)
+        parent = findViewById(R.id.cam1_doc_parent)
+        mPreview = findViewById(R.id.cam1_doc_preview)
+        rectangleView = findViewById(R.id.cam1_doc_rect)
+        instructionView = findViewById(R.id.cam1_doc_text)
 
-        instructionView.setPadding(60, 15, 60, 15)
-        instructionView.gravity = Gravity.CENTER
-        instructionView.rotation = 90.0f
-        instructionView.layoutParams = tvlp
         setTextFromState(CameraState.Align)
-        parent.addView(instructionView, tvlp)
 
         // Check for the camera permission before accessing the camera.  If the
         // permission is not granted yet, request permission.
@@ -244,10 +228,15 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         // Creates and starts the camera.  Note that this uses a higher resolution in comparison
         // to other detection examples to enable the barcode detector to detect small barcodes
         // at long distances.
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val height: Int = displayMetrics.heightPixels
+        val width: Int = displayMetrics.widthPixels
+
         documentDetector = createDocumentDetector()
         var builder: DocumentCameraSource.Builder = DocumentCameraSource.Builder(applicationContext, documentDetector)
                 .setFacing(DocumentCameraSource.CAMERA_FACING_BACK)
-                .setRequestedPreviewSize(1600, 1200)
+                .setRequestedPreviewSize(width, height)
                 .setRequestedFps(60.0f)
 
         builder = builder.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)
@@ -257,28 +246,49 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                 .build()
     }
 
+    private fun isDocumentInPreviewFrame(points: Array<Point>, frameSize: Size): Boolean {
+        val minOffset = 0.01f
+        if (mPreview != null) {
+            val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
+            val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
 
+            val startY = frameSize.height * minOffset * scaleY//textureView.width
+            val startX = frameSize.width * minOffset * scaleX //textureView.height.toFloat() / 2 - previewSize.width.toFloat() / 2
+            val endY = frameSize.height * (1 - minOffset) * scaleY//textureView.width
+            val endX = frameSize.width * (1 - minOffset) * scaleX//textureView.height
 
-    private fun isDocumentInPreviewFrame(points: Array<Point>): Boolean {
-        points.apply {
-            this.forEach { p ->
-                if (p.x < 0 || (mPreview!!.mSurfaceView.width - p.y) < 0 || p.x > displaySize.y || (mPreview!!.mSurfaceView.width - p.y) > displaySize.x) {
+//            Log.d("WTF", "start: $startX,$startY\tend: $endX,$endY")
+//            if (previewSize.width.toFloat()/displaySize.y < previewSize.height.toFloat()/displaySize.x) {
+//                endX = (previewSize.width * displaySize.x/previewSize.height.toFloat()).toInt()
+//            } else {
+//                endY = (previewSize.height * displaySize.y/previewSize.width.toFloat()).toInt()
+//            }
+//            Log.d("WTF", "start: $startX,$startY\tend: $endX,$endY")
+
+            for (point in points) {
+                if (point.x < startX || point.y < startY || point.x > endX || point.y > endY) {
                     return false
                 }
             }
+
+            return true
         }
-        return true
+
+        return false
     }
 
     private fun scalePoints(points: Array<Point>, frameSize: Size): Array<Point> {
         val scaledPoints = points.copyOf()
-        val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
-        val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
+        if (mPreview != null) {
+            val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
+            val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
+            rectangleView.setWidth(mPreview!!.mSurfaceView.width.toFloat())
 
-        scaledPoints.apply {
-            this.forEach { p ->
-                p.x = (p.x * scaleY).toInt()
-                p.y = (p.y * scaleX).toInt()
+            scaledPoints.forEach {
+                it.x = (it.x * scaleY).toInt()
+                it.y = (it.y * scaleX).toInt()
+                it.y += mPreview?.pointXOffset ?: 0
+                it.x -= mPreview?.pointYOffset ?: 0
             }
         }
 
@@ -313,13 +323,12 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                         var points = it.point
                         val frameSize = it.frameSize!!
                         var feedback = it.feedback
-                        rectangleView.setWidth(mPreview!!.mSurfaceView.width.toFloat())
                         if (points != null && points.size == 4) {
 
                             points = scalePoints(points, frameSize)
                             points = fixPoints(points)
 
-                            if (!isDocumentInPreviewFrame(points)) {
+                            if (!isDocumentInPreviewFrame(points, frameSize)) {
                                 feedback = DocumentFeedback.NotInFrame
                             }
                         }
@@ -498,7 +507,7 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
      */
     @Throws(SecurityException::class)
     private fun startCameraSource() {
-        if (documentCameraSource != null) {
+        if (documentCameraSource != null && mPreview != null) {
             try {
                 mPreview!!.start(documentCameraSource)
             } catch (e: IOException) {

@@ -24,10 +24,10 @@ import com.google.android.gms.vision.barcode.Barcode
  * Factory for creating a tracker and associated graphic to be associated with a new barcode.  The
  * multi-processor uses this factory to create barcode trackers as needed -- one for each barcode.
  */
-internal class DocumentTrackerFactory(private val listener: DocumentGraphicTracker.BarcodeUpdateListener) : MultiProcessor.Factory<Barcode> {
+internal class MrzTrackerFactory(private val listener: MrzGraphicTracker.BarcodeUpdateListener) : MultiProcessor.Factory<Barcode> {
 
     override fun create(barcode: Barcode): Tracker<Barcode> {
-        return DocumentGraphicTracker(listener)
+        return MrzGraphicTracker(listener)
     }
 
 }

@@ -40,7 +40,9 @@ import java.util.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
+import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
 
 abstract class AcuantBaseCameraFragment : Fragment() {
 
@@ -58,11 +60,12 @@ abstract class AcuantBaseCameraFragment : Fragment() {
     protected lateinit var textView: TextView
     protected lateinit var imageView: ImageView
     protected lateinit var detectors: List<IAcuantDetector>
+    private val previewBoundThreshold = 10
+    protected var pointXOffset = 0
+    protected var pointYOffset = 0
     private lateinit var orientationListener: AcuantOrientationListener
     protected var oldPoints : Array<Point>? = null
     private lateinit var displaySize: Point
-    internal var targetSmallDocDpi: Int = 0
-    internal var targetLargeDocDpi: Int = 0
     internal var barCodeString: String? = null
     internal var isCapturing = false
     /**
@@ -141,8 +144,6 @@ abstract class AcuantBaseCameraFragment : Fragment() {
      */
     private var sensorOrientation = 0
 
-    private val previewBoundThreshold = 25
-
     protected abstract fun setTextFromState(state: CameraState)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -177,17 +178,23 @@ abstract class AcuantBaseCameraFragment : Fragment() {
 
 
     internal fun isDocumentInFrame(points: Array<Point>?) : Boolean{
-        if(points != null){
-            val startY = 0 //textureView.width.toFloat() / 2 - previewSize.height.toFloat() / 2
-            val startX = 0 //textureView.height.toFloat() / 2 - previewSize.width.toFloat() / 2
-            val endY = startY + displaySize.x //textureView.width
-            val endX = startX + displaySize.y //textureView.height
+        if (points != null) {
+            val minOffset = 0.025f
+            val startY = displaySize.x * minOffset//textureView.width
+            val startX = displaySize.y * minOffset //textureView.height.toFloat() / 2 - previewSize.width.toFloat() / 2
+            val endY = displaySize.x * (1 - minOffset)//textureView.width
+            val endX = displaySize.y * (1 - minOffset)//textureView.height
+
+//            Log.d("WTF", "start: $startX,$startY\tend: $endX,$endY")
+//            if (previewSize.width.toFloat()/displaySize.y < previewSize.height.toFloat()/displaySize.x) {
+//                endX = (previewSize.width * displaySize.x/previewSize.height.toFloat()).toInt()
+//            } else {
+//                endY = (previewSize.height * displaySize.y/previewSize.width.toFloat()).toInt()
+//            }
+//            Log.d("WTF", "start: $startX,$startY\tend: $endX,$endY")
 
             for (point in points) {
-                if( point.x < -previewBoundThreshold ||
-                        point.x > endX + previewBoundThreshold ||
-                        (textureView.width - point.y) < -previewBoundThreshold ||
-                        (textureView.width - point.y) > endY + previewBoundThreshold) {
+                if (point.x < startX || point.y < startY || point.x > endX || point.y > endY) {
                     return false
                 }
             }
@@ -284,6 +291,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
 
         override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
             configureTransform(width, height)
+            textureView.requestLayout()
         }
 
         override fun onSurfaceTextureDestroyed(texture: SurfaceTexture) = true
@@ -470,36 +478,49 @@ abstract class AcuantBaseCameraFragment : Fragment() {
                 val maxPreviewWidth = if (swappedDimensions) displaySize.y else displaySize.x
                 val maxPreviewHeight = if (swappedDimensions) displaySize.x else displaySize.y
 
-                val largestJpeg = Collections.max(
+                val bestJpeg = Collections.max(
                         listOf(*map.getOutputSizes(ImageFormat.JPEG)),
                         CompareSizesByArea())
+
+//                val bestJpeg = chooseBestCaptureSize(listOf(*map.getOutputSizes(ImageFormat.JPEG)), maxPreviewWidth, maxPreviewHeight)
 
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
                 // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
                 // garbage capture data.
                 previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture::class.java),
                         rotatedPreviewWidth, rotatedPreviewHeight,
-                        maxPreviewWidth, maxPreviewHeight)
-
-                targetSmallDocDpi = (previewSize.width * SMALL_DOC_DPI_SCALE_VALUE).toInt()
-                targetLargeDocDpi = (previewSize.width * LARGE_DOC_DPI_SCALE_VALUE).toInt()
+                        maxPreviewWidth, maxPreviewHeight, bestJpeg)
 
                 imageReader = ImageReader.newInstance(previewSize.width , previewSize.height,
                         ImageFormat.YUV_420_888, /*maxImages*/ 3).apply {
                     setOnImageAvailableListener(onFrameImageAvailableListener, backgroundHandler)
                 }
 
-                captureImageReader = ImageReader.newInstance(largestJpeg.width, largestJpeg.height,
+                captureImageReader = ImageReader.newInstance(bestJpeg.width, bestJpeg.height,
                         ImageFormat.JPEG, /*maxImages*/ 1).apply {
                     setOnImageAvailableListener(onCaptureImageAvailableListener, backgroundHandler)
                 }
 
+                val scaledWidth: Int
+                val scaledHeight: Int
+
+                if (rotatedPreviewWidth/previewSize.width.toFloat() < rotatedPreviewHeight/previewSize.height.toFloat()) {
+                    scaledWidth = rotatedPreviewWidth
+                    scaledHeight = (previewSize.height * rotatedPreviewWidth/previewSize.width.toFloat()).toInt()
+                } else {
+                    scaledWidth = (previewSize.width * rotatedPreviewHeight/previewSize.height.toFloat()).toInt()
+                    scaledHeight = rotatedPreviewHeight
+                }
+
+                pointXOffset = (rotatedPreviewWidth - scaledWidth)/2
+                pointYOffset = (rotatedPreviewHeight - scaledHeight)/2
+
                 // We fit the aspect ratio of TextureView to the size of preview we picked.
                 if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    textureView.setMax(maxPreviewWidth, maxPreviewHeight)
+                    //textureView.setMax(maxPreviewWidth, maxPreviewHeight)
                     textureView.setAspectRatio(previewSize.width, previewSize.height)
                 } else {
-                    textureView.setMax(maxPreviewHeight, maxPreviewWidth)
+                    //textureView.setMax(maxPreviewHeight, maxPreviewWidth)
                     textureView.setAspectRatio(previewSize.height, previewSize.width)
                 }
 
@@ -573,6 +594,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
                 throw RuntimeException("Time out waiting to lock camera opening.")
             }
             manager.openCamera(cameraId, stateCallback, backgroundHandler)
+            textureView.requestLayout()
         } catch (e: CameraAccessException) {
             Log.e(TAG, e.toString())
         } catch (e: InterruptedException) {
@@ -606,7 +628,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
      */
     private fun startBackgroundThread() {
         backgroundThread = HandlerThread("CameraBackground").also { it.start() }
-        backgroundHandler = Handler(backgroundThread?.looper)
+        backgroundHandler = Handler(backgroundThread?.looper ?: throw IllegalStateException("Background thread was null in a place where it can not/should not be null."))
     }
 
     /**
@@ -888,17 +910,30 @@ abstract class AcuantBaseCameraFragment : Fragment() {
          */
         private const val STATE_PICTURE_TAKEN = 4
 
-        /**
-         * Target DPI for preview size 1920x1080 = 350
-         * SMALL_DOC_DPI_SCALE_VALUE = target_dpi/preview_size_width
-         */
-        private const val SMALL_DOC_DPI_SCALE_VALUE = .18229
+        private const val RATIO_TOLERANCE = 0.1f
 
-        /**
-         * Target DPI for preview size 1920x1080 = 225
-         * LARGE_DOC_DPI_SCALE_VALUE = target_dpi/preview_size_width
-         */
-        private const val LARGE_DOC_DPI_SCALE_VALUE = .11719
+        @Suppress("unused")
+        @JvmStatic private fun chooseBestCaptureSize(sizes: List<Size>, screenWidth: Int, screenHeight: Int) : Size {
+            val targetSmallSide = min(screenHeight, screenWidth)
+            val targetLargeSide = max(screenHeight, screenWidth)
+
+            val sortedSizes = sizes.sortedWith(CompareSizesByArea())
+
+            val minSize = sortedSizes[0].width * sortedSizes[0].height * 0.75f
+
+            for (option in sortedSizes) {
+
+                val currentSmallSide = min(option.height, option.width)
+                val currentLargeSide = max(option.height, option.width)
+
+                if (abs(currentLargeSide.toFloat()/currentSmallSide - targetLargeSide.toFloat()/targetSmallSide) < RATIO_TOLERANCE &&
+                        currentLargeSide * currentSmallSide > minSize) {
+                    return option
+                }
+            }
+
+            return sortedSizes[0]
+        }
 
         /**
          * Given `choices` of `Size`s supported by a camera, choose the smallest one that
@@ -920,19 +955,30 @@ abstract class AcuantBaseCameraFragment : Fragment() {
                 textureViewWidth: Int,
                 textureViewHeight: Int,
                 maxWidth: Int,
-                maxHeight: Int
+                maxHeight: Int,
+                captureSize: Size
         ): Size {
-
+            val targetRatio = captureSize.width.toFloat()/captureSize.height
             // Collect the supported resolutions that are at least as big as the preview Surface
-            val bigEnough = ArrayList<Size>()
+            val bigEnoughGood = ArrayList<Size>()
+            val bigEnoughBad = ArrayList<Size>()
             // Collect the supported resolutions that are smaller than the preview Surface
-            val notBigEnough = ArrayList<Size>()
+            val notBigEnoughGood = ArrayList<Size>()
+            val notBigEnoughBad = ArrayList<Size>()
             for (option in choices) {
                 if (option.width <= maxWidth && option.height <= maxHeight ) {
                     if (option.width >= textureViewWidth && option.height >= textureViewHeight) {
-                        bigEnough.add(option)
+                        if (abs(option.width.toFloat()/option.height - targetRatio) < RATIO_TOLERANCE) {
+                            bigEnoughGood.add(option)
+                        } else {
+                            bigEnoughBad.add(option)
+                        }
                     } else {
-                        notBigEnough.add(option)
+                        if (abs(option.width.toFloat()/option.height - targetRatio) < RATIO_TOLERANCE) {
+                            notBigEnoughGood.add(option)
+                        } else {
+                            notBigEnoughBad.add(option)
+                        }
                     }
                 }
             }
@@ -940,8 +986,10 @@ abstract class AcuantBaseCameraFragment : Fragment() {
             // Pick the smallest of those big enough. If there is no one big enough, pick the
             // largest of those not big enough.
             return when {
-                bigEnough.size > 0 -> Collections.min(bigEnough, CompareSizesByArea())
-                notBigEnough.size > 0 -> Collections.max(notBigEnough, CompareSizesByArea())
+                bigEnoughGood.size > 0 -> Collections.min(bigEnoughGood, CompareSizesByArea())
+                notBigEnoughGood.size > 0 -> Collections.max(notBigEnoughGood, CompareSizesByArea())
+                bigEnoughBad.size > 0 -> Collections.min(bigEnoughBad, CompareSizesByArea())
+                notBigEnoughBad.size > 0 -> Collections.max(notBigEnoughBad, CompareSizesByArea())
                 else -> {
                     Log.e(TAG, "Couldn't find any suitable preview size")
                     choices[0]

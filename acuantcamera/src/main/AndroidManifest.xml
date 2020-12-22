@@ -23,7 +23,7 @@
             android:screenOrientation="portrait" />
 
         <activity
-            android:name="com.acuant.acuantcamera.camera.mrz.cameraone.DocumentCaptureActivity"
+            android:name="com.acuant.acuantcamera.camera.mrz.cameraone.MrzCaptureActivity"
             android:screenOrientation="portrait" />
     </application>
 

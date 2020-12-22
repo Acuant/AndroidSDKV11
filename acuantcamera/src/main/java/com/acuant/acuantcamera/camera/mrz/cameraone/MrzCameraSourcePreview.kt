@@ -30,11 +30,13 @@ import com.acuant.acuantcamera.R
 
 import java.io.IOException
 
-class DocumentCameraSourcePreview(private val mContext: Context, attrs: AttributeSet?) : ViewGroup(mContext, attrs) {
+class MrzCameraSourcePreview(private val mContext: Context, attrs: AttributeSet?) : ViewGroup(mContext, attrs) {
     var mSurfaceView: SurfaceView
+    var pointXOffset: Int = 0
+    var pointYOffset: Int = 0
     private var mStartRequested: Boolean = false
     private var mSurfaceAvailable: Boolean = false
-    private var documentCameraSource: DocumentCameraSource? = null
+    private var mrzCameraSource: MrzCameraSource? = null
 
     private val isPortraitMode: Boolean
         get() {
@@ -61,29 +63,29 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
 
     @RequiresPermission(Manifest.permission.CAMERA)
     @Throws(IOException::class, SecurityException::class)
-    fun start(documentCameraSource: DocumentCameraSource?) {
-        if (documentCameraSource == null) {
+    fun start(mrzCameraSource: MrzCameraSource?) {
+        if (mrzCameraSource == null) {
             stop()
         }
 
-        this.documentCameraSource = documentCameraSource
+        this.mrzCameraSource = mrzCameraSource
 
-        if (this.documentCameraSource != null) {
+        if (this.mrzCameraSource != null) {
             mStartRequested = true
             startIfReady()
         }
     }
 
     fun stop() {
-        if (documentCameraSource != null) {
-            documentCameraSource!!.stop()
+        if (mrzCameraSource != null) {
+            mrzCameraSource!!.stop()
         }
     }
 
     fun release() {
-        if (documentCameraSource != null) {
-            documentCameraSource!!.release()
-            documentCameraSource = null
+        if (mrzCameraSource != null) {
+            mrzCameraSource!!.release()
+            mrzCameraSource = null
         }
     }
 
@@ -91,7 +93,7 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
     @Throws(IOException::class, SecurityException::class)
     private fun startIfReady() {
         if (mStartRequested && mSurfaceAvailable) {
-            documentCameraSource!!.start(mSurfaceView.holder)
+            mrzCameraSource!!.start(mSurfaceView.holder, this)
             mStartRequested = false
         }
     }
@@ -124,46 +126,60 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        var width = 320
-        var height = 240
-        if (documentCameraSource != null) {
-            val size = documentCameraSource!!.previewSize
+
+        val viewWidth = right - left
+        val viewHeight = bottom - top
+
+        var previewWidth = viewWidth
+        var previewHeight = viewHeight
+        if (mrzCameraSource != null) {
+            val size = mrzCameraSource?.previewSize
             if (size != null) {
-                width = size.width
-                height = size.height
+                previewWidth = size.width
+                previewHeight = size.height
             }
         }
 
         // Swap width and height sizes when in portrait, since it will be rotated 90 degrees
         if (isPortraitMode) {
-            val tmp = width
-
-            width = height
-            height = tmp
+            val tmp = previewWidth
+            previewWidth = previewHeight
+            previewHeight = tmp
         }
 
-        val layoutWidth = right - left
-        val layoutHeight = bottom - top
+        val childWidth: Int
+        val childHeight: Int
+        val childXOffset: Int
+        val childYOffset: Int
+        val widthRatio = viewWidth.toFloat() / previewWidth.toFloat()
+        val heightRatio = viewHeight.toFloat() / previewHeight.toFloat()
 
-        // Computes height and width for potentially doing fit width.
-        var childWidth = layoutWidth
-        var childHeight = (layoutWidth.toFloat() / width.toFloat() * height).toInt()
-
-        if (childHeight < layoutHeight) {
-            childHeight = layoutHeight
-            childWidth = (layoutHeight.toFloat() / height.toFloat() * width).toInt()
+        if (widthRatio < heightRatio) {
+            childWidth = viewWidth
+            childHeight = (previewHeight.toFloat() * widthRatio).toInt()
+        } else {
+            childWidth = (previewWidth.toFloat() * heightRatio).toInt()
+            childHeight = viewHeight
         }
+        childXOffset = (childWidth - viewWidth) / 2
+        childYOffset = (childHeight - viewHeight) / 2
+
+        pointXOffset = childXOffset
+        pointYOffset = childYOffset
 
         for (i in 0 until childCount) {
-            getChildAt(i).layout(0, 0, childWidth, layoutHeight)
+            getChildAt(i).layout(
+                    -1 * childXOffset, -1 * childYOffset,
+                    childWidth - childXOffset, childHeight - childYOffset)
+            getChildAt(i).requestLayout()
         }
-
         try {
             startIfReady()
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             e.printStackTrace()
+        } catch (se: SecurityException) {
+            se.printStackTrace()
         }
-
     }
 
     companion object {

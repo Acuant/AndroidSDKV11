@@ -46,10 +46,13 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
                     val scaledPointY = textureView.height.toFloat() / previewSize.width.toFloat()
                     val scaledPointX = textureView.width.toFloat() / previewSize.height.toFloat()
                     rectangleView.setWidth(textureView.width.toFloat())
+
                     points.apply {
                         this.forEach {
                             it.x = (it.x * scaledPointY).toInt()
                             it.y = (it.y * scaledPointX).toInt()
+                            it.y -= pointYOffset
+                            it.x += pointXOffset
                         }
                     }
 

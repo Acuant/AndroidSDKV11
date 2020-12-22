@@ -56,7 +56,7 @@ import java.util.Map;
  * </ul>
  */
 @SuppressWarnings("deprecation")
-public class DocumentCameraSource {
+public class MrzCameraSource {
     @SuppressLint("InlinedApi")
     static final int CAMERA_FACING_BACK = CameraInfo.CAMERA_FACING_BACK;
     @SuppressLint("InlinedApi")
@@ -157,7 +157,7 @@ public class DocumentCameraSource {
      */
     public static class Builder {
         private final Detector<?> mDetector;
-        private DocumentCameraSource documentCameraSource = new DocumentCameraSource();
+        private MrzCameraSource mrzCameraSource = new MrzCameraSource();
 
         /**
          * Creates a camera source builder with the supplied context and detector.  Camera preview
@@ -172,7 +172,7 @@ public class DocumentCameraSource {
             }
 
             mDetector = detector;
-            documentCameraSource.mContext = context;
+            mrzCameraSource.mContext = context;
         }
 
         /**
@@ -183,19 +183,19 @@ public class DocumentCameraSource {
             if (fps <= 0) {
                 throw new IllegalArgumentException("Invalid fps: " + fps);
             }
-            documentCameraSource.mRequestedFps = fps;
+            mrzCameraSource.mRequestedFps = fps;
             return this;
         }
 
         public Builder setFocusMode(@FocusMode String mode) {
-            documentCameraSource.mFocusMode = mode;
+            mrzCameraSource.mFocusMode = mode;
             return this;
         }
 
 
 
         public Builder setFlashMode(@FlashMode String mode) {
-            documentCameraSource.mFlashMode = mode;
+            mrzCameraSource.mFlashMode = mode;
             return this;
         }
 
@@ -213,8 +213,8 @@ public class DocumentCameraSource {
             if ((width <= 0) || (width > MAX) || (height <= 0) || (height > MAX)) {
                 throw new IllegalArgumentException("Invalid preview size: " + width + "x" + height);
             }
-            documentCameraSource.mRequestedPreviewWidth = width;
-            documentCameraSource.mRequestedPreviewHeight = height;
+            mrzCameraSource.mRequestedPreviewWidth = width;
+            mrzCameraSource.mRequestedPreviewHeight = height;
             return this;
         }
 
@@ -226,16 +226,16 @@ public class DocumentCameraSource {
             if ((facing != CAMERA_FACING_BACK) && (facing != CAMERA_FACING_FRONT)) {
                 throw new IllegalArgumentException("Invalid camera: " + facing);
             }
-            documentCameraSource.mFacing = facing;
+            mrzCameraSource.mFacing = facing;
             return this;
         }
 
         /**
          * Creates an instance of the camera source.
          */
-        public DocumentCameraSource build() {
-            documentCameraSource.mFrameProcessor = documentCameraSource.new FrameProcessingRunnable(mDetector);
-            return documentCameraSource;
+        public MrzCameraSource build() {
+            mrzCameraSource.mFrameProcessor = mrzCameraSource.new FrameProcessingRunnable(mDetector);
+            return mrzCameraSource;
         }
     }
 
@@ -324,7 +324,7 @@ public class DocumentCameraSource {
      * @throws IOException if the camera's preview texture or display could not be initialized
      */
     @RequiresPermission(Manifest.permission.CAMERA)
-    public DocumentCameraSource start() throws IOException {
+    public MrzCameraSource start() throws IOException {
         synchronized (mCameraLock) {
             if (mCamera != null) {
                 return this;
@@ -358,7 +358,7 @@ public class DocumentCameraSource {
      * @throws IOException if the supplied surface holder could not be used as the preview display
      */
     @RequiresPermission(Manifest.permission.CAMERA)
-    public DocumentCameraSource start(SurfaceHolder surfaceHolder) throws IOException {
+    public MrzCameraSource start(SurfaceHolder surfaceHolder, MrzCameraSourcePreview preview) throws IOException {
         synchronized (mCameraLock) {
             if (mCamera != null) {
                 return this;
@@ -373,6 +373,10 @@ public class DocumentCameraSource {
             mCamera.setPreviewDisplay(surfaceHolder);
             mCamera.startPreview();
 
+            if (preview != null) {
+                preview.requestLayout();
+            }
+
             mProcessingThread = new Thread(mFrameProcessor);
             mFrameProcessor.setActive(true);
             mProcessingThread.start();
@@ -384,7 +388,7 @@ public class DocumentCameraSource {
      * Closes the camera and stops sending frames to the underlying frame detector.
      * <p/>
      * This camera source may be restarted again by calling {@link #start()} or
-     * {@link #start(SurfaceHolder)}.
+     * {@link #start(SurfaceHolder, MrzCameraSourcePreview)}.
      * <p/>
      * Call {@link #release()} instead to completely shut down this camera source and release the
      * resources of the underlying detector.
@@ -481,7 +485,7 @@ public class DocumentCameraSource {
 
     /**
      * Initiates taking a picture, which happens asynchronously.  The camera source should have been
-     * activated previously with {@link #start()} or {@link #start(SurfaceHolder)}.  The camera
+     * activated previously with {@link #start()} or {@link #start(SurfaceHolder, MrzCameraSourcePreview)}.  The camera
      * preview is suspended while the picture is being taken, but will resume once picture taking is
      * done.
      *
@@ -586,7 +590,7 @@ public class DocumentCameraSource {
     /**
      * Starts camera auto-focus and registers a callback function to run when
      * the camera is focused.  This method is only valid when preview is active
-     * (between {@link #start()} or {@link #start(SurfaceHolder)} and before {@link #stop()} or {@link #release()}).
+     * (between {@link #start()} or {@link #start(SurfaceHolder, MrzCameraSourcePreview)} and before {@link #stop()} or {@link #release()}).
      * <p/>
      * <p>Callers should check
      * {@link #getFocusMode()} to determine if
@@ -663,7 +667,7 @@ public class DocumentCameraSource {
     /**
      * Only allow creation via the builder class.
      */
-    private DocumentCameraSource() {
+    private MrzCameraSource() {
     }
 
     /**
@@ -827,6 +831,41 @@ public class DocumentCameraSource {
         return -1;
     }
 
+//    private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
+//        List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
+//        // The method for selecting the best size is to minimize the sum of the differences between
+//        // the desired values and the actual values for width and height.  This is certainly not the
+//        // only way to select the best size, but it provides a decent tradeoff between using the
+//        // closest aspect ratio vs. using the closest pixel area.
+//        SizePair selectedPair = null;
+//        int maxArea = Integer.MIN_VALUE;
+//        int maxPict = Integer.MIN_VALUE;
+//        int area = Integer.MIN_VALUE;
+//        for (SizePair sizePair : validPreviewSizes) {
+//            Size size_pict = sizePair.pictureSize();
+//            int newArea = size_pict.getWidth()*size_pict.getHeight();
+//            if (newArea > maxPict) {
+//                maxPict = newArea;
+//                maxArea = Integer.MIN_VALUE;
+//                Size size = sizePair.previewSize();
+//                area = size.getWidth()*size.getHeight();
+//                if (maxArea < area) {
+//                    selectedPair = sizePair;
+//                    maxArea = area;
+//                }
+//            }
+//            else if (newArea == maxPict) {
+//                Size size = sizePair.previewSize();
+//                area = size.getWidth()*size.getHeight();
+//                if (maxArea < area) {
+//                    selectedPair = sizePair;
+//                    maxArea = area;
+//                }
+//            }
+//        }
+//        return selectedPair;
+//    }
+
     /**
      * Selects the most suitable preview and picture size, given the desired width and height.
      * <p/>
@@ -840,9 +879,11 @@ public class DocumentCameraSource {
      * @param desiredHeight the desired height of the camera preview frames
      * @return the selected preview and picture size pair
      */
-    /*private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
+        private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
         List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
-
+        long expectedSize = desiredWidth*desiredHeight;
+        int desiredShortSide = Math.min(desiredHeight, desiredWidth);
+        int desiredLongSide = Math.max(desiredHeight, desiredWidth);
         // The method for selecting the best size is to minimize the sum of the differences between
         // the desired values and the actual values for width and height.  This is certainly not the
         // only way to select the best size, but it provides a decent tradeoff between using the
@@ -851,51 +892,32 @@ public class DocumentCameraSource {
         int minDiff = Integer.MAX_VALUE;
         for (SizePair sizePair : validPreviewSizes) {
             Size size = sizePair.previewSize();
-            int diff = Math.abs(size.getWidth() - desiredWidth) +
-                    Math.abs(size.getHeight() - desiredHeight);
-            if (diff < minDiff) {
+
+
+            int currentShortSide = Math.min(size.getWidth(), size.getHeight());
+            int currentLongSide = Math.max(size.getWidth(), size.getHeight());
+            float change = Math.min(Math.min((float) desiredShortSide / currentShortSide, (float) desiredLongSide / currentLongSide), 2f);
+            currentLongSide *= change;
+            currentShortSide *= change;
+
+
+            int diff = Math.abs(currentShortSide - desiredShortSide) +
+                    Math.abs(currentLongSide - desiredLongSide);
+            if ((!(currentLongSide > desiredLongSide) && !(currentShortSide > desiredShortSide)) && diff < minDiff && (sizePair.pictureSize().getWidth()*sizePair.pictureSize().getHeight() >= expectedSize * 0.6f)) {
                 selectedPair = sizePair;
                 minDiff = diff;
             }
         }
 
-        return selectedPair;
-    }*/
-
-    private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
-        List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
-        // The method for selecting the best size is to minimize the sum of the differences between
-        // the desired values and the actual values for width and height.  This is certainly not the
-        // only way to select the best size, but it provides a decent tradeoff between using the
-        // closest aspect ratio vs. using the closest pixel area.
-        SizePair selectedPair = null;
-        int maxArea = Integer.MIN_VALUE;
-        int maxPict = Integer.MIN_VALUE;
-        int area = Integer.MIN_VALUE;
-        for (SizePair sizePair : validPreviewSizes) {
-            Size size_pict = sizePair.pictureSize();
-            int newArea = size_pict.getWidth()*size_pict.getHeight();
-            if (newArea > maxPict) {
-                maxPict = newArea;
-                maxArea = Integer.MIN_VALUE;
-                Size size = sizePair.previewSize();
-                area = size.getWidth()*size.getHeight();
-                if (maxArea < area) {
-                    selectedPair = sizePair;
-                    maxArea = area;
-                }
-            }
-            else if (newArea == maxPict) {
-                Size size = sizePair.previewSize();
-                area = size.getWidth()*size.getHeight();
-                if (maxArea < area) {
-                    selectedPair = sizePair;
-                    maxArea = area;
-                }
-            }
+        if (selectedPair != null) {
+            return selectedPair;
+        } else if (validPreviewSizes.size() > 0){
+            return validPreviewSizes.get(0);
+        } else {
+            return null;
         }
-        return selectedPair;
     }
+
 
     /**
      * Stores a preview size and a corresponding same-aspect-ratio picture size.  To avoid distorted

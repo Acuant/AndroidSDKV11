@@ -15,6 +15,7 @@
  */
 package com.acuant.acuantcamera.camera.document.cameraone
 
+
 import android.Manifest
 import android.content.Context
 import android.content.res.Configuration
@@ -25,14 +26,14 @@ import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.ViewGroup
+import android.widget.RelativeLayout
 import com.acuant.acuantcamera.R
-import com.acuant.acuantcamera.camera.mrz.cameraone.DocumentCameraSourcePreview
-
-
 import java.io.IOException
 
 class DocumentCameraSourcePreview(private val mContext: Context, attrs: AttributeSet?) : ViewGroup(mContext, attrs) {
     var mSurfaceView: SurfaceView
+    var pointXOffset: Int = 0
+    var pointYOffset: Int = 0
     private var mStartRequested: Boolean = false
     private var mSurfaceAvailable: Boolean = false
     private var documentCameraSource: DocumentCameraSource? = null
@@ -55,7 +56,11 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
         mStartRequested = false
         mSurfaceAvailable = false
 
+        val previewParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.MATCH_PARENT)
+        previewParams.addRule(RelativeLayout.CENTER_IN_PARENT)
         mSurfaceView = SurfaceView(mContext)
+        mSurfaceView.layoutParams = previewParams
         mSurfaceView.holder.addCallback(SurfaceCallback())
         addView(mSurfaceView)
     }
@@ -92,7 +97,7 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
     @Throws(IOException::class, SecurityException::class)
     private fun startIfReady() {
         if (mStartRequested && mSurfaceAvailable) {
-            documentCameraSource!!.start(mSurfaceView.holder)
+            documentCameraSource!!.start(mSurfaceView.holder, this)
             mStartRequested = false
         }
     }
@@ -124,48 +129,64 @@ class DocumentCameraSourcePreview(private val mContext: Context, attrs: Attribut
         }
 
         override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        var width = 320
-        var height = 240
+
+        val viewWidth = right - left
+        val viewHeight = bottom - top
+
+        var previewWidth = viewWidth
+        var previewHeight = viewHeight
         if (documentCameraSource != null) {
-            val size = documentCameraSource!!.previewSize
+            val size = documentCameraSource?.previewSize
             if (size != null) {
-                width = size.width
-                height = size.height
+                previewWidth = size.width
+                previewHeight = size.height
             }
         }
 
         // Swap width and height sizes when in portrait, since it will be rotated 90 degrees
         if (isPortraitMode) {
-            val tmp = width
+            val tmp = previewWidth
+            previewWidth = previewHeight
+            previewHeight = tmp
+        }
+        val childWidth: Int
+        val childHeight: Int
+        val childXOffset: Int
+        val childYOffset: Int
+        val widthRatio = viewWidth.toFloat() / previewWidth.toFloat()
+        val heightRatio = viewHeight.toFloat() / previewHeight.toFloat()
 
-            width = height
-            height = tmp
+        if (widthRatio < heightRatio) {
+            childWidth = viewWidth
+            childHeight = (previewHeight.toFloat() * widthRatio).toInt()
+        } else {
+            childWidth = (previewWidth.toFloat() * heightRatio).toInt()
+            childHeight = viewHeight
         }
 
-        val layoutWidth = right - left
-        val layoutHeight = bottom - top
+        childXOffset = (childWidth - viewWidth) / 2
+        childYOffset = (childHeight - viewHeight) / 2
 
-        // Computes height and width for potentially doing fit width.
-        var childWidth = layoutWidth
-        var childHeight = (layoutWidth.toFloat() / width.toFloat() * height).toInt()
-
-        if (childHeight < layoutHeight) {
-            childHeight = layoutHeight
-            childWidth = (layoutHeight.toFloat() / height.toFloat() * width).toInt()
-        }
+        pointXOffset = childXOffset
+        pointYOffset = childYOffset
 
         for (i in 0 until childCount) {
-            getChildAt(i).layout(0, 0, childWidth, layoutHeight)
+            getChildAt(i).layout(
+                    -1 * childXOffset, -1 * childYOffset,
+                    childWidth - childXOffset, childHeight - childYOffset)
+            getChildAt(i).requestLayout()
         }
         try {
             startIfReady()
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             e.printStackTrace()
+        } catch (se: SecurityException) {
+            se.printStackTrace()
         }
-
     }
 
     companion object {
