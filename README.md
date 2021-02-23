@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.9
-**December 2020**
+# Acuant Android SDK v11.4.10
+**February 2021**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -189,18 +189,18 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.9'
-    		implementation 'com.acuant:acuantcamera:11.4.9'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.9'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.9'
-    		implementation 'com.acuant:acuantechipreader:11.4.9'
-    		implementation 'com.acuant:acuantfacematch:11.4.9'
-    		implementation 'com.acuant:acuanthgliveness:11.4.9'
-    		implementation ('com.acuant:acuantipliveness:11.4.9'){
+    		implementation 'com.acuant:acuantcommon:11.4.10'
+    		implementation 'com.acuant:acuantcamera:11.4.10'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.10'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.10'
+    		implementation 'com.acuant:acuantechipreader:11.4.10'
+    		implementation 'com.acuant:acuantfacematch:11.4.10'
+    		implementation 'com.acuant:acuanthgliveness:11.4.10'
+    		implementation ('com.acuant:acuantipliveness:11.4.10'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.9'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.9'
+    		implementation 'com.acuant:acuantfacecapture:11.4.10'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.10'
 		
    - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
@@ -362,8 +362,8 @@ Here is the interface for the initialize listener:
 		startActivityForResult(cameraIntent, REQUEST_CODE) 
 **Note:**  When the camera is launched, the image processing speed is automatically checked.
 
-	- Live document detection and auto capture features are enabled if the device supports a speed of at least 130ms.
-	- For devices that don't meet the processing threshold, tap to capture will be enabled. Live document detection and auto capture features are disabled and switched to tap to capture. The user will have to manually capture the document. 
+ * Live document detection and auto capture features are enabled if the device supports a speed of at least 130ms.
+ * For devices that don't meet the processing threshold, tap to capture will be enabled. Live document detection and auto capture features are disabled and switched to tap to capture. The user will have to manually capture the document. 
  
 1. Get activity result:
 	
@@ -435,7 +435,7 @@ This section describes how to use **AcuantImagePreparation**.
 	
 	passing in the cropping data:
 	
-		class CroppingData(Bitmap image)
+		class CroppingData(imageUrlString: String)
 	
 	and a callback listener:
 	
@@ -456,6 +456,8 @@ This section describes how to use **AcuantImagePreparation**.
 			val aspectRatio: Float
 			val rawBytes: ByteArray
 		}
+		
+**Note:** If you are using an independent orchestration layer, then make sure you supply AcuantImage.rawBytes not just AcuantImage.image.
 		
 -------------------------------------
 

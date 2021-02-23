@@ -205,7 +205,7 @@ class FaceCaptureActivity : AppCompatActivity(), FaceListener {
     /**
      * Saves the camera facing mode, so that it can be restored after the device is rotated.
      */
-    public override fun onSaveInstanceState(savedInstanceState: Bundle?) {
+    public override fun onSaveInstanceState(savedInstanceState: Bundle) {
         super.onSaveInstanceState(savedInstanceState)
     }
 

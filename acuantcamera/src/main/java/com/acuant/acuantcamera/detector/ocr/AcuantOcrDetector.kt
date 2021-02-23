@@ -2,12 +2,12 @@ package com.acuant.acuantcamera.detector.ocr
 
 import android.content.Context
 import com.acuant.acuantimagepreparation.AcuantImagePreparation
-import com.acuant.acuantimagepreparation.model.CroppingData
 import java.lang.Exception
 import android.graphics.*
 import com.acuant.acuantcommon.model.Image
 import android.graphics.Bitmap.CompressFormat
 import com.acuant.acuantcamera.detector.IAcuantDetector
+import com.acuant.acuantimagepreparation.model.DetectData
 import com.googlecode.tesseract.android.TessBaseAPI
 import java.io.File
 import java.io.FileOutputStream
@@ -33,14 +33,13 @@ class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetecto
         var processedImgFinal : Bitmap? = null
         var croppedImage : Image? = null
         if (isInitialized && bitmap != null && !isDetecting) {
-            try{
+            try {
                 isDetecting = true
-                val data = CroppingData()
-                data.image = bitmap
+                val data = DetectData(bitmap)
 
                 croppedImage = AcuantImagePreparation.detectMrz(data)
 
-                if(croppedImage.isPassport){
+                if (croppedImage.isPassport) {
 
                     croppedImage = AcuantImagePreparation.cropMrz(data, croppedImage)
 
@@ -64,8 +63,8 @@ class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetecto
                     }
 
                     processedImgWithBorder = addWhiteBorder(processedImg)
-                    //TODO: this method is absolute trash and eventually we want to come up with a better version
-                    processedImgFinal = if(tryFlip) {
+                    //TODO: this method could use improvement, it is too brute force of a solution
+                    processedImgFinal = if (tryFlip) {
                         val matrix = Matrix()
                         matrix.postRotate(180f)
                         tryFlip = false
@@ -122,7 +121,6 @@ class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetecto
 
     companion object{
         var isDetecting = false
-        private const val MAX_UNALIGNED = 85
         private const val saveDebug = false
     }
 }

@@ -62,9 +62,11 @@ class AcuantTokenService(private val credential: Credential,
                     }
                     `in`.close()
                     responseText = response.toString()
-                    val json = JSONObject(responseText)
-                    if (json.has("access_token")) {
-                        token = json.getString("access_token")
+                    if (responseText != null) {
+                        val json = JSONObject(responseText!!)
+                        if (json.has("access_token")) {
+                            token = json.getString("access_token")
+                        }
                     }
                 }
             } catch (e: Exception) {

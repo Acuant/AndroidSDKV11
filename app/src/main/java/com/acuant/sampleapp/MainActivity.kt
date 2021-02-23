@@ -342,7 +342,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
         progressText?.text = text
     }
 
-    private fun readFromFile(fileUri: String?): ByteArray{
+    private fun readFromFile(fileUri: String): ByteArray{
         val file = File(fileUri)
         val bytes = ByteArray(file.length().toInt())
         try {
@@ -384,8 +384,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
             if (url != null) {
                 setProgress(true, "Cropping...")
-                val bytes = readFromFile(url)
-                AcuantImagePreparation.evaluateImage(this, CroppingData(BitmapFactory.decodeByteArray(bytes, 0, bytes.size)), object : EvaluateImageListener {
+                AcuantImagePreparation.evaluateImage(this, CroppingData(url), object : EvaluateImageListener {
 
                     override fun onSuccess(image: AcuantImage) {
 
@@ -520,8 +519,16 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
             when (resultCode) {
                 FaceCaptureActivity.RESPONSE_SUCCESS_CODE -> {
+                    val url = data?.getStringExtra(FaceCaptureActivity.OUTPUT_URL)
+
+                    if (url == null) {
+                        showFaceCaptureError()
+                        return
+                    }
+
                     processingFacialLiveness = true
-                    val bytes = readFromFile(data?.getStringExtra(FaceCaptureActivity.OUTPUT_URL))
+
+                    val bytes = readFromFile(url)
                     capturedSelfieImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     val plData = PassiveLivenessData(capturedSelfieImage as Bitmap)
                     AcuantPassiveLiveness.processFaceLiveness(plData, object : PassiveLivenessListener {

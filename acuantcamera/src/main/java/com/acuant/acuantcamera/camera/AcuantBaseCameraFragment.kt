@@ -360,7 +360,9 @@ abstract class AcuantBaseCameraFragment : Fragment() {
                     this.isProcessing = true
                     this.isCapturing = false
 
-                    backgroundHandler?.post(ImageSaver(orientationListener.previousAngle, image, file, object : ImageSaveHandler {
+                    val capturetype = if(isAutoCapture) "AUTO" else "TAP"
+
+                    backgroundHandler?.post(ImageSaver(orientationListener.previousAngle, image, file, capturetype, object : ImageSaveHandler {
                         override fun onSave() {
                             if (activity is ICameraActivityFinish) {
                                 (activity as ICameraActivityFinish).onActivityFinish(file.absolutePath, barCodeString)
@@ -653,7 +655,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
             val texture = textureView.surfaceTexture
 
             // We configure the size of default buffer to be the size of camera preview we want.
-            texture.setDefaultBufferSize(previewSize.width, previewSize.height)
+            texture?.setDefaultBufferSize(previewSize.width, previewSize.height)
             // This is the output Surface we need to start preview.
             val surface = Surface(texture)
 

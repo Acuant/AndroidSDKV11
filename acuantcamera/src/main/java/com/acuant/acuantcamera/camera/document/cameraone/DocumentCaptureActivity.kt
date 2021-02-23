@@ -247,26 +247,23 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
     }
 
     private fun isDocumentInPreviewFrame(points: Array<Point>, frameSize: Size): Boolean {
-        val minOffset = 0.01f
+        val minOffset = 0.0025f
         if (mPreview != null) {
-            val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
-            val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
 
-            val startY = frameSize.height * minOffset * scaleY//textureView.width
-            val startX = frameSize.width * minOffset * scaleX //textureView.height.toFloat() / 2 - previewSize.width.toFloat() / 2
-            val endY = frameSize.height * (1 - minOffset) * scaleY//textureView.width
-            val endX = frameSize.width * (1 - minOffset) * scaleX//textureView.height
+            //this causes issue on some devices where the scale is very large.
+            //not needed in method, is performed in the scale for the screen match
+            //val scaleX = mPreview!!.mSurfaceView.width / frameSize.height.toFloat()
+            //val scaleY = mPreview!!.mSurfaceView.height / frameSize.width.toFloat()
 
-//            Log.d("WTF", "start: $startX,$startY\tend: $endX,$endY")
-//            if (previewSize.width.toFloat()/displaySize.y < previewSize.height.toFloat()/displaySize.x) {
-//                endX = (previewSize.width * displaySize.x/previewSize.height.toFloat()).toInt()
-//            } else {
-//                endY = (previewSize.height * displaySize.y/previewSize.width.toFloat()).toInt()
-//            }
-//            Log.d("WTF", "start: $startX,$startY\tend: $endX,$endY")
+            val startY = frameSize.height * minOffset// * scaleY
+            val startX = frameSize.width * minOffset// * scaleX
+            val endY = frameSize.height * (1 - minOffset)// * scaleY
+            val endX = frameSize.width * (1 - minOffset)// * scaleX
 
             for (point in points) {
+                //Log.d("wtf", "Point: ${point.x.toString().padEnd(5)}, ${point.y.toString().padEnd(5)} Start: ${startX.toString().padEnd(5)}, ${startY.toString().padEnd(5)} End: ${endX.toString().padEnd(5)}, ${endY.toString().padEnd(5)}")
                 if (point.x < startX || point.y < startY || point.x > endX || point.y > endY) {
+                    //Log.d("wtf", "Failed here")
                     return false
                 }
             }
@@ -324,13 +321,14 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
                         val frameSize = it.frameSize!!
                         var feedback = it.feedback
                         if (points != null && points.size == 4) {
-
-                            points = scalePoints(points, frameSize)
                             points = fixPoints(points)
 
                             if (!isDocumentInPreviewFrame(points, frameSize)) {
                                 feedback = DocumentFeedback.NotInFrame
                             }
+
+                            //this scale is done to match on screen display better, the frame checks should happen before
+                            points = scalePoints(points, frameSize)
                         }
 
 
@@ -657,6 +655,8 @@ class DocumentCaptureActivity : AppCompatActivity(), DocumentCameraSource.Pictur
         var output: FileOutputStream? = null
         try {
             output = FileOutputStream(file).apply { write(data) }
+            val captureType = if (autoCapture) "AUTO" else "TAP"
+            ImageSaver.addExif(file, captureType)
         } catch (e: IOException) {
             e.printStackTrace()
         } finally {

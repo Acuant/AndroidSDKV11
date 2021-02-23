@@ -29,7 +29,7 @@ object DialogUtils {
 
     fun showDialog(context: AppCompatActivity, message: String): AlertDialog {
 
-        val clickListener = DialogInterface.OnClickListener { dialog, which ->
+        val clickListener = DialogInterface.OnClickListener { dialog, _ ->
             dismissDialog(dialog as Dialog)
         }
         return showDialog(context, message, clickListener)

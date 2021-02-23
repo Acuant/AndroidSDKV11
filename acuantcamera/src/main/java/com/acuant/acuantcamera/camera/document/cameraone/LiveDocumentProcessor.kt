@@ -7,9 +7,8 @@ import android.graphics.Bitmap
 import android.util.Log
 import android.util.Size
 import com.acuant.acuantcamera.camera.document.AcuantDocCameraFragment
-
 import com.acuant.acuantimagepreparation.AcuantImagePreparation
-import com.acuant.acuantimagepreparation.model.CroppingData
+import com.acuant.acuantimagepreparation.model.DetectData
 import com.google.android.gms.vision.MultiProcessor
 import com.google.android.gms.vision.barcode.Barcode
 import com.google.android.gms.vision.barcode.BarcodeDetector
@@ -76,8 +75,7 @@ class LiveDocumentProcessor : DocumentGraphicTracker.BarcodeUpdateListener {
                         processing = true
                         frame = documentDetector?.frame
                         if (frame != null) {
-                            val data = CroppingData()
-                            data.image = frame
+                            val data = DetectData(frame!!)
                             val frameSize = Size(data.image.width, data.image.height)
                             try {
                                 val startTime = System.currentTimeMillis()

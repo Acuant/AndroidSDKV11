@@ -8,6 +8,9 @@ import android.graphics.ImageFormat
 import android.graphics.YuvImage
 import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
+import android.support.media.ExifInterface
+import com.acuant.acuantimagepreparation.AcuantImagePreparation
+import org.json.JSONObject
 import java.io.*
 
 
@@ -33,6 +36,17 @@ class ImageSaver(
 
 ) : Runnable {
 
+    private var captureType = "NOT SPECIFIED (implementer's custom camera did not call right method)"
+
+    constructor(orientation: Int,
+                image: Image,
+                file: File,
+                type: String,
+                callback: ImageSaveHandler
+                ) : this(orientation, image, file, callback) {
+        captureType = type
+    }
+
     override fun run() {
         val buffer = image.planes[0].buffer
         var bytes = ByteArray(buffer.remaining())
@@ -51,6 +65,7 @@ class ImageSaver(
         var output: FileOutputStream? = null
         try {
             output = FileOutputStream(file).apply {write(bytes)}
+            addExif(file, captureType)
         } catch (e: IOException) {
             Log.e(TAG, e.toString())
         } finally {
@@ -66,6 +81,7 @@ class ImageSaver(
         }
     }
 
+
     companion object {
         /**
          * Tag for the [Log].
@@ -75,6 +91,18 @@ class ImageSaver(
 
         @JvmStatic fun imageToByteArray(image: Image, quality: Int = 50): ByteArray {
             return NV21toJPEG(YUV420toNV21(image), image.getWidth(), image.getHeight(), 100)
+        }
+
+        fun addExif(file: File, captureType: String) {
+            val exif = ExifInterface(file.absolutePath)
+            val json = JSONObject()
+
+
+            json.put(AcuantImagePreparation.CAPTURE_TYPE_TAG, captureType)
+            //further exif stuff can be added to the JSON here and read in the CroppingData constructor
+
+            exif.setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, json.toString())
+            exif.saveAttributes()
         }
 
         fun rotateImage(img: Bitmap, degree: Float): Bitmap {

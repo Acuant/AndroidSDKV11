@@ -15,6 +15,7 @@ import com.google.android.gms.vision.face.LargestFaceFocusingProcessor
 import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.math.abs
+import kotlin.math.min
 
 class FaceProcessor private constructor(context: Context, listener: FaceListener, private val countdown: Int) : Tracker<Face>() {
     private val liveFaceListener: FaceListener?
@@ -108,12 +109,13 @@ class FaceProcessor private constructor(context: Context, listener: FaceListener
     override fun onNewItem(id: Int, face: Face) {}
     private fun isGoodSizeFace(x: Float, y: Float, width: Float, height: Float,
                                screenWidth: Float, screenHeight: Float, face: Face?): FaceDetailState {
-        val area = width * height
-        val screenArea = screenWidth * screenHeight
-        return if (area < screenArea * 0.25) {
-            FaceDetailState.FACE_TOO_FAR
-        } else if (area > screenArea * 0.55) {
+        val ratioToEdges = min(1-height/screenHeight, 1-width/screenWidth)
+        //Log.d("ratios", ratioToEdges.toString())
+        @Suppress("unused")
+        return if (ratioToEdges < TOO_CLOSE_THRESH) {
             FaceDetailState.FACE_TOO_CLOSE
+        } else if (ratioToEdges > TOO_FAR_THRESH) {
+            FaceDetailState.FACE_TOO_FAR
         } else if (!isInBounds(x, y, width, height, screenWidth, screenHeight)) {
             FaceDetailState.FACE_NOT_IN_FRAME
         } else if (face != null && (abs(face.eulerY) > 15 || abs(face.eulerZ) > 10)) {
@@ -207,6 +209,7 @@ class FaceProcessor private constructor(context: Context, listener: FaceListener
         liveFaceListener!!.faceCaptured(faceDetails)
     }
 
+    @Suppress("unused")
     fun release() {
         handler!!.removeCallbacksAndMessages(null)
         faceDetector!!.release()
@@ -226,9 +229,12 @@ class FaceProcessor private constructor(context: Context, listener: FaceListener
 
     companion object {
         private const val EYE_CLOSED_THRESHOLD = 0.3f
+        private const val TOO_CLOSE_THRESH = 0.185f
+        private const val TOO_FAR_THRESH = 0.315f
+
         //==============================================================================================
-// Methods
-//==============================================================================================
+        // Methods
+        //==============================================================================================
         fun initLiveFaceDetector(context: Context,
                                  listener: FaceListener,
                                  countdown: Int = 2): FaceDetector? {
