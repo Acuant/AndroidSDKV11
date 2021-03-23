@@ -226,7 +226,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        file = File(activity!!.externalCacheDir,  "${UUID.randomUUID()}.jpg")
+        file = File(activity!!.cacheDir,  "${UUID.randomUUID()}.jpg")
     }
 
     override fun onResume() {

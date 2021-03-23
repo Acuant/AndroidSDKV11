@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.10
-**February 2021**
+# Acuant Android SDK v11.4.11
+**March 2021**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -189,18 +189,18 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.10'
-    		implementation 'com.acuant:acuantcamera:11.4.10'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.10'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.10'
-    		implementation 'com.acuant:acuantechipreader:11.4.10'
-    		implementation 'com.acuant:acuantfacematch:11.4.10'
-    		implementation 'com.acuant:acuanthgliveness:11.4.10'
-    		implementation ('com.acuant:acuantipliveness:11.4.10'){
+    		implementation 'com.acuant:acuantcommon:11.4.11'
+    		implementation 'com.acuant:acuantcamera:11.4.11'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.11'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.11'
+    		implementation 'com.acuant:acuantechipreader:11.4.11'
+    		implementation 'com.acuant:acuantfacematch:11.4.11'
+    		implementation 'com.acuant:acuanthgliveness:11.4.11'
+    		implementation ('com.acuant:acuantipliveness:11.4.11'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.10'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.10'
+    		implementation 'com.acuant:acuantfacecapture:11.4.11'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.11'
 		
    - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
@@ -262,7 +262,7 @@ The SDK includes the following modules:
 		
 ## Initializing the SDK ##
 
-Before you use the SDK, you need to initialize it either by using the credentials saved on the device or by using bearer tokens (provided by an external server).
+Before you use the SDK, you must initialize it, either by using the credentials saved on the device or by using bearer tokens (provided by an external server).
 
 **Note:** If you are *not* using a configuration file for initialization, then use the following statement (providing appropriate credentials for *username*, *password*, and *subscription ID*) and leave the "PATH/TO/CONFIG/FILENAME.XML" in the initialize method as ""
 	
@@ -276,7 +276,7 @@ Before you use the SDK, you need to initialize it either by using the credential
 		"https://acas.acuant.net",
 		"https://ozone.acuant.net")
 
-1. Using credentials saved on a device:
+* Using credentials saved on a device:
 
 		
 		//Specify the path to the previously created XML file, using “assets” as root
@@ -293,7 +293,7 @@ Before you use the SDK, you need to initialize it either by using the credential
 			Log.e("Acuant Error", e.toString())
 		}
 		
-2. Using bearer tokens:	
+* Using bearer tokens:	
 
 		
 		//Specify the path to the previously created XML file, using “assets” as root
@@ -335,7 +335,7 @@ Here is the interface for the initialize listener:
 ## AcuantCamera ##
 
 ### Capturing a document ###
-**Note:**   **AcuantCamera** is dependent on **AcuantImagePreparation** and  **AcuantCommon**.
+**Note:** **AcuantCamera** is dependent on **AcuantImagePreparation** and  **AcuantCommon**.
 
 1. Start camera activity:
 
@@ -360,7 +360,7 @@ Here is the interface for the initialize listener:
 		)
 
 		startActivityForResult(cameraIntent, REQUEST_CODE) 
-**Note:**  When the camera is launched, the image processing speed is automatically checked.
+**Note:** When the camera is launched, the image processing speed is automatically checked.
 
  * Live document detection and auto capture features are enabled if the device supports a speed of at least 130ms.
  * For devices that don't meet the processing threshold, tap to capture will be enabled. Live document detection and auto capture features are disabled and switched to tap to capture. The user will have to manually capture the document. 
@@ -378,7 +378,7 @@ Here is the interface for the initialize listener:
 		
 ### Capturing MRZ data in a passport document ###
 
-**Note:**   To use the MRZ features, your credentials must be enabled to use Ozone.
+**Note:** To use the MRZ features, your credentials must be enabled to use Ozone.
 
 - **Initialization**
 
@@ -416,10 +416,12 @@ Here is the interface for the initialize listener:
 					val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
 				}
 			}
+			
+----------
 		 
 ## AcuantImagePreparation ##
 
-**Note:**   **AcuantImagePreparation** uses @Keep annotations. These are supported by the default Android configuration. If you override or modify the Android ProGuard file, then support for these annotations must be included.
+**Note:** **AcuantImagePreparation** uses @Keep annotations. These are supported by the default Android configuration. If you override or modify the Android ProGuard file, then support for these annotations must be included.
 
 This section describes how to use **AcuantImagePreparation**.
 
@@ -444,7 +446,8 @@ This section describes how to use **AcuantImagePreparation**.
 			fun onError(error: Error)
 		}
 		
-	The AcuantImage can be used to verify the crop, sharpness, and glare as well as upload in the next step:
+	The **AcuantImage** can be used to verify the crop, sharpness, and glare of the image, and then upload the document in the next step (see [AcuantDocumentProcessing](#acuantdocumentprocessing)).
+
 	
 		class AcuantImage {
 			val image: Bitmap
@@ -456,6 +459,12 @@ This section describes how to use **AcuantImagePreparation**.
 			val aspectRatio: Float
 			val rawBytes: ByteArray
 		}
+	
+	If the sharpness value is greater than 50, then the image is considered sharp (not blurry). If the glare value is 100, then the image does not contain glare. If the glare value is 0, then image contains glare.
+	
+	Preferably, the image must be sharp and not contain glare to get best results in authentication and data extraction. When the image has glare, low sharpness, or both, retake the image.
+	
+	 Acuant recommends against modifying and/or compressing the resulting AcuantImage.image before uploading. Modifying and/or compressing the AcuantImage.image may negatively affect authentication and data extraction results. 
 		
 **Note:** If you are using an independent orchestration layer, then make sure you supply AcuantImage.rawBytes not just AcuantImage.image.
 		
@@ -463,7 +472,7 @@ This section describes how to use **AcuantImagePreparation**.
 
 ## AcuantDocumentProcessing ##
 
-After you capture a document image is captured, use the following steps to process the image.
+After you capture a document image and completed crop, it can be processed using the following steps.
 
 **Note:**  If an upload fails with an error, retry the image upload using a better image.
 
@@ -906,7 +915,7 @@ Acuant does not provide obfuscation tools. See the Android developer documentati
 
 -------------------------------------
 
-**Copyright 2020 Acuant Inc. All rights reserved.**
+**Copyright 2021 Acuant Inc. All rights reserved.**
 
 This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
 

@@ -61,7 +61,7 @@ class MrzParser{
         }
 
         var startPos = 0
-        resultLocal.passportNumber = line.substring(startPos, startPos+9)
+        resultLocal.passportNumber = line.substring(startPos, startPos+9).replace("<", "")
         startPos+=9
 
         var check1 = line[startPos]

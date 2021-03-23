@@ -30,7 +30,7 @@ class ResultActivity : AppCompatActivity() {
         textViewCardInfo = findViewById(R.id.textViewLicenseCardInfo)
         nfcScanningBtn = findViewById(R.id.buttonNFC)
 
-        if(ProcessedData.cardType.equals("ID3",true) && Credential.get().secureAuthorizations.ozoneAuth){
+        if(ProcessedData.cardType.equals("ID3",true) && (Credential.get().secureAuthorizations.ozoneAuth || Credential.get().secureAuthorizations.chipExtract)){
             nfcScanningBtn.visibility = View.VISIBLE
         }else{
             nfcScanningBtn.visibility = View.GONE

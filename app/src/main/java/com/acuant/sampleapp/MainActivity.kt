@@ -199,7 +199,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                         callback.onInitializeSuccess()
                     }
                     else{
-                        if(Credential.get().secureAuthorizations.ozoneAuth) {
+                        if(Credential.get().secureAuthorizations.ozoneAuth || Credential.get().secureAuthorizations.chipExtract) {
                             findViewById<Button>(R.id.main_mrz_camera).visibility = View.VISIBLE
                         }
                         getFacialLivenessCredentials(callback)

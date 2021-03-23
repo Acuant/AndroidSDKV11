@@ -136,11 +136,14 @@ class NfcResultActivity : AppCompatActivity() {
         key = "Data group hash authentication"
         addBooleanField(key, data.passportDataValid)
 
-        key = "Document signer (Ozone)"
-        addBooleanField(key, data.passportSigned == NfcData.OzoneResultStatus.SUCCESS)
-
-        key = "Country Signer (Ozone)"
-        addBooleanField(key, data.passportCountrySigned == NfcData.OzoneResultStatus.SUCCESS)
+        if (data.passportSigned != NfcData.OzoneResultStatus.NOT_PERFORMED) {
+            key = "Document signer (Ozone)"
+            addBooleanField(key, data.passportSigned == NfcData.OzoneResultStatus.SUCCESS)
+        }
+        if (data.passportCountrySigned != NfcData.OzoneResultStatus.NOT_PERFORMED) {
+            key = "Country Signer (Ozone)"
+            addBooleanField(key, data.passportCountrySigned == NfcData.OzoneResultStatus.SUCCESS)
+        }
     }
 
     private fun addField(key: String, value: String?) {

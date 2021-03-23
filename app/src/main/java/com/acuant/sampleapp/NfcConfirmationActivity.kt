@@ -203,7 +203,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         val dateOfExpiry = mrzDOE.text.toString()
         if (docNumber != "" && dateOfBirth.length == 6 && dateOfExpiry.length == 6) {
             AcuantEchipReader.readNfcTag(this, intent, Credential.get(), docNumber, dateOfBirth,
-                    dateOfExpiry, this)
+                    dateOfExpiry, performOzoneAuthentication = true, tagListener = this)
         } else {
             setProgress(true, HelpState.Failed, "Error in formatting for Document number, Date of birth, or Expiration date. Fix and retry." )
         }
