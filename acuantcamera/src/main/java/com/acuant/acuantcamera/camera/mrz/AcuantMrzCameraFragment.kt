@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Point
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.support.v4.app.ActivityCompat
 import android.view.View
 import android.widget.ImageView
@@ -29,7 +30,7 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
      */
     private val mrzParser = MrzParser()
     private var tries = 0
-    private var handler: Handler? = Handler()
+    private var handler: Handler? = Handler(Looper.getMainLooper())
     private var mrzResult : MrzResult? = null
     private var capturing = false
     private var allowCapture = false
@@ -144,6 +145,16 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
         handler?.removeCallbacksAndMessages(null)
         handler = null
         super.onPause()
+    }
+
+
+    override fun onResume() {
+        handler = Handler(Looper.getMainLooper())
+        if (capturing) {
+            capturing = false
+            this.isCapturing = false
+        }
+        super.onResume()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

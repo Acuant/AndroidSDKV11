@@ -29,6 +29,7 @@ import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import android.graphics.drawable.Drawable
 import android.os.Handler
+import android.os.Looper
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -79,7 +80,7 @@ class MrzCaptureActivity : AppCompatActivity(), MrzCameraSource.PictureCallback,
     private var oldPoints : Array<Point>? = null
     private val mrzParser = MrzParser()
     private var tries = 0
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
     private var mrzResult : MrzResult? = null
     private var capturing = false
     private var allowCapture = false
@@ -347,6 +348,8 @@ class MrzCaptureActivity : AppCompatActivity(), MrzCameraSource.PictureCallback,
      */
     override fun onResume() {
         super.onResume()
+
+        capturing = false
 
         if (mOrientationEventListener.canDetectOrientation()) {
             mOrientationEventListener.enable()

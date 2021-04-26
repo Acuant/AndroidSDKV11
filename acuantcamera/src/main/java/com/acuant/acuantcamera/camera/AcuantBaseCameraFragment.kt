@@ -514,8 +514,10 @@ abstract class AcuantBaseCameraFragment : Fragment() {
                     scaledHeight = rotatedPreviewHeight
                 }
 
-                pointXOffset = (rotatedPreviewWidth - scaledWidth)/2
-                pointYOffset = (rotatedPreviewHeight - scaledHeight)/2
+                val tmpWidth = (rotatedPreviewWidth - scaledWidth)/2
+                pointXOffset = if (tmpWidth > 0) tmpWidth else pointXOffset
+                val tmpHeight = (rotatedPreviewHeight - scaledHeight)/2
+                pointYOffset = if (tmpHeight > 0) tmpHeight else pointYOffset
 
                 // We fit the aspect ratio of TextureView to the size of preview we picked.
                 if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
