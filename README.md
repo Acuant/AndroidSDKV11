@@ -22,6 +22,10 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ## Updates
 
+**As of April 29th 2021** Due to the upcoming end of service for Bintray the SDK is now distributed through a new Maven URL:
+
+    		maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
+
 **v11.4.4:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.4.4).
 
 ----------
@@ -184,7 +188,7 @@ The SDK includes the following modules:
 
 	- Add the following Maven URL
 
-    		maven { url 'https://dl.bintray.com/acuant/Acuant' }
+    		maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
     		maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
    - Add the following dependencies
