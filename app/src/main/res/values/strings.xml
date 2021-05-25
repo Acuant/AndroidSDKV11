@@ -129,7 +129,7 @@
     <string name="verify_captured_data">Verify captured data and tap &startEchip;</string>
     <string name="photo_of_person">Photo of the person obtained from chip</string>
     <string name="photo_of_signature">Photo of signature obtained from passport chip</string>
-    <string name="mrz_camera">Read Passport MRZ</string>
+    <string name="mrz_camera">Read MRZ</string>
 
     <string name="mrz_help_text">Ensure sufficient lighting with no reflection or glare on the passport.</string>
     <string name="tap_anywhere_to_continue">Tap anywhere to continue</string>

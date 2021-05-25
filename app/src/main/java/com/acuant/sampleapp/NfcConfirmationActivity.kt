@@ -49,6 +49,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
     private var documentNumber: String? = null
     private var dob: String? = null
     private var doe: String? = null
+    private var threeLine: Boolean = false
     private var error: Boolean = true
 
     private fun setProgress(visible : Boolean, state : HelpState = HelpState.Locate, text : String = "") {
@@ -123,13 +124,14 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         documentNumber = intent.getStringExtra("DOCNUMBER")
         dob = intent.getStringExtra("DOB")
         doe = intent.getStringExtra("DOE")
+        threeLine = intent.getBooleanExtra("THREELINE", false)
 
         mrzDocNumber = findViewById(R.id.mrzDocumentNumber)
         mrzDOB = findViewById(R.id.mrzDOB)
         mrzDOE = findViewById(R.id.mrzDOE)
         locationText = findViewById(R.id.mrzInstruction2)
 
-        if(!position.equals("unknown", true) && position != "") {
+        if(!position.equals("unknown", true) && position != "" && !threeLine) {
             locationText.text = "Note: For $country passports, the eChip is typically on the $position"
         } else {
             locationText.text = ""

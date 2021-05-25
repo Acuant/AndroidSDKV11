@@ -567,6 +567,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             confirmNFCDataActivity.putExtra("DOE", result.passportExpiration)
             confirmNFCDataActivity.putExtra("DOCNUMBER", result.passportNumber)
             confirmNFCDataActivity.putExtra("COUNTRY", result.country)
+            confirmNFCDataActivity.putExtra("THREELINE", result.threeLineMrz)
 
             this.startActivity(confirmNFCDataActivity)
         }

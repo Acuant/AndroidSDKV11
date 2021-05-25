@@ -119,6 +119,7 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
     override fun onOcrDetected(textBlock: String?){
         if (textBlock != null && allowCapture) {
             val result = mrzParser.parseMrz(textBlock)
+            //Log.d("MRZLOG", " " + result?.checkSumResult1 + ", "+ result?.checkSumResult2 +", "+ result?.checkSumResult3 +", "+ result?.checkSumResult4 +", "+ result?.checkSumResult5)
             if (result != null) {
                 if (result.checkSumResult1 && result.checkSumResult2 && result.checkSumResult3 && result.checkSumResult4 && result.checkSumResult5) {
                     capturing = true
@@ -204,7 +205,7 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
 
         fun isAcceptableAspectRatio(points: Array<Point>) : Boolean {
             val ratio = distance(points[0], points[3]) / distance(points[0], points[1])
-            return ratio > 8f && ratio < 10f
+            return ratio > 4f && ratio < 10f
         }
 
         fun isAcceptableDistance(points: Array<Point>, screenSize: Float): Boolean {

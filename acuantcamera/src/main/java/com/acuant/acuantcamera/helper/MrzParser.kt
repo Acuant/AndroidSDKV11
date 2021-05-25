@@ -1,7 +1,5 @@
 package com.acuant.acuantcamera.helper
 
-import android.util.Log
-
 class MrzParser{
 
     companion object {
@@ -19,15 +17,130 @@ class MrzParser{
                 mrzLines.add(mrzLinesTmp[i])
             }
         }
-        if(mrzLines.size == 2){
-            val result = parseFirstLine(mrzLines[0])
+
+        if (mrzLines.size == 2) {
+            //Log.d("MRZLOG", "Follows:\n" + mrzLines[0] + "\n" +mrzLines[1])
+            var result = parseFirstLineOfTwoLine(mrzLines[0])
             //not checking result of first line as it is not strictly needed for echip reading
-            return parseSecondLine(mrzLines[1], result)
+            result = parseSecondLineOfTwoLine(mrzLines[1], result)
+
+            result?.threeLineMrz = false
+            //Log.d("MRZLOG", " " + result?.checkSumResult1 + ", "+ result?.checkSumResult2 +", "+ result?.checkSumResult3 +", "+ result?.checkSumResult4 +", "+ result?.checkSumResult5)
+            return result
+        } else if (mrzLines.size == 3) {
+            //Log.d("MRZLOG", "Follows:\n" + mrzLines[0] + "\n" +mrzLines[1])
+            var result = parseFirstLineOfThreeLine(mrzLines[0])
+            if (result != null) {
+                result = parseSecondLineOfThreeLine(mrzLines[1], result)
+
+                result?.threeLineMrz = true
+
+                return result
+                //third line does not contain any relevant info
+            }
         }
         return null
     }
 
-    private fun parseFirstLine(firstLine:String): MrzResult?{
+    private fun parseFirstLineOfThreeLine (firstLine: String) : MrzResult? {
+        var startPos = 0
+        if(firstLine.length == 30){
+            startPos+=2
+
+            val country = firstLine.substring(startPos, startPos+3)
+            startPos+=3
+
+            var passportNumber = firstLine.substring(startPos, startPos+9)
+            startPos+=9
+
+            var check1 = firstLine[startPos]
+            var checkSumResult1 = checkSum(passportNumber, check1)
+            ++startPos
+
+            if (!checkSumResult1) {
+                passportNumber = passportNumber.replace('O', '0')
+                checkSumResult1 = checkSum(passportNumber, check1)
+
+                if (checkSumResult1 && check1 == 'O') {
+                    check1 = '0'
+                    checkSumResult1 = checkSum(passportNumber, check1)
+                }
+            }
+
+            val optional1 = firstLine.substring(startPos, startPos + 15)
+
+            return MrzResult(country = country, passportNumber = passportNumber, checkSumResult1 = checkSumResult1, checkChar1 = check1, optionalField1 = optional1)
+        }
+        return null
+    }
+
+    private fun parseSecondLineOfThreeLine (line: String, result: MrzResult) : MrzResult? {
+
+        if(line.length != 30){
+            return null
+        }
+
+        var startPos = 0
+        result.dob = line.substring(startPos, startPos+6)
+        startPos+=6
+
+        var check2 = line[startPos]
+        result.checkSumResult2 = checkSum(result.dob, check2)
+        ++startPos
+
+        if (!result.checkSumResult2) {
+            result.dob = result.dob.replace('O', '0')
+            result.checkSumResult2 = checkSum(result.dob, check2)
+
+            if (!result.checkSumResult2 && check2 == 'O') {
+                check2 = '0'
+                result.checkSumResult2 = checkSum(result.dob, check2)
+            }
+        }
+
+        result.gender = line.substring(startPos, startPos+1)
+        ++startPos
+
+        result.passportExpiration = line.substring(startPos, startPos+6)
+        startPos+=6
+
+        var check3 = line[startPos]
+        result.checkSumResult3 = checkSum(result.passportExpiration, check3)
+        ++startPos
+
+        if (!result.checkSumResult3) {
+            result.passportExpiration = result.passportExpiration.replace('O', '0')
+            result.checkSumResult3 = checkSum(result.passportExpiration, check3)
+
+            if (!result.checkSumResult3 && check3 == 'O') {
+                check3 = '0'
+                result.checkSumResult3 = checkSum(result.passportExpiration, check3)
+            }
+        }
+
+        result.nationality = line.substring(startPos, startPos+3)
+        startPos+=3
+
+        val optional2 = line.substring(startPos, startPos+11)
+        startPos += 11
+
+        val finalCheckString = result.passportNumber + result.checkChar1 + result.optionalField1 + result.dob + check2 +
+                result.passportExpiration + check3 + optional2
+        result.checkSumResult4 = checkSum(finalCheckString, line[startPos])
+
+        if (!result.checkSumResult4 && line[startPos] == 'O') {
+            result.checkSumResult4 = checkSum(finalCheckString, '0')
+        }
+
+        result.checkSumResult5 = true
+
+        result.passportNumber = result.passportNumber.replace("<", "")
+
+        return result
+    }
+
+
+    private fun parseFirstLineOfTwoLine(firstLine:String): MrzResult?{
         var startPos = 0
         if(firstLine[startPos] == PASSPORT_FIRST_VALUE && firstLine.length == 44){
             startPos+=2
@@ -46,9 +159,8 @@ class MrzParser{
         return null
     }
 
-    private fun parseSecondLine(line:String, result: MrzResult?): MrzResult?{
+    private fun parseSecondLineOfTwoLine (line: String, result: MrzResult?) : MrzResult? {
 
-        //Log.d("SecondLine:", line)
 
         if(line.length != 44){
             return null
@@ -61,7 +173,7 @@ class MrzParser{
         }
 
         var startPos = 0
-        resultLocal.passportNumber = line.substring(startPos, startPos+9).replace("<", "")
+        resultLocal.passportNumber = line.substring(startPos, startPos+9)//.replace("<", "")
         startPos+=9
 
         var check1 = line[startPos]
@@ -140,9 +252,10 @@ class MrzParser{
         resultLocal.checkSumResult5 = checkSum(finalCheckString, line[startPos])
 
         if (!resultLocal.checkSumResult5 && line[startPos] == 'O') {
-            resultLocal.checkSumResult5 = checkSum(resultLocal.personalDocNumber, '0')
+            resultLocal.checkSumResult5 = checkSum(finalCheckString, '0')
         }
-        Log.d("SecondLine:", "" + resultLocal.checkSumResult1 + " " + resultLocal.checkSumResult2 + " " + resultLocal.checkSumResult3 + " " + resultLocal.checkSumResult4 + " " + resultLocal.checkSumResult5)
+
+        resultLocal.passportNumber = resultLocal.passportNumber.replace("<", "")
 
         return resultLocal
     }
