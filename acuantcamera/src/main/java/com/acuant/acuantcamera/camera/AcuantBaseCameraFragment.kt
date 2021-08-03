@@ -49,7 +49,6 @@ abstract class AcuantBaseCameraFragment : Fragment() {
     enum class CameraState {Align, MoveCloser, Hold, Steady, Capturing, MrzNone, MrzAlign, MrzMoveCloser, MrzReposition, MrzTrying, MrzCapturing, NotInFrame}
 
     private var captureImageReader: ImageReader? = null
-    protected var isProcessing = false
     private var image: Image? = null
     internal var options: AcuantCameraOptions? = null
     internal var isAutoCapture = true
@@ -60,7 +59,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
     protected lateinit var textView: TextView
     protected lateinit var imageView: ImageView
     protected lateinit var detectors: List<IAcuantDetector>
-    private val previewBoundThreshold = 10
+    protected var barcodeOnly = false
     protected var pointXOffset = 0
     protected var pointYOffset = 0
     private lateinit var orientationListener: AcuantOrientationListener
@@ -219,7 +218,11 @@ abstract class AcuantBaseCameraFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         textView = view.findViewById(R.id.acu_display_text)
         imageView = view.findViewById(R.id.acu_help_image)
-        orientationListener = AcuantOrientationListener(activity!!.applicationContext, WeakReference(textView), WeakReference(imageView))
+        orientationListener = if (!barcodeOnly) {
+            AcuantOrientationListener(activity!!.applicationContext, WeakReference(textView), WeakReference(imageView))
+        } else {
+            AcuantOrientationListener(activity!!.applicationContext, WeakReference(textView))
+        }
 
         setOptions(options)
     }
@@ -330,10 +333,9 @@ abstract class AcuantBaseCameraFragment : Fragment() {
         try {
             val image:Image? = it.acquireLatestImage()
             if (image != null) {
-                if(this.isAutoCapture && !this.isProcessing && !this.isCapturing){
-                    try{
-                        this.isProcessing = true
-                        AcuantDetectorWorker(detectors, image).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+                if (!isCapturing) {
+                    try {
+                        AcuantDetectorWorker(detectors, image, isAutoCapture).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                     }
                     catch(e:Exception){
                         e.printStackTrace()
@@ -356,8 +358,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
         try {
             val image:Image? = it.acquireLatestImage()
             if (image != null) {
-                if (isCapturing){
-                    this.isProcessing = true
+                if (isCapturing) {
                     this.isCapturing = false
 
                     val capturetype = if(isAutoCapture) "AUTO" else "TAP"

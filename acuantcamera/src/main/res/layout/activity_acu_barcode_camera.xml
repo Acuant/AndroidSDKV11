@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cam1_barcode_parent"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:keepScreenOn="true"
+    android:background="@color/black">
+
+    <com.acuant.acuantcamera.camera.barcode.cameraone.BarcodeCameraSourcePreview
+        android:id="@+id/cam1_barcode_preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/black" />
+
+    <ImageView
+        android:id="@+id/cam1_barcode_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:layout_centerInParent="true"
+        android:src="@drawable/barcode"
+        android:gravity="center"
+        android:alpha="0.4"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/cam1_barcode_text"
+        android:layout_centerInParent="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:rotation="90"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:paddingLeft="60dp"
+        android:paddingRight="60dp"
+        />
+
+</RelativeLayout>

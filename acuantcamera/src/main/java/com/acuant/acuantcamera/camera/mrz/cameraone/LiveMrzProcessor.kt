@@ -12,7 +12,7 @@ import com.google.android.gms.vision.barcode.BarcodeDetector
 class LiveMrzProcessor : MrzGraphicTracker.BarcodeUpdateListener {
     private var finishedCapturing = false
     private var mrzDetector: MrzDetector? = null
-    private var ocrDetector: AcuantOcrDetector? = null
+    internal var ocrDetector: AcuantOcrDetector? = null
     var frame: Bitmap? = null
 
     fun setOcrDetector(detector: AcuantOcrDetector) {

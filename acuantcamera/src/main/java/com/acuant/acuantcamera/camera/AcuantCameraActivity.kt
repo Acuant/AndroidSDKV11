@@ -10,9 +10,11 @@ import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import com.acuant.acuantcamera.R
+import com.acuant.acuantcamera.camera.barcode.AcuantBarcodeCameraFragment
 import com.acuant.acuantcamera.camera.document.cameraone.DocumentCaptureActivity
 import com.acuant.acuantcamera.camera.document.AcuantDocCameraFragment
 import com.acuant.acuantcamera.camera.mrz.AcuantMrzCameraFragment
+import com.acuant.acuantcamera.camera.AcuantCameraOptions.CameraMode
 import com.acuant.acuantcamera.constant.*
 import com.acuant.acuantcamera.helper.MrzResult
 import com.google.android.gms.common.ConnectionResult
@@ -22,16 +24,17 @@ import com.google.android.gms.common.GoogleApiAvailability
 interface ICameraActivityFinish{
     fun onActivityFinish(imageUrl: String, barCodeString: String?)
     fun onActivityFinish(mrzResult: MrzResult)
+    fun onActivityFinish(barCodeString: String?)
 }
 
 class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
+
     companion object {
         const val RESULT_SUCCESS_CODE = 1
+        const val BARCODE_REQUEST = 3
         const val MRZ_REQUEST = 2
         const val DOC_REQUEST = 1
     }
-
-    private var isInMrzCapture: Boolean = false
 
     override fun onActivityFinish(imageUrl: String, barCodeString: String?) {
         val intent = Intent()
@@ -48,7 +51,15 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
         this@AcuantCameraActivity.finish()
     }
 
-    private fun hideTopMenu(){
+    override fun onActivityFinish(barCodeString: String?) {
+        val intent = Intent()
+        intent.putExtra(ACUANT_EXTRA_PDF417_BARCODE, barCodeString)
+        this@AcuantCameraActivity.setResult(RESULT_SUCCESS_CODE, intent)
+        this@AcuantCameraActivity.finish()
+    }
+
+    private fun hideTopMenu() {
+        @Suppress("DEPRECATION") //this needs android x to use the not deprecated code
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         actionBar?.hide()
         supportActionBar?.hide()
@@ -62,24 +73,15 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        isInMrzCapture = false//intent.getBooleanExtra(ACUANT_EXTRA_CAMERA_MRZ_MODE, false)
-
         val unserializedOptions = intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS)
         val isAutoCapture = intent.getBooleanExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, true)
         val isBorderAllowed = intent.getBooleanExtra(ACUANT_EXTRA_BORDER_ENABLED, true)
 
         val options: AcuantCameraOptions = if (unserializedOptions == null) {
-            if (!isInMrzCapture) {
-                AcuantCameraOptions.DocumentCameraOptionsBuilder().setAutoCapture(isAutoCapture).setAllowBox(isBorderAllowed).build()
-            } else {
-                AcuantCameraOptions.MrzCameraOptionsBuilder().setAllowBox(isBorderAllowed).build()
-            }
+            AcuantCameraOptions.DocumentCameraOptionsBuilder().setAutoCapture(isAutoCapture).setAllowBox(isBorderAllowed).build()
         } else {
             unserializedOptions as AcuantCameraOptions
         }
-
-        @Suppress("DEPRECATION")
-        isInMrzCapture = options.isMrzMode
 
         if (options.useGMS) {
             val resultCode = try {
@@ -100,10 +102,16 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
             hideTopMenu()
 
             if (null == savedInstanceState) {
-                val cameraFragment: AcuantBaseCameraFragment = if (isInMrzCapture) {
-                    AcuantMrzCameraFragment.newInstance()
-                } else {
-                    AcuantDocCameraFragment.newInstance()
+                val cameraFragment: AcuantBaseCameraFragment = when (options.cameraMode) {
+                    CameraMode.BarcodeOnly -> {
+                        AcuantBarcodeCameraFragment.newInstance()
+                    }
+                    CameraMode.Mrz -> {
+                        AcuantMrzCameraFragment.newInstance()
+                    }
+                    else -> { //Document
+                        AcuantDocCameraFragment.newInstance()
+                    }
                 }
                 cameraFragment.arguments = Bundle().apply {
                     putBoolean(ACUANT_EXTRA_IS_AUTO_CAPTURE, isAutoCapture)
@@ -111,29 +119,51 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
                     putSerializable(ACUANT_EXTRA_CAMERA_OPTIONS, options)
                 }
 
-                supportFragmentManager.beginTransaction()
-                        .replace(R.id.container, cameraFragment as Fragment)
-                        .commit()
+
+                if (!options.useGMS) {
+                    onActivityFinish(null)
+                } else {
+                    supportFragmentManager.beginTransaction()
+                            .replace(R.id.container, cameraFragment as Fragment)
+                            .commit()
+                }
             }
         } else {
-            if (!isInMrzCapture) {
-                val cameraIntent = Intent(
-                        this@AcuantCameraActivity,
-                        DocumentCaptureActivity::class.java
-                )
-                cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, options.autoCapture)
-                cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, options)
+            when (options.cameraMode) {
+                CameraMode.BarcodeOnly -> {
+                    if (options.useGMS) {
+                        val cameraIntent = Intent(
+                                this@AcuantCameraActivity,
+                                com.acuant.acuantcamera.camera.barcode.cameraone.BarcodeCaptureActivity::class.java
+                        )
 
-                startActivityForResult(cameraIntent, DOC_REQUEST)
-            } else {
-                val cameraIntent = Intent(
-                        this@AcuantCameraActivity,
-                        com.acuant.acuantcamera.camera.mrz.cameraone.MrzCaptureActivity::class.java
-                )
+                        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, options)
 
-                cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, options)
+                        startActivityForResult(cameraIntent, BARCODE_REQUEST)
+                    } else {
+                        onActivityFinish(null)
+                    }
+                }
+                CameraMode.Mrz -> {
+                    val cameraIntent = Intent(
+                            this@AcuantCameraActivity,
+                            com.acuant.acuantcamera.camera.mrz.cameraone.MrzCaptureActivity::class.java
+                    )
 
-                startActivityForResult(cameraIntent, MRZ_REQUEST)
+                    cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, options)
+
+                    startActivityForResult(cameraIntent, MRZ_REQUEST)
+                }
+                else -> { //Document
+                    val cameraIntent = Intent(
+                            this@AcuantCameraActivity,
+                            DocumentCaptureActivity::class.java
+                    )
+                    cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, options.autoCapture)
+                    cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS, options)
+
+                    startActivityForResult(cameraIntent, DOC_REQUEST)
+                }
             }
         }
     }
@@ -157,6 +187,14 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
                     this@AcuantCameraActivity.finish()
                 }
             }
+            BARCODE_REQUEST -> {
+                if(resultCode == RESULT_SUCCESS_CODE && data != null){
+                    onActivityFinish(data.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE))
+                }
+                else{
+                    this@AcuantCameraActivity.finish()
+                }
+            }
         }
     }
 
@@ -166,9 +204,6 @@ class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
 
     private fun supportCamera2(activity: AppCompatActivity): Boolean {
         // Check if we're running on Android 5.0 or higher
-        /*if(Build.MANUFACTURER!=null && Build.MANUFACTURER.toLowerCase().contains("samsung")){
-            return false;
-        }*/
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (Build.MODEL == "Nexus 9") {
                 false

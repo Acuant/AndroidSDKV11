@@ -8,11 +8,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import java.lang.ref.WeakReference
 
-class AcuantOrientationListener(context: Context, private val textView: WeakReference<TextView>, private val imageView: WeakReference<ImageView>) : OrientationEventListener(context, SensorManager.SENSOR_DELAY_UI){
+class AcuantOrientationListener(context: Context, private val textView: WeakReference<TextView>, private val imageView: WeakReference<ImageView>? = null) : OrientationEventListener(context, SensorManager.SENSOR_DELAY_UI) {
     var previousAngle = 270
     override fun onOrientationChanged(orientation: Int) {
         val textViewLocal = textView.get()
-        val imageViewLocal = imageView.get()
+        val imageViewLocal = imageView?.get()
         if(orientation in 30..150 && previousAngle !in 30..150){
             previousAngle = orientation
             rotateView(textViewLocal, 90f, 270f)

@@ -3,10 +3,11 @@ package com.acuant.acuantcamera.detector
 import android.graphics.*
 import android.media.Image
 import android.os.AsyncTask
+import com.acuant.acuantcamera.detector.document.AcuantDocumentDetector
 import java.lang.Exception
 import kotlin.concurrent.thread
 
-class AcuantDetectorWorker(private val detectors: List<IAcuantDetector>, private val image: Image): AsyncTask<Void, Void, Void>(){
+class AcuantDetectorWorker(private val detectors: List<IAcuantDetector>, private val image: Image, private val runDocumentDetection: Boolean = true): AsyncTask<Void, Void, Void>(){
     override fun doInBackground(vararg params: Void?): Void? {
         var bitmap:Bitmap? = null
         try{
@@ -19,8 +20,10 @@ class AcuantDetectorWorker(private val detectors: List<IAcuantDetector>, private
             image.close()
 
             detectors.forEach{
-                thread{
-                    it.detect(bitmap)
+                if (runDocumentDetection || it !is AcuantDocumentDetector) {
+                    thread {
+                        it.detect(bitmap)
+                    }
                 }
             }
         }

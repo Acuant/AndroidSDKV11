@@ -26,8 +26,6 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
     //private variables
     private var currentDigit: Int = digitsToShow
     private var lastTime: Long = System.currentTimeMillis()
-    private var redTransparent: Int = 0
-    private var grayTransparent: Int = 0
     private var greenTransparent: Int = 0
     private var firstThreeTimings: Array<Long> = arrayOf(-1, -1, -1)
     private var hasFinishedTest = false
@@ -103,7 +101,11 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
             if (!hasFinishedTest) {
                 rectangleView.setViewFromState(CameraState.Align)
                 setTextFromState(CameraState.Align)
-                this.isProcessing = false
+                detectors.forEach {
+                    if (it is AcuantDocumentDetector) {
+                        it.isProcessing = false
+                    }
+                }
             }
 
             if (hasFinishedTest && isAutoCapture) {
@@ -171,7 +173,11 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
                 oldPoints = detectedPoints
                 drawBorder(detectedPoints)
 
-                this.isProcessing = false
+                detectors.forEach {
+                    if (it is AcuantDocumentDetector) {
+                        it.isProcessing = false
+                    }
+                }
             }
         }
     }
@@ -234,6 +240,11 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
 
     override fun onBarcodeDetected(barcode: String){
         this.barCodeString = barcode
+        detectors.forEach {
+            if (it is AcuantBarcodeDetector) {
+                it.isProcessing = false
+            }
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater,
@@ -246,8 +257,6 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
         rectangleView = view.findViewById(R.id.acu_doc_rectangle) as DocRectangleView
         rectangleView.visibility = View.VISIBLE
 
-        redTransparent = getColorWithAlpha(Color.RED, .50f)
-        grayTransparent = getColorWithAlpha(Color.BLACK, .50f)
         greenTransparent = getColorWithAlpha(Color.GREEN, .50f)
 
         super.onViewCreated(view, savedInstanceState)

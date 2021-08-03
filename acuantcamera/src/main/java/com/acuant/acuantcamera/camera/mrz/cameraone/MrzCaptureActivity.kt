@@ -164,6 +164,7 @@ class MrzCaptureActivity : AppCompatActivity(), MrzCameraSource.PictureCallback,
     override fun onOcrDetected(textBlock: String?){
         if (textBlock != null && allowCapture) {
             val result = mrzParser.parseMrz(textBlock)
+
             if (result != null) {
                 if (result.checkSumResult1 && result.checkSumResult2 && result.checkSumResult3 && result.checkSumResult4 && result.checkSumResult5) {
                     capturing = true
@@ -183,6 +184,7 @@ class MrzCaptureActivity : AppCompatActivity(), MrzCameraSource.PictureCallback,
             }
             ++tries
         }
+        mrzProcessor.ocrDetector?.isProcessing = false
     }
 
     private fun setOptions(options : AcuantCameraOptions?) {

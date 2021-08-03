@@ -25,6 +25,10 @@
         <activity
             android:name="com.acuant.acuantcamera.camera.mrz.cameraone.MrzCaptureActivity"
             android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.acuant.acuantcamera.camera.barcode.cameraone.BarcodeCaptureActivity"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>

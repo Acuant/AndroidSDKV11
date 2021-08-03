@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AlertDialog
@@ -27,13 +29,10 @@ import com.acuant.acuantcommon.initializer.IAcuantPackageCallback
 import com.acuant.acuantcommon.model.*
 import com.acuant.acuantcommon.type.CardSide
 import com.acuant.acuantdocumentprocessing.AcuantDocumentProcessor
-import com.acuant.acuantdocumentprocessing.service.listener.CreateInstanceListener
-import com.acuant.acuantdocumentprocessing.service.listener.DeleteListener
-import com.acuant.acuantdocumentprocessing.service.listener.GetDataListener
-import com.acuant.acuantdocumentprocessing.service.listener.UploadImageListener
 import com.acuant.acuantcamera.initializer.MrzCameraInitializer
 import com.acuant.acuantcommon.helper.CredentialHelper
 import com.acuant.acuantdocumentprocessing.model.*
+import com.acuant.acuantdocumentprocessing.service.listener.*
 import com.acuant.acuantechipreader.initializer.EchipInitializer
 import com.acuant.acuantfacecapture.FaceCaptureActivity
 import com.acuant.acuantfacematchsdk.AcuantFaceMatch
@@ -87,6 +86,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
     private var captureWaitTime: Int = 0
     private var documentInstanceID: String? = null
     private var autoCaptureEnabled: Boolean = true
+    private var barcodeExpected: Boolean = false
     private var numberOfClassificationAttempts: Int = 0
     private var isInitialized = false
     private var livenessSelected = 0
@@ -392,7 +392,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //                        try {
 //                            val output = FileOutputStream(File(Environment.getExternalStorageDirectory().toString(), "test.png"))
-//                            acuantImage?.image?.compress(Bitmap.CompressFormat.PNG, 100, output)
+//                            image.image.compress(Bitmap.CompressFormat.PNG, 100, output)
 //                            output.flush()
 //                            output.close()
 //                        } catch (e: Exception) {
@@ -416,9 +416,52 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
             } else {
                 showAcuDialog("Camera failed to return valid image path")
             }
+        } else if (requestCode == Constants.REQUEST_CAMERA_MRZ && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
+            val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
+
+            val confirmNFCDataActivity = Intent(this, NfcConfirmationActivity::class.java)
+            confirmNFCDataActivity.putExtra("DOB", result.dob)
+            confirmNFCDataActivity.putExtra("DOE", result.passportExpiration)
+            confirmNFCDataActivity.putExtra("DOCNUMBER", result.passportNumber)
+            confirmNFCDataActivity.putExtra("COUNTRY", result.country)
+            confirmNFCDataActivity.putExtra("THREELINE", result.threeLineMrz)
+
+            this.startActivity(confirmNFCDataActivity)
+        } else if (requestCode == Constants.REQUEST_CAMERA_BARCODE && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
+            capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+
+            setProgress(true, "Uploading...")
+
+            val alert = AlertDialog.Builder(this@MainActivity)
+            alert.setTitle("Message")
+            if (livenessSelected != 0) {
+                alert.setMessage("Capture Selfie Image now.")
+            } else {
+                alert.setMessage("Continue.")
+            }
+            alert.setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+                setProgress(true, "Getting Data...")
+                uploadBackImageOfDocument()
+                showFrontCamera()
+            }
+            if (livenessSelected != 0) {
+                alert.setNegativeButton("CANCEL") { dialog, _ ->
+                    setProgress(true, "Getting Data...")
+                    facialLivelinessResultString = "Facial Liveliness Failed"
+                    capturingSelfieImage = false
+                    uploadBackImageOfDocument()
+                    dialog.dismiss()
+                }
+            }
+            alert.show()
+
         } else if(requestCode == Constants.REQUEST_HELP_MRZ && resultCode == Constants.REQUEST_HELP_MRZ) {
+
             showMrzCaptureCamera()
+
         } else if (requestCode == Constants.REQUEST_CONFIRMATION && resultCode == Constants.REQUEST_CONFIRMATION) {
+
             val isFront = data!!.getBooleanExtra("isFrontImage", true)
             val isConfirmed = data.getBooleanExtra("Confirmed", true)
             if (isConfirmed) {
@@ -455,27 +498,49 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                                         + "Barcode String :\n\n"
                                         + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt()))
                             }
+                            alert.setPositiveButton("OK") { dialog, _ ->
+                                dialog.dismiss()
+                                setProgress(true, "Getting Data...")
+                                uploadBackImageOfDocument()
+                                showFrontCamera()
+                            }
+                            if (livenessSelected != 0) {
+                                alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                    setProgress(true, "Getting Data...")
+                                    facialLivelinessResultString = "Facial Liveliness Failed"
+                                    capturingSelfieImage = false
+                                    uploadBackImageOfDocument()
+                                    dialog.dismiss()
+                                }
+                            }
+                        } else if (barcodeExpected) {
+                            alert.setMessage("A barcode was expected but was not captured. Please try capturing the barcode.")
+
+                            alert.setPositiveButton("OK") { dialog, _ ->
+                                dialog.dismiss()
+                                setProgress(true, "Getting Data...")
+                                showBarcodeCaptureCamera()
+                            }
                         } else {
                             if (livenessSelected != 0) {
                                 alert.setMessage("Capture Selfie Image now.")
                             } else {
                                 alert.setMessage("Continue.")
-
                             }
-                        }
-                        alert.setPositiveButton("OK") { dialog, _ ->
-                            dialog.dismiss()
-                            setProgress(true, "Getting Data...")
-                            uploadBackImageOfDocument()
-                            showFrontCamera()
-                        }
-                        if (livenessSelected != 0) {
-                            alert.setNegativeButton("CANCEL") { dialog, _ ->
-                                setProgress(true, "Getting Data...")
-                                facialLivelinessResultString = "Facial Liveliness Failed"
-                                capturingSelfieImage = false
-                                uploadBackImageOfDocument()
+                            alert.setPositiveButton("OK") { dialog, _ ->
                                 dialog.dismiss()
+                                setProgress(true, "Getting Data...")
+                                uploadBackImageOfDocument()
+                                showFrontCamera()
+                            }
+                            if (livenessSelected != 0) {
+                                alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                    setProgress(true, "Getting Data...")
+                                    facialLivelinessResultString = "Facial Liveliness Failed"
+                                    capturingSelfieImage = false
+                                    uploadBackImageOfDocument()
+                                    dialog.dismiss()
+                                }
                             }
                         }
                         alert.show()
@@ -559,17 +624,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                     showFaceCaptureError()
                 }
             }
-        } else if (requestCode == Constants.REQUEST_CAMERA_MRZ && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
-            val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
-
-            val confirmNFCDataActivity = Intent(this, NfcConfirmationActivity::class.java)
-            confirmNFCDataActivity.putExtra("DOB", result.dob)
-            confirmNFCDataActivity.putExtra("DOE", result.passportExpiration)
-            confirmNFCDataActivity.putExtra("DOCNUMBER", result.passportNumber)
-            confirmNFCDataActivity.putExtra("COUNTRY", result.country)
-            confirmNFCDataActivity.putExtra("THREELINE", result.threeLineMrz)
-
-            this.startActivity(confirmNFCDataActivity)
         }
     }
 
@@ -619,9 +673,23 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
     }
 
     private fun hasInternetConnection(): Boolean {
-        val connectivityManager= this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo=connectivityManager.activeNetworkInfo
-        return networkInfo!=null && networkInfo.isConnected
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val nw = connectivityManager.activeNetwork ?: return false
+            val actNw = connectivityManager.getNetworkCapabilities(nw) ?: return false
+            return when {
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                //for other device how are able to connect with Ethernet
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                //for check internet over Bluetooth
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
+                else -> false
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            return connectivityManager.activeNetworkInfo?.isConnected ?: false
+        }
     }
 
     // ID/Passport Clicked
@@ -775,6 +843,22 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                         .build()
         )
         startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_PHOTO)
+    }
+
+    //Show Rear Camera to Capture Image of ID,Passport or Health Insurance Card
+    private fun showBarcodeCaptureCamera() {
+
+        capturedBarcodeString = null
+        val cameraIntent = Intent(
+                this@MainActivity,
+                AcuantCameraActivity::class.java
+        )
+        cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
+                AcuantCameraOptions
+                        .BarcodeCameraOptionsBuilder()
+                        .build()
+        )
+        startActivityForResult(cameraIntent, Constants.REQUEST_CAMERA_BARCODE)
     }
 
     //Show Front Camera to Capture Live Selfie
@@ -991,6 +1075,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
                         // Successfully uploaded
                         setProgress(false)
                         frontCaptured = true
+                        barcodeExpected = classification?.type?.referenceDocumentDataTypes?.contains(0) ?: false
                         if (isBackSideRequired(classification)) {
                             this@MainActivity.runOnUiThread {
                                 showAcuDialog(R.string.scan_back_side_id, "Message", DialogInterface.OnClickListener { dialog, _ ->

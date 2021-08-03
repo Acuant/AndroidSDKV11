@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.13
-**May 2021**
+# Acuant Android SDK v11.4.14
+**August 2021**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -22,10 +22,6 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ## Updates
 
-**As of April 29th 2021** Due to the upcoming end of service for Bintray the SDK is now distributed through a new Maven URL:
-
-    		maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
-
 **v11.4.4:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.4.4).
 
 ----------
@@ -44,7 +40,7 @@ In order to maintain backward compatibility, the Acuant SDK is currently not com
 
 ## Prerequisites ##
 
-- Supports Android SDK versions 21-29
+- Supports Android SDK versions 21-30
 
 
 ## Modules ##
@@ -188,23 +184,23 @@ The SDK includes the following modules:
 
 	- Add the following Maven URL
 
-    		maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
+    		maven { url 'https://dl.bintray.com/acuant/Acuant' }
     		maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.13'
-    		implementation 'com.acuant:acuantcamera:11.4.13'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.13'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.13'
-    		implementation 'com.acuant:acuantechipreader:11.4.13'
-    		implementation 'com.acuant:acuantfacematch:11.4.13'
-    		implementation 'com.acuant:acuanthgliveness:11.4.13'
-    		implementation ('com.acuant:acuantipliveness:11.4.13'){
+    		implementation 'com.acuant:acuantcommon:11.4.14'
+    		implementation 'com.acuant:acuantcamera:11.4.14'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.14'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.14'
+    		implementation 'com.acuant:acuantechipreader:11.4.14'
+    		implementation 'com.acuant:acuantfacematch:11.4.14'
+    		implementation 'com.acuant:acuanthgliveness:11.4.14'
+    		implementation ('com.acuant:acuantipliveness:11.4.14'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.13'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.13'
+    		implementation 'com.acuant:acuantfacecapture:11.4.14'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.14'
 		
    - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
@@ -343,27 +339,20 @@ Here is the interface for the initialize listener:
 
 1. Start camera activity:
 
-		val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
-
-		cameraIntent.putExtra(ACUANT_EXTRA_IS_AUTO_CAPTURE, boolean)//default is true
-		cameraIntent.putExtra(ACUANT_EXTRA_BORDER_ENABLED, boolean)//default is true
-
-		startActivityForResult(cameraIntent, REQUEST_CODE)
-	   
-	Alternatively use the new options object. This method allows you to configure much more about the camera (see **AcuantCameraOptions**):
-        
-		val cameraIntent = Intent(this, AcuantCameraActivity::class.java)
+		val cameraIntent = Intent(
+			this@MainActivity,
+			AcuantCameraActivity::class.java
+		)
 
 		cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
 			AcuantCameraOptions
 				.DocumentCameraOptionsBuilder()
+				/*Call any other methods detailed in the AcuantCameraOptions section near the bottom of the readme*/
 				.build()
-				/*Acuant has temporarily kept the constructor public for backward compatibility,
-				 * but it will become private in the near future. Acuant strongly recommends that
-				 * you use the provided builder for all new implementations.*/
 		)
 
 		startActivityForResult(cameraIntent, REQUEST_CODE) 
+		
 **Note:** When the camera is launched, the image processing speed is automatically checked.
 
  * Live document detection and auto capture features are enabled if the device supports a speed of at least 130ms.
@@ -380,6 +369,38 @@ Here is the interface for the initialize listener:
 			}
 		}
 		
+### Capturing a document barcode ###
+
+**Note:** During regular capture of a document the camera will try to read the barcode. You should only launch this camera mode if the barcode is expected according to document classification and failed to read during normal capture of the relevant side.
+
+1. Start camera activity:
+
+		val cameraIntent = Intent(
+			this@MainActivity,
+			AcuantCameraActivity::class.java
+		)
+
+		cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
+			AcuantCameraOptions
+				.BarcodeCameraOptionsBuilder()
+				/*Call any other methods detailed in the AcuantCameraOptions section near the bottom of the readme*/
+				.build()
+		)
+
+		startActivityForResult(cameraIntent, REQUEST_CODE)
+		
+1. Get activity result:
+	
+		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+			super.onActivityResult(requestCode, resultCode, data)
+			
+			if (requestCode == REQUEST_CODE && AcuantCameraActivity.RESULT_SUCCESS_CODE) {
+				val capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+			}
+		}
+
+**Note:** This camera is completely reliant on Google Vision. If Google Services are unavailable, the camera will not launch and onActivityResult will instantly be called along with a null value for the barcode. To keep your workflow neater, we recommend checking for Google Services before launching the camera.
+
 ### Capturing MRZ data in a passport document ###
 
 **Note:** To use the MRZ features, your credentials must be enabled to use Ozone.
@@ -404,9 +425,8 @@ Here is the interface for the initialize listener:
 			cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
 				AcuantCameraOptions
 					.MrzCameraOptionsBuilder()
+					/*Call any other methods detailed in the AcuantCameraOptions section near the bottom of the readme*/
 					.build()
-					/*Please note that this uses a different builder than the document camera.
-					 * This is how the camera knows that it is being launched in MRZ mode.*/
 			)
 			
 			startActivityForResult(cameraIntent, REQUEST_CODE)
@@ -633,7 +653,7 @@ This module is used to match two facial images:
 
 Must include EchipInitializer() in initialization (See **Initializing the SDK**).
 	
-1. If you are using ProGuard, then you must add the the following to the configuration file (otherwise the echip read will fail at runtime):
+1. If you are using ProGuard, then you must add the the following to the configuration file (otherwise the eChip read will fail at runtime):
 
 		-keep class org.bouncycastle.jcajce.provider.** {
 			<fields>;
@@ -838,25 +858,9 @@ Relevant Enums:
 
 ### AcuantCameraOptions ###
 
-		class AcuantCameraOptions constructor(
-			val timeInMsPerDigit: Int = 900,
-			val digitsToShow: Int = 2,
-			val allowBox : Boolean = true,
-			val autoCapture : Boolean = true,
-			val bracketLengthInHorizontal : Int = 155,
-			val bracketLengthInVertical : Int = 255,
-			val defaultBracketMarginWidth : Int = 160,
-			val defaultBracketMarginHeight : Int = 160,
-			val colorHold : Int = Color.YELLOW,
-			val colorCapturing : Int = Color.GREEN,
-			val colorBracketAlign : Int = Color.BLACK,
-			val colorBracketCloser : Int = Color.RED,
-			val colorBracketHold : Int = Color.YELLOW,
-			val colorBracketCapturing : Int = Color.GREEN,
-			val cardRatio : Float = 0.65f
-		)
+		class AcuantCameraOptions ()
 		
-**Note:**   While the constructor has been left public for backwards compatibility purposes, we encourage everyone to instead update to one of the two Options Builders included with the class:
+**Note:**   The camera options should be built using one of the following builders. This will also tell the camera what capture mode to use (Document, MRZ, or Barcode):
 
 		class DocumentCameraOptionsBuilder {
 			fun setTimeInMsPerDigit(value: Int) : DocumentCameraOptionsBuilder
@@ -886,6 +890,14 @@ Relevant Enums:
 			fun setColorBracketCapturing(value: Int) : MrzCameraOptionsBuilder
 			fun build() : AcuantCameraOptions
 		}
+		
+		class BarcodeCameraOptionsBuilder {
+			fun setTimeToWaitAfterDetection(value: Int) : BarcodeCameraOptionsBuilder
+			fun setTimeToWaitUntilTimeout(value: Int) : BarcodeCameraOptionsBuilder
+			fun setColorCapturing(value: Int) : BarcodeCameraOptionsBuilder
+			fun setColorAlign(value: Int) : BarcodeCameraOptionsBuilder
+			fun build() : AcuantCameraOptions
+		}
 
 ### FaceCaptureOptions ###
 
@@ -907,6 +919,7 @@ Relevant Enums:
 				public boolean isRetrying;
 				public boolean isHealthCard;
 				public AuthenticationSensitivity authenticationSensitivity;
+				public TamperSensitivity tamperSensitivity;
 			}
 
 -------------------------------------

@@ -6,24 +6,23 @@ import java.lang.Exception
 import android.graphics.*
 import com.acuant.acuantcommon.model.Image
 import android.graphics.Bitmap.CompressFormat
-import com.acuant.acuantcamera.detector.IAcuantDetector
+import com.acuant.acuantcamera.detector.BaseAcuantDetector
 import com.acuant.acuantimagepreparation.model.DetectData
 import com.googlecode.tesseract.android.TessBaseAPI
 import java.io.File
 import java.io.FileOutputStream
 
 
-class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetectorHandler): IAcuantDetector {
+class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetectorHandler): BaseAcuantDetector() {
     private val textRecognizer = TessBaseAPI()
     private var isInitialized = true
     private var extStorage : String? = null
     private var tryFlip = false
 
-    init{
+    init {
         extStorage = context.getExternalFilesDir(null)?.absolutePath
         textRecognizer.init(extStorage, "ocrb")
         textRecognizer.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890<")
-
     }
 
     @Suppress("ConstantConditionIf")
@@ -32,9 +31,9 @@ class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetecto
         var processedImgWithBorder : Bitmap? = null
         var processedImgFinal : Bitmap? = null
         var croppedImage : Image? = null
-        if (isInitialized && bitmap != null && !isDetecting) {
+        if (isInitialized && bitmap != null && !isProcessing) {
             try {
-                isDetecting = true
+                isProcessing = true
                 val data = DetectData(bitmap)
 
                 croppedImage = AcuantImagePreparation.detectMrz(data)
@@ -77,29 +76,25 @@ class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetecto
 
                     val mrz = textRecognizer.utF8Text
 
-                    if(!mrz.isBlank()){
+                    if (!mrz.isBlank()) {
                         callback.onOcrDetected(mrz)
                     }
-                    else{
+                    else {
                         callback.onOcrDetected("")
                     }
                 } else {
                     callback.onOcrDetected(null)
                     callback.onPointsDetected(null)
                 }
-            }
-            catch(e:Exception){
+            } catch (e:Exception) {
                 callback.onOcrDetected(null)
                 callback.onPointsDetected(null)
                 e.printStackTrace()
-            }
-            finally{
+            } finally {
                 processedImg?.recycle()
                 processedImgWithBorder?.recycle()
                 processedImgFinal?.recycle()
                 croppedImage?.image?.recycle()
-
-                isDetecting = false
             }
         }
     }
@@ -112,15 +107,15 @@ class AcuantOcrDetector(context: Context, private val callback: AcuantOcrDetecto
         return bmpWithBorder
     }
 
-    override fun clean(){
-        if(isInitialized) {
+    override fun clean() {
+        super.clean()
+        if (isInitialized) {
             isInitialized = false
             textRecognizer.end()
         }
     }
 
-    companion object{
-        var isDetecting = false
+    companion object {
         private const val saveDebug = false
     }
 }

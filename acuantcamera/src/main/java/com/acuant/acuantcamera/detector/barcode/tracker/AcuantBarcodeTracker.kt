@@ -17,7 +17,9 @@ package com.acuant.acuantcamera.detector.barcode.tracker
  */
 
 
+import android.util.Log
 import com.acuant.acuantcamera.detector.barcode.AcuantBarcodeDetectorHandler
+import com.google.android.gms.vision.Detector.Detections
 
 import com.google.android.gms.vision.Tracker
 import com.google.android.gms.vision.barcode.Barcode
@@ -34,7 +36,7 @@ class AcuantBarcodeTracker internal constructor(private val mBarcodeUpdateListen
      * Start tracking the detected item instance within the item overlay.
      */
     override fun onNewItem(id: Int, item: Barcode?) {
-        if(item != null && item.format == Barcode.PDF417){
+        if (item != null && item.format == Barcode.PDF417) {
             mBarcodeUpdateListener.onBarcodeDetected(item.rawValue)
         }
     }

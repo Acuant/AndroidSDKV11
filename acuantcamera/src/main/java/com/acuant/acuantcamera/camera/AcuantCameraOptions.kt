@@ -10,6 +10,7 @@ import java.io.Serializable
  *      ACUANT_EXTRA_IS_AUTO_CAPTURE with the autoCapture variable
  *      ACUANT_EXTRA_BORDER_ENABLED with the allowBox variable
  */
+//todo this should be refactored into a base class and extensions when allowed to break backwards compatibility
 open class AcuantCameraOptions 
 @Deprecated("Use DocumentCameraOptionsBuilder or MrzCameraOptionsBuilder, constructor will be private in the future.")
 constructor(
@@ -30,9 +31,15 @@ constructor(
         var useGMS: Boolean = true,
         @Deprecated("This variable is not exposed in any of the OptionsBuilders, and is not intended to be modified externally. When the constructor goes private you will not be able to modify it.")
         val cardRatio : Float = 0.65f,
-        @Deprecated("This variable is not exposed in any of the OptionsBuilders, and is not intended to be modified externally. When the constructor goes private you will not be able to modify it.")
-        val isMrzMode : Boolean = false
+        internal val cameraMode: CameraMode = CameraMode.Document
 ) : Serializable {
+
+    enum class CameraMode {Document, Mrz, BarcodeOnly}
+
+    companion object {
+        const val DEFAULT_TIMEOUT_BARCODE = 20000
+        const val DEFAULT_DELAY_BARCODE = 800
+    }
 
     @Suppress("unused")
     class DocumentCameraOptionsBuilder {
@@ -130,9 +137,54 @@ constructor(
         }
 
         fun build() : AcuantCameraOptions {
+            @Suppress("DEPRECATION")
             return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture, bracketLengthInHorizontal,
                     bracketLengthInVertical, defaultBracketMarginWidth, defaultBracketMarginHeight, colorHold,
-                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, useGms, cardRatio, isMrzMode)
+                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, useGms, cardRatio, cameraMode = CameraMode.Document)
+        }
+    }
+
+    @Suppress("unused")
+    class BarcodeCameraOptionsBuilder {
+        private var timeInMsPerDigit : Int = DEFAULT_DELAY_BARCODE
+        private var digitsToShow : Int = DEFAULT_TIMEOUT_BARCODE
+        private var colorCapturing : Int = Color.GREEN
+        private var colorHold : Int = Color.WHITE
+
+        /**
+         * Only an aesthetic difference to prevent jarring transition from the camera (default: [DEFAULT_DELAY_BARCODE]).
+         */
+        fun setTimeToWaitAfterDetection(value: Int) : BarcodeCameraOptionsBuilder {
+            timeInMsPerDigit = value
+            return this
+        }
+
+        /**
+         * Set a time to wait in MS before canceling the camera (default [DEFAULT_TIMEOUT_BARCODE]).
+         *
+         * This can help account for if an id is miss-identified as having a barcode or the barcode
+         * is damaged/unreadable.
+         */
+        fun setTimeToWaitUntilTimeout(value: Int) : BarcodeCameraOptionsBuilder {
+            digitsToShow = value
+            return this
+        }
+
+        fun setColorCapturing(value: Int) : BarcodeCameraOptionsBuilder {
+            colorCapturing = value
+            return this
+        }
+
+        fun setColorAlign(value: Int) : BarcodeCameraOptionsBuilder {
+            colorHold = value
+            return this
+        }
+
+        fun build() : AcuantCameraOptions {
+            @Suppress("DEPRECATION")
+            return AcuantCameraOptions(timeInMsPerDigit = timeInMsPerDigit, digitsToShow = digitsToShow,
+                    colorCapturing = colorCapturing, colorHold = colorHold,
+                    cameraMode = CameraMode.BarcodeOnly)
         }
     }
 
@@ -194,9 +246,10 @@ constructor(
         }
 
         fun build() : AcuantCameraOptions {
+            @Suppress("DEPRECATION")
             return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture, bracketLengthInHorizontal,
                     bracketLengthInVertical, defaultBracketMarginWidth, defaultBracketMarginHeight, colorHold,
-                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, useGMS, cardRatio, isMrzMode)
+                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, useGMS, cardRatio, cameraMode = CameraMode.Mrz)
         }
     }
 }

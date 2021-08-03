@@ -15,6 +15,7 @@ class Constants {
         const val REQUEST_CAMERA_FACE_CAPTURE = 7
         const val REQUEST_CAMERA_MRZ = 8
         const val REQUEST_HELP_MRZ = 9
+        const val REQUEST_CAMERA_BARCODE = 10
         const val HG_FRAME_RATE_TARGET = "targetFrameRate"
 
     }

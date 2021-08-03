@@ -39,4 +39,6 @@
     <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
     <string name="cam_perm_request_text">The camera is required to capture documents. If the permission has been declined you will need to manually go to the app settings to enable it.</string>
     <string name="error_starting_cam">An error occurred while starting the camera, possibly in use by another application.</string>
+    <string name="acuant_camera_capturing_barcode">Capturing...</string>
+    <string name="acuant_camera_align_barcode">Capture Barcode</string>
 </resources>

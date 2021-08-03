@@ -15,6 +15,7 @@ import com.acuant.acuantcamera.camera.AcuantBaseCameraFragment
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
 import com.acuant.acuantcamera.camera.ICameraActivityFinish
 import com.acuant.acuantcamera.constant.ACUANT_EXTRA_CAMERA_OPTIONS
+import com.acuant.acuantcamera.detector.barcode.AcuantBarcodeDetector
 import com.acuant.acuantcamera.detector.ocr.AcuantOcrDetector
 import com.acuant.acuantcamera.detector.ocr.AcuantOcrDetectorHandler
 import com.acuant.acuantcamera.helper.MrzParser
@@ -139,7 +140,11 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
             }
             ++tries
         }
-        this.isProcessing = false
+        detectors.forEach {
+            if (it is AcuantOcrDetector) {
+                it.isProcessing = false
+            }
+        }
     }
 
     override fun onPause() {
