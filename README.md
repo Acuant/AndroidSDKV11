@@ -184,8 +184,8 @@ The SDK includes the following modules:
 
 	- Add the following Maven URL
 
-    		maven { url 'https://dl.bintray.com/acuant/Acuant' }
-    		maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
+            maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
+            maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
    - Add the following dependencies
 
