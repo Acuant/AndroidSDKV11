@@ -52,7 +52,7 @@ class AcuantBarcodeCameraFragment : AcuantBaseCameraFragment(),
                 textView.text = getString(R.string.acuant_camera_align_barcode)
                 textView.setTextColor(options?.colorHold ?: Color.WHITE)
                 imageView.setImageDrawable(ResourcesCompat.getDrawable(resources, R.drawable.barcode, null))
-                imageView.rotation = 0f
+                imageView.rotation = 90f
                 imageView.alpha = 0.4f
                 imageView.visibility = View.VISIBLE
                 textView.bringToFront()
