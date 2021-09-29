@@ -335,19 +335,27 @@ abstract class AcuantBaseCameraFragment : Fragment() {
             if (image != null) {
                 if (!isCapturing) {
                     try {
-                        AcuantDetectorWorker(detectors, image, isAutoCapture).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+                        AcuantDetectorWorker(detectors, imageToBitmap(image), isAutoCapture).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                     }
                     catch(e:Exception){
+                        image.close()
                         e.printStackTrace()
                     }
                 }
-                else{
+                else {
                     image.close()
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    private fun imageToBitmap(image: Image) : Bitmap {
+        val imageBytes = ImageSaver.imageToByteArray(image)
+        val bitmap =  BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        image.close()
+        return bitmap
     }
 
     /**
@@ -370,8 +378,7 @@ abstract class AcuantBaseCameraFragment : Fragment() {
                             }
                         }
                     }))
-                }
-                else{
+                } else {
                     image.close()
                 }
             }

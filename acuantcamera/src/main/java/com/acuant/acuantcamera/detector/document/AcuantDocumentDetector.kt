@@ -13,6 +13,7 @@ class AcuantDocumentDetector constructor (private val callback: AcuantDocumentDe
 
     override fun detect(bitmap: Bitmap?) {
         if (!isProcessing) {
+            isProcessing = true
             val cropStart = System.currentTimeMillis()
             var croppedImage: Image? = null
 
@@ -23,6 +24,7 @@ class AcuantDocumentDetector constructor (private val callback: AcuantDocumentDe
                     croppedImage = AcuantImagePreparation.detect(data)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    isProcessing = false
                 }
             }
             callback.onDetected(croppedImage, System.currentTimeMillis() - cropStart)

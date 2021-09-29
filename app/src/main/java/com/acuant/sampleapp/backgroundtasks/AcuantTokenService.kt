@@ -2,7 +2,7 @@ package com.acuant.sampleapp.backgroundtasks
 
 import android.os.AsyncTask
 import com.acuant.acuantcommon.model.Credential
-import android.util.Base64
+import com.acuant.acuantcommon.helper.CredentialHelper
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -29,9 +29,7 @@ class AcuantTokenService(private val credential: Credential,
             val conn = url.openConnection() as HttpURLConnection
             try {
                 conn.requestMethod = "POST"
-                val sub = if (credential.subscription != null && credential.subscription != "") "${credential.subscription};" else ""
-                val auth = Base64.encodeToString("$sub${credential.username}:${credential.password}".toByteArray(), Base64.NO_WRAP)
-                conn.setRequestProperty("Authorization", "Basic $auth")
+                conn.setRequestProperty("Authorization", CredentialHelper.getAcuantAuthHeader(credential))
                 conn.setRequestProperty("Accept", "application/json")
                 conn.addRequestProperty("Cache-Control", "no-cache")
                 conn.addRequestProperty("Cache-Control", "max-age=0")

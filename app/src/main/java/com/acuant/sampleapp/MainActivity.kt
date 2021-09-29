@@ -1356,13 +1356,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener, IP
 
     fun loadAssureIDImage(url: String?, credential: Credential?): Bitmap? {
         if (url != null && credential != null) {
-            val c = URL(url).openConnection() as HttpURLConnection
-            val auth = CredentialHelper.getAcuantAuthHeader(credential)
-            c.setRequestProperty("Authorization", auth)
-            c.useCaches = false
-            c.connect()
-            val img = BitmapFactory.decodeStream(c.inputStream)
-            c.disconnect()
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.setRequestProperty("Authorization", CredentialHelper.getAcuantAuthHeader(credential))
+            conn.useCaches = false
+            conn.connect()
+            val img = BitmapFactory.decodeStream(conn.inputStream)
+            conn.disconnect()
             return img
         }
         return null

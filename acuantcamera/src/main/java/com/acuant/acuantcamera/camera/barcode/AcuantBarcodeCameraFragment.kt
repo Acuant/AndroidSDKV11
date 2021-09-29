@@ -62,13 +62,6 @@ class AcuantBarcodeCameraFragment : AcuantBaseCameraFragment(),
 
     override fun onBarcodeDetected(barcode: String) {
         this.barCodeString = barcode
-        detectors.forEach {
-            if (it is AcuantBarcodeDetector) {
-                it.isProcessing = false
-            }
-        }
-
-        Log.d("BarcodeCamera","Barcode Detected, Done: $done")
         if (!done) {
             done = true
             activity?.runOnUiThread {
@@ -80,7 +73,7 @@ class AcuantBarcodeCameraFragment : AcuantBaseCameraFragment(),
                     }
 
                     override fun onTick(millisUntilFinished: Long) {
-                        Log.d("BarcodeCamera","Capturing: $millisUntilFinished")
+                        //do nothing
                     }
                 }.start()
             }

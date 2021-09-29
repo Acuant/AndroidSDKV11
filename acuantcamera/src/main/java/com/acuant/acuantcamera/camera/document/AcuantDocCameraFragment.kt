@@ -4,6 +4,7 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.os.*
 import android.support.v4.app.ActivityCompat
+import android.util.Log
 import android.util.Size
 import android.util.SparseIntArray
 import android.view.*
@@ -238,13 +239,8 @@ class AcuantDocCameraFragment : AcuantBaseCameraFragment(),
         currentDigit = digitsToShow
     }
 
-    override fun onBarcodeDetected(barcode: String){
+    override fun onBarcodeDetected(barcode: String) {
         this.barCodeString = barcode
-        detectors.forEach {
-            if (it is AcuantBarcodeDetector) {
-                it.isProcessing = false
-            }
-        }
     }
 
     override fun onCreateView(inflater: LayoutInflater,

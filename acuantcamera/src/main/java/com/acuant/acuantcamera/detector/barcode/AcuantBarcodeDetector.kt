@@ -9,7 +9,7 @@ import com.acuant.acuantcamera.detector.barcode.tracker.BarcodeTrackerFactory
 import com.google.android.gms.vision.MultiProcessor
 import com.google.android.gms.vision.Frame
 
-
+//NOTE: this class does not use the isProcessing flag due to difficulties with how the gms barcode detector does its callbacks
 class AcuantBarcodeDetector(context: Context, callback: AcuantBarcodeDetectorHandler) : BaseAcuantDetector() {
     private lateinit var barcodeDetector: BarcodeDetector
     private var isInitialized = false
@@ -26,7 +26,7 @@ class AcuantBarcodeDetector(context: Context, callback: AcuantBarcodeDetectorHan
     }
 
     override fun detect(bitmap: Bitmap?) {
-        if (isInitialized && bitmap != null && !isProcessing) {
+        if (isInitialized && bitmap != null) {
             try {
                 barcodeDetector.receiveFrame(Frame.Builder()
                         .setBitmap(bitmap)

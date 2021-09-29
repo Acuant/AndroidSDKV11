@@ -19,8 +19,6 @@ package com.acuant.acuantcamera.detector.barcode.tracker
 
 import android.util.Log
 import com.acuant.acuantcamera.detector.barcode.AcuantBarcodeDetectorHandler
-import com.google.android.gms.vision.Detector.Detections
-
 import com.google.android.gms.vision.Tracker
 import com.google.android.gms.vision.barcode.Barcode
 

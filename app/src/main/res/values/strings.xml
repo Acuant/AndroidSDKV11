@@ -107,12 +107,12 @@
     <string name="classification_error">Could not classify the document</string>
 
     <string name="scan_back_side_id">Scan back side of document.</string>
-    <string name="scan_back_side_health_insurance_card">Capture back side of health insurance card.</string>
+    <string name="scan_back_side_health_insurance_card">Capture back side of medical insurance card.</string>
 
     <string name="classification_error_retry">Retry</string>
     <string name="classification_error_image_preview">Image Preview</string>
     <string name="id_passport_button_text">ID/Passport</string>
-    <string name="health_insurance_button_text">Health Insurance Card</string>
+    <string name="health_insurance_button_text">Medical Insurance Card</string>
     <string name="auto_capture">Auto Capture</string>
     <string name="ip_liveness_enabled">IP Liveness Enabled</string>
     <string name="face_capture_button_text">Face Capture</string>

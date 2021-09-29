@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.15
-**August 2021**
+# Acuant Android SDK v11.4.16
+**September 2021**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -189,18 +189,18 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.15'
-    		implementation 'com.acuant:acuantcamera:11.4.15'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.15'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.15'
-    		implementation 'com.acuant:acuantechipreader:11.4.15'
-    		implementation 'com.acuant:acuantfacematch:11.4.15'
-    		implementation 'com.acuant:acuanthgliveness:11.4.15'
-    		implementation ('com.acuant:acuantipliveness:11.4.15'){
+    		implementation 'com.acuant:acuantcommon:11.4.16'
+    		implementation 'com.acuant:acuantcamera:11.4.16'
+    		implementation 'com.acuant:acuantimagepreparation:11.4.16'
+    		implementation 'com.acuant:acuantdocumentprocessing:11.4.16'
+    		implementation 'com.acuant:acuantechipreader:11.4.16'
+    		implementation 'com.acuant:acuantfacematch:11.4.16'
+    		implementation 'com.acuant:acuanthgliveness:11.4.16'
+    		implementation ('com.acuant:acuantipliveness:11.4.16'){
         		transitive = true
     		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.15'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.15'
+    		implementation 'com.acuant:acuantfacecapture:11.4.16'
+    		implementation 'com.acuant:acuantpassiveliveness:11.4.16'
 		
    - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
 
@@ -914,13 +914,38 @@ Relevant Enums:
 
 ### IdOptions ###
 
-			public class IdOptions {
-				public CardSide cardSide;
-				public boolean isRetrying;
-				public boolean isHealthCard;
-				public AuthenticationSensitivity authenticationSensitivity;
-				public TamperSensitivity tamperSensitivity;
-			}
+		public class IdOptions {
+			public CardSide cardSide;
+			public boolean isRetrying;
+			public boolean isHealthCard;
+			public AuthenticationSensitivity authenticationSensitivity;
+			public TamperSensitivity tamperSensitivity;
+		}
+		
+### NfcData (used in eChip workflow) ###
+
+		public class NfcData {
+			var dateOfBirth: String
+			var documentExpiryDate: String
+			var documentCode: String
+			var issuingAuthority: String
+			var documentNumber: String
+			var nationality: String
+			var personalNumber: String
+			var firstName: String
+			var lastName: String
+			var documentType: String 
+			var documentSubType: String 
+			var gender: String 
+			val age: Int? //extrapolated
+			val isExpired: Boolean? //extrapolated
+			var image: Bitmap?
+			var passportDataValid: Boolean //Data Group Hash Check Status
+			var passportCountrySigned: OzoneResultStatus
+			var passportSigned: OzoneResultStatus
+			
+			fun getBytes(group: ByteGroup?): ByteArray?
+		}
 
 -------------------------------------
 
