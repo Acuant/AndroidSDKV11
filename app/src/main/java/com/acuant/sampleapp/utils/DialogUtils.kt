@@ -5,12 +5,8 @@ import android.content.DialogInterface
 import android.util.Log
 
 import android.content.ContentValues.TAG
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
-
-/**
- * Created by tapasbehera on 4/16/18.
- */
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 
 object DialogUtils {
 

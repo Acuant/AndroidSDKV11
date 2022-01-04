@@ -1,13 +1,12 @@
 package com.acuant.sampleapp
 
-import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Typeface
 import android.nfc.NfcAdapter
 import android.os.Bundle
-import android.support.constraint.ConstraintLayout
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.StyleSpan
@@ -17,14 +16,12 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
-import com.acuant.acuantcommon.model.Credential
-import com.acuant.acuantcommon.model.Error
+import com.acuant.acuantcommon.model.AcuantError
 import com.acuant.acuantechipreader.AcuantEchipReader
 import com.acuant.acuantechipreader.AcuantEchipReader.getPositionOfChip
 import com.acuant.acuantechipreader.echipreader.NfcTagReadingListener
 import com.acuant.acuantechipreader.model.NfcData
 import com.acuant.sampleapp.utils.DialogUtils
-
 
 class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
 
@@ -115,9 +112,9 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         position = try {
             getPositionOfChip(application, country)
         } catch (e: IllegalStateException) {
-            DialogUtils.showDialog(this, "Ozone Not Enabled", DialogInterface.OnClickListener { _, _ ->
+            DialogUtils.showDialog(this, "Ozone Not Enabled") { _, _ ->
                 finish()
-            })
+            }
             ""
         }
 
@@ -204,7 +201,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         val dateOfBirth = mrzDOB.text.toString()
         val dateOfExpiry = mrzDOE.text.toString()
         if (docNumber != "" && dateOfBirth.length == 6 && dateOfExpiry.length == 6) {
-            AcuantEchipReader.readNfcTag(this, intent, Credential.get(), docNumber, dateOfBirth,
+            AcuantEchipReader.readNfcTag(this, intent, docNumber, dateOfBirth,
                     dateOfExpiry, performOzoneAuthentication = true, tagListener = this)
         } else {
             setProgress(true, HelpState.Failed, "Error in formatting for Document number, Date of birth, or Expiration date. Fix and retry." )
@@ -222,17 +219,20 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         }
     }
 
-    override fun tagReadFailed(error: Error) {
+    override fun tagReadStatus(status: String) {
+        if (alertDialog != null && alertDialog!!.isShowing) {
+            DialogUtils.dismissDialog(alertDialog)
+        }
+        setProgress(true, HelpState.Found, status)
+    }
+
+    override fun onError(error: AcuantError) {
         this.error = true
         if (alertDialog != null && alertDialog!!.isShowing) {
             DialogUtils.dismissDialog(alertDialog)
         }
         setProgress(false)
-        if (error.errorDescription != null) {
-            setProgress(true, HelpState.Failed, error.errorDescription)
-        } else {
-            setProgress(true, HelpState.Failed)
-        }
+        setProgress(true, HelpState.Failed, error.errorDescription)
         if (this.nfcAdapter != null) {
             try {
                 this.nfcAdapter!!.disableForegroundDispatch(this)
@@ -240,13 +240,6 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
                 e.printStackTrace()
             }
         }
-    }
-
-    override fun tagReadStatus(status: String) {
-        if (alertDialog != null && alertDialog!!.isShowing) {
-            DialogUtils.dismissDialog(alertDialog)
-        }
-        setProgress(true, HelpState.Found, status)
     }
 
 }

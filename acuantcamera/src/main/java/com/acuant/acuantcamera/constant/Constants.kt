@@ -2,14 +2,10 @@
 
 package com.acuant.acuantcamera.constant
 
-@JvmField val REQUEST_CAMERA_PERMISSION = 1
-@JvmField val PIC_FILE_NAME = "pic.jpg"
-@JvmField val ACUANT_EXTRA_IMAGE_URL = "imageUrl"
-@JvmField val ACUANT_EXTRA_PDF417_BARCODE = "barCodeString"
-@JvmField val ACUANT_EXTRA_IS_AUTO_CAPTURE = "isAutoCapture"
-@JvmField val ACUANT_EXTRA_BORDER_ENABLED = "borderEnabled"
-@JvmField val ACUANT_EXTRA_CAMERA_OPTIONS = "cameraOptions"
-@JvmField val ACUANT_EXTRA_FACE_CAPTURE_OPTIONS = "faceCaptureOptions"
-@JvmField val ACUANT_EXTRA_MRZ_RESULT = "mrzResult"
-@JvmField val MINIMUM_DPI = 20
-@JvmField val MINIMUM_REQUIRED_DPI = 160
+const val ACUANT_EXTRA_IMAGE_URL = "imageUrl"
+const val ACUANT_EXTRA_PDF417_BARCODE = "barCodeString"
+const val ACUANT_EXTRA_CAMERA_OPTIONS = "cameraOptions"
+const val ACUANT_EXTRA_MRZ_RESULT = "mrzResult"
+const val ACUANT_EXTRA_ERROR = "error"
+const val RESULT_ERROR = -99
+const val MINIMUM_DPI = 20 // a random low number to filter out small detections due to noise but to not filter any documents even too small ones

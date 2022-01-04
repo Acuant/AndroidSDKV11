@@ -1,149 +1,63 @@
 package com.acuant.acuantcamera.camera.mrz
 
-import android.content.Context
 import android.graphics.Color
 import android.graphics.Point
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.support.v4.app.ActivityCompat
+import android.util.Size
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.camera.core.ImageAnalysis
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.AcuantBaseCameraFragment
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
-import com.acuant.acuantcamera.camera.ICameraActivityFinish
-import com.acuant.acuantcamera.constant.ACUANT_EXTRA_CAMERA_OPTIONS
-import com.acuant.acuantcamera.detector.ocr.AcuantOcrDetector
-import com.acuant.acuantcamera.detector.ocr.AcuantOcrDetectorHandler
-import com.acuant.acuantcamera.helper.MrzParser
+import com.acuant.acuantcamera.databinding.MrzFragmentUiBinding
+import com.acuant.acuantcamera.detector.MrzFrameAnalyzer
+import com.acuant.acuantcamera.detector.MrzState
 import com.acuant.acuantcamera.helper.MrzResult
+import com.acuant.acuantcamera.helper.PointsUtils
 import com.acuant.acuantcamera.overlay.MrzRectangleView
+import java.lang.ref.WeakReference
 import kotlin.math.*
 
+enum class MrzCameraState { Align, MoveCloser, Reposition, Trying, Capturing }
 
-class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnRequestPermissionsResultCallback, AcuantOcrDetectorHandler {
-
-    /**
-     * This is the output file for our picture.
-     */
-    private val mrzParser = MrzParser()
+class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
+    private var rectangleView: MrzRectangleView? = null
+    private var textView: TextView? = null
+    private var imageView: ImageView? = null
+    private var cameraUiContainerBinding: MrzFragmentUiBinding? = null
+    private var defaultTextDrawable: Drawable? = null
     private var tries = 0
-    private var handler: Handler? = Handler(Looper.getMainLooper())
-    private var mrzResult : MrzResult? = null
-    private var capturing = false
-    private var allowCapture = false
+    private var handler: Handler? = null
+    private var oldPoints: Array<Point>? = null
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-    override fun setTextFromState(state: CameraState) {
-        setTextFromState(activity!!, state, textView, imageView)
-    }
-
-    override fun onPointsDetected(points: Array<Point>?) {
-        activity!!.runOnUiThread {
-            if (points != null) {
-                if (points.size == 4) {
-                    val scaledPointY = textureView.height.toFloat() / previewSize.width.toFloat()
-                    val scaledPointX = textureView.width.toFloat() / previewSize.height.toFloat()
-                    rectangleView.setWidth(textureView.width.toFloat())
-
-                    points.apply {
-                        this.forEach {
-                            it.x = (it.x * scaledPointY).toInt()
-                            it.y = (it.y * scaledPointX).toInt()
-                            it.y -= pointYOffset
-                            it.x += pointXOffset
-                        }
-                    }
-
-                    MrzRectangleView.fixPoints(points)
-
-                    var dist = 0
-                    if (oldPoints != null && oldPoints!!.size == 4 && points.size == 4) {
-                        for (i in 0..3) {
-                            dist += sqrt(((oldPoints!![i].x - points[i].x).toDouble().pow(2) + (oldPoints!![i].y - points[i].y).toDouble().pow(2))).toInt()
-                        }
-                    }
-
-                    if (dist > TOO_MUCH_MOVEMENT) {
-                        resetCapture()
-                    }
-
-                    if (capturing) {
-                        setTextFromState(CameraState.MrzCapturing)
-                        rectangleView.setViewFromState(CameraState.MrzCapturing)
-                    } else if (!isAligned(points) || !isAcceptableAspectRatio(points)) {
-                        resetCapture()
-                        setTextFromState(CameraState.MrzAlign)
-                        rectangleView.setViewFromState(CameraState.MrzAlign)
-                        rectangleView.setAndDrawPoints(null)
-                    } else if(!isAcceptableDistance(points, textureView.height.toFloat())) {
-                        resetCapture()
-                        setTextFromState(CameraState.MrzMoveCloser)
-                        rectangleView.setViewFromState(CameraState.MrzMoveCloser)
-                        rectangleView.setAndDrawPoints(points)
-                    }else if (tries < ALLOWED_ERRORS) {
-                        allowCapture = true
-                        setTextFromState(CameraState.MrzTrying)
-                        rectangleView.setViewFromState(CameraState.MrzTrying)
-                        rectangleView.setAndDrawPoints(points)
-                    } else {
-                        allowCapture = true
-                        setTextFromState(CameraState.MrzReposition)
-                        rectangleView.setViewFromState(CameraState.MrzReposition)
-                        rectangleView.setAndDrawPoints(points)
-                    }
-                } else if(!capturing) {
-                    resetCapture()
-                    setTextFromState(CameraState.MrzNone)
-                    rectangleView.setViewFromState(CameraState.MrzNone)
-                    rectangleView.setAndDrawPoints(null)
-                }
-            } else if(!capturing) {
-                resetCapture()
-                setTextFromState(CameraState.MrzNone)
-                rectangleView.setViewFromState(CameraState.MrzNone)
-                rectangleView.setAndDrawPoints(null)
-            }
-
-            oldPoints = points
+        cameraUiContainerBinding?.root?.let {
+            fragmentCameraBinding!!.root.removeView(it)
         }
-    }
 
-    private fun resetCapture() {
-        tries = 0
-        allowCapture = false
-    }
+        cameraUiContainerBinding = MrzFragmentUiBinding.inflate(
+            LayoutInflater.from(requireContext()),
+            fragmentCameraBinding!!.root,
+            true
+        )
 
-    override fun onOcrDetected(textBlock: String?){
-        if (textBlock != null && allowCapture) {
-            val result = mrzParser.parseMrz(textBlock)
-            //Log.d("MRZLOG", " " + result?.checkSumResult1 + ", "+ result?.checkSumResult2 +", "+ result?.checkSumResult3 +", "+ result?.checkSumResult4 +", "+ result?.checkSumResult5)
-            if (result != null) {
-                if (result.checkSumResult1 && result.checkSumResult2 && result.checkSumResult3 && result.checkSumResult4 && result.checkSumResult5) {
-                    capturing = true
-                    this.isCapturing = true
-                    setTextFromState(CameraState.MrzCapturing)
-                    rectangleView.setViewFromState(CameraState.MrzCapturing)
-                    if (mrzResult == null || (mrzResult?.country == "" && result.country != "")) {
-                        mrzResult = result
-                    }
-                    handler?.postDelayed({
-                        handler?.removeCallbacksAndMessages(null)
-                        if (activity is ICameraActivityFinish) {
-                            (activity as ICameraActivityFinish).onActivityFinish(result)
-                        }
-                    }, 750)
-                }
-            }
-            ++tries
-        }
-        detectors.forEach {
-            if (it is AcuantOcrDetector) {
-                it.isProcessing = false
-            }
-        }
+        rectangleView = cameraUiContainerBinding?.mrzRectangle
+        textView = cameraUiContainerBinding?.mrzTextView
+        imageView = cameraUiContainerBinding?.mrzImage
+
+        setOptions(rectangleView)
+
+        defaultTextDrawable = AppCompatResources.getDrawable(requireContext(), R.drawable.camera_text_config_default)
+
     }
 
     override fun onPause() {
@@ -152,40 +66,153 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
         super.onPause()
     }
 
-
     override fun onResume() {
         handler = Handler(Looper.getMainLooper())
-        if (capturing) {
-            capturing = false
-            this.isCapturing = false
-        }
+        capturing = false
         super.onResume()
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        detectors = listOf(AcuantOcrDetector(activity!!.applicationContext, this))
+    private fun onMrzDetection(points: Array<Point>?, result: MrzResult?, state: MrzState) {
+        if (!capturing) {
+            activity?.runOnUiThread {
+
+                var detectedPoints = points
+
+                if (detectedPoints != null) {
+                    val camContainer = fragmentCameraBinding?.root
+                    val analyzerSize = imageAnalyzer?.resolutionInfo?.resolution
+                    val previewSize = fragmentCameraBinding?.viewFinder
+                    detectedPoints = PointsUtils.fixPoints(PointsUtils.scalePoints(detectedPoints, camContainer, analyzerSize, previewSize, rectangleView))
+
+                    var dist = 0
+                    if (oldPoints != null && oldPoints!!.size == 4 && detectedPoints.size == 4) {
+                        for (i in 0..3) {
+                            dist += sqrt(((oldPoints!![i].x - detectedPoints[i].x).toDouble().pow(2) + (oldPoints!![i].y - detectedPoints[i].y).toDouble().pow(2))).toInt()
+                        }
+                    }
+
+                    if (dist > TOO_MUCH_MOVEMENT) {
+                        resetCapture()
+                    }
+
+                    when {
+                        state == MrzState.NoMrz || !PointsUtils.correctDirection(points, previewSize) -> {
+                            resetCapture()
+                            setTextFromState(MrzCameraState.Align)
+                            rectangleView?.setViewFromState(MrzCameraState.Align)
+                        }
+                        state == MrzState.TooFar -> {
+                            resetCapture()
+
+                            setTextFromState(MrzCameraState.MoveCloser)
+                            rectangleView?.setViewFromState(MrzCameraState.MoveCloser)
+                        }
+                        else -> { //good mrz
+                            when {
+                                result != null && result.allCheckSumsPassed -> {
+                                    capturing = true
+                                    setTextFromState(MrzCameraState.Capturing)
+                                    rectangleView?.setViewFromState(MrzCameraState.Capturing)
+                                    val handler = handler
+                                    if (handler != null) {
+                                        handler.postDelayed({
+                                            this.handler?.removeCallbacksAndMessages(null)
+                                            cameraActivityListener.onCameraDone(result)
+                                        }, 750)
+                                    } else {
+                                        handler?.removeCallbacksAndMessages(null)
+                                        cameraActivityListener.onCameraDone(result)
+
+                                    }
+                                }
+                                tries < ALLOWED_ERRORS -> {
+                                    ++tries
+                                    setTextFromState(MrzCameraState.Trying)
+                                    rectangleView?.setViewFromState(MrzCameraState.Trying)
+                                }
+                                else -> { //too many errors
+                                    setTextFromState(MrzCameraState.Reposition)
+                                    rectangleView?.setViewFromState(MrzCameraState.Reposition)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                oldPoints = detectedPoints
+                rectangleView?.setAndDrawPoints(detectedPoints)
+            }
+        }
+    }
+
+    private fun resetCapture() {
         tries = 0
+    }
+    
+    private fun setTextFromState(state: MrzCameraState) {
+        if (!isAdded)
+            return
+        val imageView = this.imageView
+        val textView = this.textView
 
+        if (imageView != null && textView != null) {
+            imageView.visibility = View.INVISIBLE
+            textView.visibility = View.VISIBLE
 
-        options = arguments?.getSerializable(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions?
-                ?: AcuantCameraOptions.MrzCameraOptionsBuilder()
-                        .setAllowBox(isBorderEnabled)
-                        .build()
-
-        capturingTextDrawable = activity!!.getDrawable(R.drawable.camera_text_config_capturing)
-        defaultTextDrawable = activity!!.getDrawable(R.drawable.camera_text_config_default)
+            when (state) {
+                MrzCameraState.MoveCloser -> {
+                    textView.background = defaultTextDrawable
+                    textView.text = getString(R.string.acuant_closer_mrz)
+                    textView.setTextColor(Color.WHITE)
+                    textView.textSize = 24f
+                }
+                MrzCameraState.Reposition -> {
+                    textView.background = defaultTextDrawable
+                    textView.text = getString(R.string.acuant_glare_mrz)
+                    textView.setTextColor(Color.WHITE)
+                    textView.textSize = 24f
+                    textView.layoutParams.width =
+                        resources.getDimension(R.dimen.cam_error_width).toInt()
+                }
+                MrzCameraState.Trying -> {
+                    textView.background = defaultTextDrawable
+                    textView.text = getString(R.string.acuant_reading_mrz)
+                    textView.setTextColor(Color.WHITE)
+                    textView.textSize = 24f
+                    textView.layoutParams.width = resources.getDimension(R.dimen.cam_info_width).toInt()
+                }
+                MrzCameraState.Capturing -> {
+                    textView.background = defaultTextDrawable
+                    textView.text = getString(R.string.acuant_read_mrz)
+                    textView.setTextColor(Color.WHITE)
+                    textView.textSize = 24f
+                    textView.layoutParams.width = resources.getDimension(R.dimen.cam_info_width).toInt()
+                }
+                else -> {
+                    textView.visibility = View.INVISIBLE
+                    imageView.visibility = View.VISIBLE
+                }
+            }
+        }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        textureView = view.findViewById(R.id.texture)
-        rectangleView = view.findViewById(R.id.acu_mrz_rectangle) as MrzRectangleView
-
-        super.onViewCreated(view, savedInstanceState)
+    override fun rotateUi(rotation: Int) {
+        textView?.rotation = rotation.toFloat()
+        imageView?.rotation = rotation.toFloat()
     }
 
-    override fun setTapToCapture() {
-        //mrz does not currently support tap to capture
+    override fun buildImageAnalyzer(screenAspectRatio: Int, rotation: Int) {
+        val frameAnalyzer = MrzFrameAnalyzer (WeakReference(requireContext())) { points, result, state ->
+            onMrzDetection(points, result, state)
+        }
+        imageAnalyzer = ImageAnalysis.Builder()
+            .setTargetResolution(Size(960, 1280))
+//            .setTargetAspectRatio(screenAspectRatio)
+            .setTargetRotation(rotation)
+            .build()
+            .also {
+                it.setAnalyzer(cameraExecutor, frameAnalyzer)
+            }
     }
 
     companion object {
@@ -193,69 +220,12 @@ class AcuantMrzCameraFragment : AcuantBaseCameraFragment(), ActivityCompat.OnReq
 
         const val TOO_MUCH_MOVEMENT = 200
 
-
-
-        private fun distance(pointA: Point, pointB: Point): Float {
-            return sqrt( (pointA.x - pointB.x).toFloat().pow(2) + (pointA.y - pointB.y).toFloat().pow(2))
-        }
-
-        fun isAligned(points: Array<Point>) : Boolean {
-            if (points.size != 4)
-                return false
-            val val1 = distance(points[0], points[2])
-            val val2 = distance(points[1], points[3])
-            return abs(val1 - val2) < 15
-        }
-
-        fun isAcceptableAspectRatio(points: Array<Point>) : Boolean {
-            val ratio = distance(points[0], points[3]) / distance(points[0], points[1])
-            return ratio > 4f && ratio < 10f
-        }
-
-        fun isAcceptableDistance(points: Array<Point>, screenSize: Float): Boolean {
-            val dist = max(distance(points[0], points[1]), distance(points[0], points[3]))
-            return dist > 0.65 * screenSize
-        }
-
-        @JvmStatic fun newInstance(): AcuantBaseCameraFragment = AcuantMrzCameraFragment()
-        fun setTextFromState(context: Context, state: CameraState, textView: TextView, imageView: ImageView) {
-
-            imageView.visibility = View.INVISIBLE
-            textView.visibility = View.VISIBLE
-
-            when (state) {
-                CameraState.MrzReposition -> {
-                    textView.background = context.getDrawable(R.drawable.camera_text_config_default)
-                    textView.text = context.resources.getString(R.string.acuant_glare_mrz)
-                    textView.setTextColor(Color.WHITE)
-                    textView.textSize = 24f
-                    textView.layoutParams.width = context.resources.getDimension(R.dimen.cam_error_width).toInt()
-                }
-                CameraState.MrzTrying -> {
-                    textView.background = context.getDrawable(R.drawable.camera_text_config_default)
-                    textView.text = context.resources.getString(R.string.acuant_reading_mrz)
-                    textView.setTextColor(Color.WHITE)
-                    textView.textSize = 24f
-                    textView.layoutParams.width = context.resources.getDimension(R.dimen.cam_info_width).toInt()
-                }
-                CameraState.MrzCapturing -> {
-                    textView.background = context.getDrawable(R.drawable.camera_text_config_default)
-                    textView.text = context.resources.getString(R.string.acuant_read_mrz)
-                    textView.setTextColor(Color.WHITE)
-                    textView.textSize = 24f
-                    textView.layoutParams.width = context.resources.getDimension(R.dimen.cam_info_width).toInt()
-                }
-                CameraState.MrzMoveCloser -> {
-                    textView.background = context.getDrawable(R.drawable.camera_text_config_default)
-                    textView.text = context.resources.getString(R.string.acuant_closer_mrz)
-                    textView.setTextColor(Color.WHITE)
-                    textView.textSize = 24f
-                }
-                else -> {//none //align
-                    textView.visibility = View.INVISIBLE
-                    imageView.visibility = View.VISIBLE
-                }
-            }
+        @JvmStatic fun newInstance(acuantOptions: AcuantCameraOptions): AcuantMrzCameraFragment {
+            val frag = AcuantMrzCameraFragment()
+            val args = Bundle()
+            args.putSerializable(INTERNAL_OPTIONS, acuantOptions)
+            frag.arguments = args
+            return frag
         }
     }
 }

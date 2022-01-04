@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.4.16
-**September 2021**
+# Acuant Android SDK v11.5.0
+**January 2022**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -22,25 +22,21 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ## Updates
 
-**v11.4.4:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.4.4).
+**v11.5.0:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.5.0).
 
 ----------
 
 ## AndroidX Support
 
-In order to maintain backward compatibility, the Acuant SDK is currently not compiled using AndroidX support libraries. However, the SDK may be used with AndroidX by using [Jetifier](https://developer.android.com/jetpack/androidx/migrate).
+As of 11.5.0 the SDK is compiled with AndroidX and CameraX.
 
-**Note:** This should be enabled by default when you migrate your project to AndroidX.
-
-- If you are using Acuant’s compiled AAR files, or if you get the SDK from Maven, no additional action is required (aside from verifying that Jetifier is enabled).
-
-- If you are customizing any of Acuant’s open modules, you will need to build the library into an AAR file, and then use that AAR file in your app along with Jetifier.
+Before 11.5.0, the SDK was not compiled with AndroidX. The SDK could still be used with AndroidX by using [Jetifier](https://developer.android.com/jetpack/androidx/migrate).
 
 ----------
 
 ## Prerequisites ##
 
-- Supports Android SDK versions 21-30
+- Supports Android SDK versions 21-31 (compiled with 31)
 
 
 ## Modules ##
@@ -49,42 +45,39 @@ The SDK includes the following modules:
 
 **Acuant Common Library (AcuantCommon) :**
 
-- Contains all shared internal models and supporting classes
+- Contains shared internal models and supporting classes.
 
 **Acuant Camera Library (AcuantCamera) :**
 
-- Implemented using Camera 2 API with Google Vision for reading PDF417 barcodes
-- Encompasses two different versions of the camera, one for reading documents, the other for reading MRZ zones.
-- Uses AcuantImagePreparation for cropping
+- Implemented using CameraX API and uses Google ML Kit for barcode reading. ML Kit model is packaged in the SDK (no outbound call to download model from Google Play services).
+- Encompasses three different versions of the camera for reading document and barcodes, reading MRZ zones, and a backup camera for reading only barcodes.
+- Uses AcuantImagePreparation for document detection and cropping.
 
 **Acuant Image Preparation Library (AcuantImagePreparation) :**
 
-- Contains all image processing including cropping and calculation of sharpness and glare
+- Contains all image processing including document detection, cropping, and metrics calculation.
 
 **Acuant Document Processing Library (AcuantDocumentProcessing) :**
 
-- Contains all the methods to upload the document images, process, and get results
+- Contains all the methods to upload and process document images.
 
 **Acuant Face Match Library (AcuantFaceMatch) :**    
 
-- Contains a method to match two facial images 
+- Contains a method to match two face images.
 
 **Acuant EChip Reader Library (AcuantEChipReader):**
 
-- Contains methods for e-Passport chip reading and authentication using Ozone
+- Contains methods for e-Passport chip reading and authentication using Ozone.
 
 **Acuant IP Liveness Library (AcuantIPLiveness):**
 
-- Uses library for capturing a facial image and calculating liveness
-- Enhanced Face Liveness
-
-**Acuant HG Liveness Library (AcuantHGLiveness):**
-
-- Uses Camera 1 to capture facial liveness using a proprietary algorithm
+- Uses library for capturing a facial image and calculating liveness.
+- Enhanced Face Liveness.
 
 **Acuant Face Capture Library (AcuantFaceCapture):**
 
-- Uses Camera 1 to capture a single face image for use with our passive liveness system
+- Contains two CameraX implementations for capturing a user's face image.
+- Intended to be used with with Acuant Passive Liveness to determine a user's liveness or as a standalone, primitive liveness check.
 
 **Acuant Passive Liveness Library (AcuantPassiveLiveness):**
 
@@ -96,114 +89,42 @@ The SDK includes the following modules:
 
 1. Specify the permissions in the App manifest file:
 	
-	    <uses-permission android:name="android.permission.INTERNET" />
-	    <uses-permission android:name="android.permission.CAMERA" />
-	    <uses-permission android:name="android.permission.NFC" />
-	    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+		<uses-permission android:name="android.permission.INTERNET" />
+		<uses-permission android:name="android.permission.CAMERA" />
+		<uses-permission android:name="android.permission.NFC" />
 	
 		<uses-feature android:name="android.hardware.camera" />
-    	<uses-feature android:name="android.hardware.camera.autofocus" />
+		<uses-feature android:name="android.hardware.camera.autofocus" />
 
-	    <meta-data
-    	    android:name="com.google.android.gms.vision.DEPENDENCIES"
-    	    android:value="barcode,face"
-    	    tools:replace="android:value"/>
-    
 1. Add the Acuant SDK dependency in **build.gradle**:
 
-		repositories {
-			//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveness
+	- Add the following under `android` (if not already present)
+	
+			compileOptions {
+				sourceCompatibility JavaVersion.VERSION_1_8
+				targetCompatibility JavaVersion.VERSION_1_8
+			}
+			kotlinOptions {
+				jvmTarget = "1.8"
+			}
+
+	- Add the following Maven URLs
+
 			maven { url 'https://maven.google.com' }
-			maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
-		}
-
-    	dependencies {
-			//if possible, use v7:28.0.0 for android support version
-			//implementation 'com.android.support:appcompat-v7:28'
-			//implementation 'com.android.support:support-v4:28.0.0'
-			//implementation 'com.android.support:appcompat-v7:28.0.0'
-			//implementation 'com.android.support:exifinterface:28.0.0'
-
-			//Face Capture and Barcode reading. Only add if using acuantcamera or acuanthgliveness
-			implementation 'com.google.android.gms:play-services-vision:17.0.2'
-
-			//External library for MRZ reading. Only add if using the MRZ part of acuantcamera
-			implementation 'com.rmtheis:tess-two:9.0.0'
-		    
-			//external libraries for echip reading. Only add if using acuantechipreader
-			implementation group: 'com.github.mhshams', name: 'jnbis', version: '1.0.4'
-			implementation('org.jmrtd:jmrtd:0.7.11') {
-				transitive = true;
-			}
-			implementation('org.ejbca.cvc:cert-cvc:1.4.6') {
-				transitive = true;
-			}
-			implementation('org.bouncycastle:bcprov-jdk15on:1.61') {
-				transitive = true;
-			}
-			implementation('net.sf.scuba:scuba-sc-android:0.0.18') {
-				transitive = true;
-			}
-			//end echip reading
-		    
-			//internal common library
-			implementation project(path: ':acuantcommon')
-
-			//camera with autocapture - Uses camera 2 API
-			implementation project(path: ':acuantcamera')
-
-			//document parse, classification, authentication
-			implementation project(path: ':acuantdocumentprocessing')
-
-			//face match library
-			implementation project(path: ':acuantfacematchsdk')
-
-			//for reading epassport chips
-			implementation project(path: ':acuantechipreader')
-
-			//face capture and liveliness
-			implementation project(path: ':acuantipliveness')
-			implementation('com.iproov.sdk:iproov:5.2.1@aar') {
-				transitive = true
-			}
-
-			//face capture and liveliness
-			implementation project(path: ':acuanthgliveness')
-
-			//image processing (cropping, glare, sharpness)
-			implementation project(path: ':acuantimagepreparation')
-
-			//face capture
-			implementation project(path: ':acuantfacecapture')
-
-			//passive liveness
-			implementation project(path: ':acuantpassiveliveness')
-  		}
-  		
-1. Add the Acuant SDK dependency in **build.gradle** if using Maven:
-
-	- Add the following Maven URL
-
-            maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
+			maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
             maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
    - Add the following dependencies
 
-    		implementation 'com.acuant:acuantcommon:11.4.16'
-    		implementation 'com.acuant:acuantcamera:11.4.16'
-    		implementation 'com.acuant:acuantimagepreparation:11.4.16'
-    		implementation 'com.acuant:acuantdocumentprocessing:11.4.16'
-    		implementation 'com.acuant:acuantechipreader:11.4.16'
-    		implementation 'com.acuant:acuantfacematch:11.4.16'
-    		implementation 'com.acuant:acuanthgliveness:11.4.16'
-    		implementation ('com.acuant:acuantipliveness:11.4.16'){
-        		transitive = true
-    		}
-    		implementation 'com.acuant:acuantfacecapture:11.4.16'
-    		implementation 'com.acuant:acuantpassiveliveness:11.4.16'
-		
-   - Acuant also relies on Google Play services dependencies, which are pre-installed on almost all Android devices.
-
+			implementation 'com.acuant:acuantcommon:11.5.0'
+			implementation 'com.acuant:acuantcamera:11.5.0'
+			implementation 'com.acuant:acuantimagepreparation:11.5.0'
+			implementation 'com.acuant:acuantdocumentprocessing:11.5.0'
+			implementation 'com.acuant:acuantechipreader:11.5.0'
+			implementation 'com.acuant:acuantipliveness:11.5.0'
+			implementation 'com.acuant:acuantfacematch:11.5.0'
+			implementation 'com.acuant:acuantfacecapture:11.5.0'
+			implementation 'com.acuant:acuantpassiveliveness:11.5.0'
 
 1. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
 
@@ -264,55 +185,51 @@ The SDK includes the following modules:
 
 Before you use the SDK, you must initialize it, either by using the credentials saved on the device or by using bearer tokens (provided by an external server).
 
-**Note:** If you are *not* using a configuration file for initialization, then use the following statement (providing appropriate credentials for *username*, *password*, and *subscription ID*) and leave the "PATH/TO/CONFIG/FILENAME.XML" in the initialize method as ""
-	
-		Credential.init("xxxxxxx",
-		"xxxxxxxx",
-		"xxxxxxxxxx",
-		"https://frm.acuant.net",
-		"https://services.assureid.net",
-		"https://medicscan.acuant.net",
-		"https://us.passlive.acuant.net",
-		"https://acas.acuant.net",
-		"https://ozone.acuant.net")
-
-* Using credentials saved on a device:
-
-		
-		//Specify the path to the previously created XML file, using “assets” as root
-		//Pass in Context from Application
-		//List the packages to initialize; only ImageProcessor is required
-
-		try{
-			AcuantInitializer.initialize("PATH/TO/CONFIG/FILENAME.XML",
-							context,
-							listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer() /\*Exclude the ones you don't use\*/),
-							listener)
-		}
-		catch(e: AcuantException){
-			Log.e("Acuant Error", e.toString())
-		}
-		
 * Using bearer tokens:	
-
 		
-		//Specify the path to the previously created XML file, using “assets” as root
-		//Pass in Context from Application
-		//List the packages to initialize; only ImageProcessor is required
-		
-		//having received the bearer token from your service
-		try{
+		try {
 			AcuantInitializer.initializeWithToken("PATH/TO/CONFIG/FILENAME.XML",
-							token,
-							context,
-							listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer() /\*Exclude the ones you don't use\*/),
-							listener)
-		}
-		catch(e: AcuantException){
+					token,
+					context, 
+					listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()), 
+					listener)
+		} catch(e: AcuantException) {
 			Log.e("Acuant Error", e.toString())
 		}
 
-Here is the interface for the initialize listener:
+* Using credentials saved on device in a config file:
+				
+		try {
+			AcuantInitializer.initialize("PATH/TO/CONFIG/FILENAME.XML",
+					context, 
+					listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()), 
+					listener)
+		} catch(e: AcuantException) {
+			Log.e("Acuant Error", e.toString())
+		}
+
+* Using credentials hardcoded in the code (not recommended):
+
+		try {
+			Credential.init("xxxxxxx",
+					"xxxxxxxx",
+					"xxxxxxxxxx",
+					"https://frm.acuant.net",
+					"https://services.assureid.net",
+					"https://medicscan.acuant.net",
+					"https://us.passlive.acuant.net",
+					"https://acas.acuant.net",
+					"https://ozone.acuant.net")
+			
+			AcuantInitializer.initialize(null, 
+					context, 
+					listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()), 
+					listener)
+		} catch(e: AcuantException) {
+			Log.e("Acuant Error", e.toString())
+		}
+
+* Here is the interface for the initialize listener:
 
 		interface IAcuantPackageCallback{
 			fun onInitializeSuccess()
@@ -320,15 +237,10 @@ Here is the interface for the initialize listener:
 			fun onInitializeFailed(error: List<Error>)
 		}
 		
+
 ### Initialization without a Subscription ID ###
 
-**AcuantImagePreparation** may be initialized by providing only a username and a password. However, without providing a Subscription ID, the application can *only* capture an image and get the image. Without a Subscription ID:
-
-1. Only the **AcuantCamera**, **AcuantImagePreparation**, and **AcuantHGLiveness** modules may be used.
-
-2. The SDK can be used to capture identity documents.
-
-3. The captured images can be exported from the SDK. See the **onActivityResult** in the following section.
+The SDK can be initialized by providing only a username and a password. However, without a Subscription ID, some features of the SDK are unavailable. In general, the SDK can capture images, but cannot make most outbound calls, such as uploading documents.
 
 ----------
 
@@ -343,7 +255,6 @@ Here is the interface for the initialize listener:
 			this@MainActivity,
 			AcuantCameraActivity::class.java
 		)
-
 		cameraIntent.putExtra(ACUANT_EXTRA_CAMERA_OPTIONS,
 			AcuantCameraOptions
 				.DocumentCameraOptionsBuilder()
@@ -351,24 +262,30 @@ Here is the interface for the initialize listener:
 				.build()
 		)
 
-		startActivityForResult(cameraIntent, REQUEST_CODE) 
-		
+		//start activity for result
+
 **Note:** When the camera is launched, the image processing speed is automatically checked.
 
- * Live document detection and auto capture features are enabled if the device supports a speed of at least 130ms.
+ * Live document detection and auto capture features are enabled if the device supports a speed of at least 200ms.
  * For devices that don't meet the processing threshold, tap to capture will be enabled. Live document detection and auto capture features are disabled and switched to tap to capture. The user will have to manually capture the document. 
  
 1. Get activity result:
 	
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-			super.onActivityResult(requestCode, resultCode, data)
-			
-			if (requestCode == REQUEST_CODE && AcuantCameraActivity.RESULT_SUCCESS_CODE) {
-				val capturedImageUrl = data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL)
-				val capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+		if (result.resultCode == RESULT_OK) {
+			val data: Intent? = result.data
+			val url = data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL)
+			val barcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+			//...
+		} else if (result.resultCode == RESULT_CANCELED) {
+			//...
+		} else {
+			val data: Intent? = result.data
+			val error = data?.getSerializableExtra(ACUANT_EXTRA_ERROR)
+			if (error is AcuantError) {
+				//...
 			}
-		}
-		
+		}	
+
 ### Capturing a document barcode ###
 
 **Note:** During regular capture of a document the camera will try to read the barcode. You should only launch this camera mode if the barcode is expected according to document classification and failed to read during normal capture of the relevant side.
@@ -387,19 +304,23 @@ Here is the interface for the initialize listener:
 				.build()
 		)
 
-		startActivityForResult(cameraIntent, REQUEST_CODE)
-		
+		//start activity for result
+
 1. Get activity result:
 	
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-			super.onActivityResult(requestCode, resultCode, data)
-			
-			if (requestCode == REQUEST_CODE && AcuantCameraActivity.RESULT_SUCCESS_CODE) {
-				val capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+		if (result.resultCode == RESULT_OK) {
+			val data: Intent? = result.data
+			val capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
+			//...
+		} else if (result.resultCode == RESULT_CANCELED) {
+			//...
+		} else {
+			val data: Intent? = result.data
+			val error = data?.getSerializableExtra(ACUANT_EXTRA_ERROR)
+			if (error is AcuantError) {
+				//...
 			}
-		}
-
-**Note:** This camera is completely reliant on Google Vision. If Google Services are unavailable, the camera will not launch and onActivityResult will instantly be called along with a null value for the barcode. To keep your workflow neater, we recommend checking for Google Services before launching the camera.
+		}	
 
 ### Capturing MRZ data in a passport document ###
 
@@ -408,8 +329,6 @@ Here is the interface for the initialize listener:
 - **Initialization**
 
 	**MrzCameraInitializer()** must be included in initialization (see **Initializing the SDK**).
-
-	**Important Note:** You must grant external storage permissions in order to save the OCRB information to the phone. Otherwise, the MRZ camera will not function.
 
 - **Capturing the MRZ data**
 
@@ -429,18 +348,25 @@ Here is the interface for the initialize listener:
 					.build()
 			)
 			
-			startActivityForResult(cameraIntent, REQUEST_CODE)
-        
+			//start activity for result
+
   	1. Get activity result:
 
-			override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-				super.onActivityResult(requestCode, resultCode, data)
-				
-				if (requestCode == REQUEST_CODE && resultCode == AcuantCameraActivity.RESULT_SUCCESS_CODE) {
-					val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult
+
+			if (result.resultCode == RESULT_OK) {
+				val data: Intent? = result.data
+				val result = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult?
+				//...
+			} else if (result.resultCode == RESULT_CANCELED) {
+				//...
+			} else {
+				val data: Intent? = result.data
+				val error = data?.getSerializableExtra(ACUANT_EXTRA_ERROR)
+				if (error is AcuantError) {
+					//...
 				}
-			}
-			
+			}	
+	
 ----------
 		 
 ## AcuantImagePreparation ##
@@ -465,11 +391,16 @@ This section describes how to use **AcuantImagePreparation**.
 	
 	and a callback listener:
 	
-		interface EvaluateImageListener {
+		interface EvaluateImageListener: AcuantListener {
 			fun onSuccess(image: AcuantImage)
-			fun onError(error: Error)
 		}
-		
+
+	* **Important note:** Most listeners/callbacks in the SDK are extended off of AcuantListener, which contains the onError function shown below.
+	
+			interface AcuantListener {
+				fun onError(error: AcuantError)
+			}
+
 	The **AcuantImage** can be used to verify the crop, sharpness, and glare of the image, and then upload the document in the next step (see [AcuantDocumentProcessing](#acuantdocumentprocessing)).
 
 	
@@ -502,147 +433,208 @@ After you capture a document image and completed crop, it can be processed using
 
 1. Create an instance:
 		
-		public static void createInstance(IdOptions options, CreateInstanceListener listener)
+		fun createInstance(options: IdInstanceOptions, listener: CreateIdInstanceListener)
 		
-		public interface CreateInstanceListener {
-			void instanceCreated(String instanceId, Error error);
+		interface CreateIdInstanceListener : AcuantListener {
+		    fun instanceCreated(instance: AcuantIdDocumentInstance)
 		}
-		
-2. Upload an image:
 
-		public static void uploadImage(String instanceID, EvaluatedImageData imageData, IdOptions options, UploadImageListener listener)
-		
-		class EvaluatedImageData (
-			val imageBytes: ByteArray,
-			val barcodeString: String? = null
-		)
-		
-		public interface UploadImageListener {
-			void imageUploaded(Error error, Classification classification);
-		}
-		
-**Important Note:** The image bytes in EvaluatedImageData should be the bytes from AcuantImage.rawBytes not the bytes from the bitmap stored within. Similarly if you are not using **AcuantDocumentProcessing** and uploading the image in some other way you should also be uploading these bytes.
-		
-3. Get the data:
-		
-		public static void getData(String instanceID,boolean isHealthCard, GetDataListener listener)
-		
-		public interface GetDataListener {
-			void processingResultReceived(ProcessingResult result);
-		}
-        
-4. Delete the instance:
+1. All further methods will be called on the instanced returned thorough the instanceCreated callback. You can run multiple instances simultaneously. Each instances tracks its own state independently. These are the available methods and relevant objects/interfaces:
 
-
-		public static void deleteInstance(String instanceId, DeleteType type, DeleteListener listener)
-
-		public interface DeleteListener {
-			public void instanceDeleted(boolean success);
-		}
+		fun uploadFrontImage(imageData: EvaluatedImageData, listener: UploadImageListener)
 		
+		fun uploadBackImage(imageData: EvaluatedImageData, listener: UploadImageListener)
+		
+			class EvaluatedImageData(imageBytes: ByteArray)
+			
+			interface UploadImageListener : AcuantListener {
+				fun imageUploaded()
+			}
+		
+		
+		fun uploadBarcode(barcodeData: BarcodeData, listener: UploadBarcodeListener)
+		
+			interface UploadBarcodeListener : AcuantListener {
+				fun barcodeUploaded()
+			}
+		
+		fun getClassification(listener: ClassificationListener)
+		
+			interface ClassificationListener: AcuantListener {
+				fun documentClassified(classified: Boolean, classification: Classification)
+			}
+		
+		fun getData(listener: GetIdDataListener)
+		
+			interface GetIdDataListener : AcuantListener {
+				fun processingResultReceived(result: IDResult)
+			}
+		
+		fun deleteInstance(listener: DeleteListener)
+		
+			interface DeleteListener : AcuantListener {
+				fun instanceDeleted()
+			}
+
+For most workflows, the steps resemble the following, with reuploads on error or failed classification:
+
+		createInstance
+		uploadFrontImage
+		getClassification
+		uploadBackImage && uploadBarcode
+		getData
+		deleteInstance
+
 -------------------------------------
 
 ## AcuantIPLiveness ##
 
-**Important Note:** The following must be in your root level gradle in the android{} section otherwise a runtime failure may occur:
-
-		compileOptions {
-			sourceCompatibility JavaVersion.VERSION_1_8
-			targetCompatibility JavaVersion.VERSION_1_8
-		}
-		kotlinOptions {
-			jvmTarget = "1.8"
-		}
-
 1. Get the setup from the controller and begin Activity:
 
-		AcuantIPLiveness.getFacialSetup(object :FacialSetupLisenter{
-			override fun onDataReceived(result: FacialSetupResult?) {
-				if(result != null) {
-					//start face capture activity
-                    result.allowScreenshots = true //Set to false by default; set to true to enable allowScreenshots
-                    AcuantIPLiveness.runFacialCapture(context, result, listener)
-				}
-				else {
-					//handle error
-				}
+		AcuantIPLiveness.getFacialSetup(object : FacialSetupListener {
+			override fun onDataReceived(result: FacialSetupResult) {
+				AcuantIPLiveness.runFacialCapture(this@MainActivity, result, object : IPLivenessListener {
+					override fun onConnecting() {
+						/...
+					}
+					
+					override fun onConnected() {
+						/...
+					}
+					
+					override fun onProgress(status: String, progress: Int) {
+						/...
+					}
+					
+					override fun onSuccess(userId: String, token: String, frame: Bitmap?) {
+						/...
+					}
+					
+					override fun onFail(error: AcuantError) {
+						/...
+					}
+					
+					override fun onCancel() {
+						/...
+					}
+					
+					override fun onError(error: AcuantError) {
+						/...
+					}
+				})
 			}
-
-			override fun onError(errorCode: Int, description: String?) {
-				//handle error
+			
+			override fun onError(error: AcuantError) {
+				/...
 			}
 		})
-        
-2. Get the result:
 
-		//implement the following listener
-		interface IPLivenessListener {
-			fun onProgress(status: String, progress: Int) // for displaying the progress of liveness analysis after capture, progress = 0 to 100, status = text description of current step
-			fun onSuccess(userId: String, token: String)
-			fun onFail(error: Error)
-			fun onCancel() // called when no error occurred but user canceled/backed out of the process
-		}
-		
 3. Get the facial capture result (call after onSuccess in IPLivenessListener):
 		
-		//isPassed = true if face is live; otherwise false
-		//frame contains the base64 encoded image
-		data class FacialCaptureResult (isPassed: Boolean, frame: String) 
-
 		AcuantIPLiveness.getFacialLiveness(
 			token,
 			userId,
-			object: FacialCaptureLisenter {
-				override fun onDataReceived(result: FacialCaptureResult) {
-					//use result
+			object: FacialCaptureListener {
+				override fun onDataReceived(result: FacialCaptureResult {
+					//...
 				}
-
-				override fun onError(errorCode:Int, errorDescription: String) {
-					//handle error
+		
+				override fun onError(error: AcuantError) {
+					//...
 				}
 			}
 		)
 
 -------------------------------------
-		
-### AcuantHGLiveness ###
 
-This module checks for liveness (whether the subject is a live person) by using blink detection. 
+## AcuantFaceCapture ##
 
-1. Begin Activity:
+This module is used to automate capturing an image of a face appropriate for use with passive liveness.
+
+1. Start the face capture activity:
 
 		val cameraIntent = Intent(
 			this@MainActivity,
-			FacialLivenessActivity::class.java
+			AcuantFaceCameraActivity::class.java
 		)
-		startActivityForResult(cameraIntent, YOUR_REQUEST_CODE)
-        
-2. Get the Activity result:
-
 		
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-		    super.onActivityResult(requestCode, resultCode, data)
-		
+		cameraIntent.putExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS, FaceCaptureOptions())
 
-			if (requestCode == YOUR_REQUEST_CODE) {
-				if(resultCode == FacialLivenessActivity.RESPONSE_SUCCESS_CODE){
-					val faceImage = FaceCapturedImage.bitmapImage
-				}
-				else{
-					//handle error
-				}
-			}
+		//start activity for result
+
+2. Receive the result from the face capture activity:
+
+		when (result.resultCode) {
+		RESULT_OK -> {
+			val data = result.data
+			val url = data?.getStringExtra(ACUANT_EXTRA_FACE_IMAGE_URL)
+			//...
+		}
+		RESULT_CANCELED -> {
+			//...
+		}
+		else -> {
+			//error...
 		}
 
-	
+**Note:** HGLiveness/Blink Test Liveness can be accessed by modifying the options as follows:
+
+		FaceCaptureOptions(cameraMode = CameraMode.HgLiveness)
+
+-------------------------------------
+
+## AcuantPassiveLiveness ##
+
+This module is used to determine liveness from a single selfie image.
+
+1. Call and handle response:
+
+		AcuantPassiveLiveness.processFaceLiveness(passiveLivenessData: PassiveLivenessData, listener: PassiveLivenessListener)
+		
+		class PassiveLivenessData(faceImage: Bitmap)
+		
+		interface PassiveLivenessListener: AcuantListener {
+			fun passiveLivenessFinished(result: PassiveLivenessResult)
+		}
+		
+		class PassiveLivenessResult {
+			var livenessAssessment: LivenessAssessment? = null
+			var transactionId: String? = null
+			var score = 0
+			var errorDesc: String? = null
+			var errorCode: PassiveLivenessErrorCode? = null
+		}
+
+		enum class LivenessAssessment {
+			Error,
+			PoorQuality,
+			Live,
+			NotLive
+		}
+
+		enum class PassiveLivenessErrorCode {
+			Unknown,
+			FaceTooClose,
+			FaceNotFound,
+			FaceTooSmall,
+			FaceAngleTooLarge,
+			FailedToReadImage,
+			InvalidRequest,
+			InvalidRequestSettings,
+			Unauthorized,
+			NotFound
+		}
+
+-------------------------------------
+			
 ## AcuantFaceMatch ##
 
 This module is used to match two facial images:
 
-		fun processFacialMatch(facialData: FacialMatchData, listener: FacialMatchListener?)
+		fun processFacialMatch(facialData: FacialMatchData, listener: FacialMatchListener)
 
-		public interface FacialMatchListener {
-			public void facialMatchFinished(FacialMatchResult result);
+		interface FacialMatchListener: AcuantListener {
+			fun facialMatchFinished(result: FacialMatchResult)
 		}
 
 -------------------------------------
@@ -671,6 +663,7 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 3. Make sure that the NFC sensor on the device is turned on.
 
 4. Initialize the Android NFC Adapter:
+		
 		NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 
 5. Use the SDK to listen to NFC tags available in an ePassport:
@@ -682,166 +675,69 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 		override fun onNewIntent(intent: Intent) {
 			super.onNewIntent(intent)
 		   
-			AcuantEchipReader.readNfcTag(this, intent, Credential.get(), docNumber, dateOfBirth, dateOfExpiry, listener)
+			AcuantEchipReader.readNfcTag(this, intent, docNumber, dateOfBirth, dateOfExpiry, listener)
 		}
 		
+
 	This is the interface for the listener:
 	
-		interface NfcTagReadingListener {
+		interface NfcTagReadingListener: AcuantListener {
 			fun tagReadSucceeded(nfcData: NfcData)
-
-			fun tagReadFailed(error: Error)
-
+			
 			fun tagReadStatus(status: String)
 		}
-		
-**Important Note:** All the data in nfcData is directly read from the passport chip except for *age* and *isExpired*. These two fields are extrapolated from the data read from the chip and the current date (obtained via Calendar.getInstance().time). This can potentially lead to inaccuracy due to either the device time being wrong or the DOB or DOE being calculated incorrectly from the data on the chip. This is an unfortunate restraint of passport chips as the DOE and DOB are stored in YYMMDD format and therefore suffers from the y2k issue (given a year of 22 we can not with 100% certainty determine if it stands for 1922 or 2022 or even theoretically 2122). The way we work around this is as follows: For age we use the current year as the breakpoint (eg. in 2020, 25 would be interpreted as 1925 but in 2030 25 would be interpreted as 2025). For isExpired we do the same but going forward 20 years from the current year.
 
--------------------------------------
+**Important Note:** All the data in nfcData is directly read from the passport chip except for *age* and *isExpired*. These two fields are extrapolated from the data read from the chip and the current date (obtained through Calendar.getInstance().time). Potentially, this can lead to inaccuracy due to either the device time being wrong or the DOB or DOE being calculated incorrectly from the data on the chip. This is an unfortunate restraint of passport chips that occurs because the DOE and DOB are stored in YYMMDD format, which is susceptible to the Y2K issue. Given a year of 22, we cannot determine with 100 percent certainty whether the 22 represents 1922 or 2022 or, theoretically, 2122. The workaround is as follows: For age, the current year is the breakpoint (for example, in 2020, 25 would be interpreted as 1925. However, in 2030, 25 would be interpreted as 2025. For isExpired, we use the same logic but going forward 20 years from the current year.
 
-## AcuantFaceCapture ##
-
-This module is used to automate capturing an image of a face appropriate for use with passive liveness.
-
-1. Start the face capture activity:
-
-		val cameraIntent = Intent(
-			this@MainActivity,
-			FaceCaptureActivity::class.java
-		)
-
-		/\*Optional, should only be used if you are changing some of the options, pointless to pass default options \*/
-		cameraIntent.putExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS, FaceCaptureOptions())
-
-		startActivityForResult(cameraIntent, YOUR_REQUEST_CODE)
-
-2. Receive the result from the face capture activity:
-
-		override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-			super.onActivityResult(requestCode, resultCode, data)
-
-			if (requestCode == YOUR_REQUEST_CODE) {
-				when (resultCode) {
-					FaceCaptureActivity.RESPONSE_SUCCESS_CODE -> {
-						val bytes = readFromFile(data?.getStringExtra(FaceCaptureActivity.OUTPUT_URL))
-						val capturedSelfieImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-						//do whatever you want with the image
-					}
-					FaceCaptureActivity.RESPONSE_CANCEL_CODE -> {
-						//handle user canceling
-					}
-					else -> {
-						//handle error during capture
-					}
-				}
-			}
-		}
-		
--------------------------------------
-
-## AcuantPassiveLiveness ##
-
-This module is used to determine liveness from a single selfie image.
-
-1. Call and handle response:
-
-		val plData = PassiveLivenessData(capturedSelfieImage)
-		AcuantPassiveLiveness.processFaceLiveness(plData, object : PassiveLivenessListener {
-			override fun passiveLivenessFinished(result: PassiveLivenessResult) {
-				when (result.livenessAssessment) {
-					AcuantPassiveLiveness.LivenessAssessment.Live -> {
-						//handle live person
-					}
-					AcuantPassiveLiveness.LivenessAssessment.NotLive -> {
-						//handle not live person
-					}
-					AcuantPassiveLiveness.LivenessAssessment.PoorQuality -> {
-						//handle input image being too poor quality
-					}
-					else -> {
-						//handle error
-					}
-				}
-			}
-		})
-
-Relevant Enums:
-
-		enum class LivenessAssessment {
-			Error,
-			PoorQuality,
-			Live,
-			NotLive
-		}
-
-		enum class PassiveLivenessErrorCode {
-			Unknown,
-			FaceTooClose,
-			FaceNotFound,
-			FaceTooSmall,
-			FaceAngleTooLarge,
-			FailedToReadImage,
-			InvalidRequest,
-			InvalidRequestSettings,
-			Unauthorized,
-			NotFound,
-			InternalError,
-			InvalidJson
-		}
 -------------------------------------
 
 ### Error codes ###
 
-		public class ErrorCodes
-		{
-			public final static int ERROR_InvalidCredentials = -1;
-			public final static int ERROR_InvalidLicenseKey = -2;
-			public final static int ERROR_InvalidEndpoint = -3;
-			public final static int ERROR_InitializationNotFinished = -4;
-			public final static int ERROR_Network = -5;
-			public final static int ERROR_InvalidJson = -6;
-			public final static int ERROR_CouldNotCrop = -7;
-			public final static int ERROR_NotEnoughMemory = -8;
-			public final static int ERROR_BarcodeCaptureFailed = -9;
-			public final static int ERROR_BarcodeCaptureTimedOut = -10;
-			public final static int ERROR_BarcodeCaptureNotAuthorized = -11;
-			public final static int ERROR_LiveFaceCaptureNotAuthorized = -12;
-			public final static int ERROR_CouldNotCreateConnectInstance = -13;
-			public final static int ERROR_CouldNotUploadConnectImage = -14;
-			public final static int ERROR_CouldNotUploadConnectBarcode = -15;
-			public final static int ERROR_CouldNotGetConnectData = -16;
-			public final static int ERROR_CouldNotProcessFacialMatch = -17;
-			public final static int ERROR_CardWidthNotSet = -18;
-			public final static int ERROR_CouldNotGetHealthCardData = -19;
-			public final static int ERROR_CouldNotClassifyDocument = -20;
-			public final static int ERROR_LowResolutionImage = -21;
-			public final static int ERROR_CAPTURING_FACIAL = -22;
-			public final static int ERROR_NETWORK_FACIAL = -23;
-			public final static int USER_CANCELED_FACIAL = -24;
+		object ErrorCodes {
+			const val ERROR_InvalidCredentials = -1
+			const val ERROR_BlankBarcode = -2
+			const val ERROR_InvalidEndpoint = -3
+			const val ERROR_Network = -4
+			const val ERROR_InvalidJson = -5
+			const val ERROR_CouldNotCrop = -6
+			const val ERROR_NotEnoughMemory = -7
+			const val ERROR_LowResolutionImage = -8
+			const val ERROR_Permissions = -9
+			const val ERROR_SavingImage = -10
+			const val ERROR_CAPTURING_FACIAL = -1001
+			const val ERROR_SETUP_FACIAL = -1003
+			const val ERROR_FailedToLoadOcrFiles = -2001
+			const val ERROR_EChipReadError = -3001
+			const val ERROR_InvalidNfcTag = -3002
+			const val ERROR_InvalidNfcKeyFormatting = -3003
+			const val ERROR_UnexpectedError = -9999
 		}
 		
+
 ### Error descriptions ###
 
-		public class ErrorDescriptions {
-			public final static String ERROR_DESC_InvalidCredentials = "Invalid credentials";
-			public final static String ERROR_DESC_InvalidLicenseKey = "Invalid License Key";
-			public final static String ERROR_DESC_InvalidEndpoint = "Invalid endpoint";
-			public final static String ERROR_DESC_InitializationNotFinished = "Initialization not finished";
-			public final static String ERROR_DESC_InvalidJson = "Invalid Json response";
-			public final static String ERROR_DESC_CouldNotCrop = "Could not crop image";
-			public final static String ERROR_DESC_BarcodeCaptureFailed = "Barcode capture failed";
-			public final static String ERROR_DESC_BarcodeCaptureTimedOut = "Barcode capture timed out";
-			public final static String ERROR_DESC_BarcodeCaptureNotAuthorized = "Barcode capture is not authorized";
-			public final static String ERROR_DESC_LiveFaceCaptureNotAuthorized = "Live face capture is not authorized";
-			public final static String ERROR_DESC_CouldNotCreateConnectInstance = "Could not create connect Instance";
-			public final static String ERROR_DESC_CouldNotUploadConnectImage = "Could not upload image to connect instance";
-			public final static String ERROR_DESC_CouldNotUploadConnectBarcode = "Could not upload barcode to connect instance";
-			public final static String ERROR_DESC_CouldNotGetConnectData = "Could not get connect image data";
-			public final static String ERROR_DESC_CardWidthNotSet = "Card width not set";
-			public final static String ERROR_DESC_CouldNotGetHealthCardData = "Could not get health card data";
-			public final static String ERROR_DESC_CouldNotClassifyDocument = "Could not classify document";
-			public final static String ERROR_DESC_LowResolutionImage = "Low resolution image";
-			public final static String ERROR_DESC_NETWORK_FACIAL_IPROOV = "Failed to connect to IProov";
+		object ErrorDescriptions {
+			const val ERROR_DESC_InvalidCredentials = "Invalid credentials"
+			const val ERROR_DESC_BlankBarcode = "Blank barcode, skipped upload."
+			const val ERROR_DESC_InvalidEndpoint = "Invalid/unapproved endpoint"
+			const val ERROR_DESC_Network = "Network request failed"
+			const val ERROR_DESC_InvalidJson = "Invalid Json response"
+			const val ERROR_DESC_CouldNotCrop = "Could not crop image"
+			const val ERROR_DESC_NotEnoughMemory = "Ran out of memory"
+			const val ERROR_DESC_LowResolutionImage = "Low resolution image"
+			const val ERROR_DESC_Permissions = "Required permission was not granted"
+			const val ERROR_DESC_SavingImage = "Error while saving an image from the camera"
+			const val ERROR_DESC_CAPTURING_FACIAL_IPROOV = "Failed to capture during IProov"
+			const val ERROR_DESC_SETUP_FACIAL_IPROOV = "Failed to set up IProov"
+			const val ERROR_DESC_FailedToLoadOcrFiles = "Failed to load ocrb.traineddata"
+			const val ERROR_DESC_EChipReadError =
+			"Error reading eChip. Connection lost to passport or incorrect key."
+			const val ERROR_DESC_InvalidNfcTag =
+			"Tag Tech list was null. Most likely means unsupported passport/not a passport"
+			const val ERROR_DESC_InvalidNfcKeyFormatting =
+			"Decryption key formatted incorrectly. Check DOB, DOE, and doc number."
+			const val ERROR_DESC_UnexpectedError =
+			"Unexpected error occurred, usually indicates a try catch caught an error that was not expected to be hit."
 		}
 
 ### Image ###
@@ -857,10 +753,6 @@ Relevant Enums:
 		}
 
 ### AcuantCameraOptions ###
-
-		class AcuantCameraOptions ()
-		
-**Note:**   The camera options should be built using one of the following builders. This will also tell the camera what capture mode to use (Document, MRZ, or Barcode):
 
 		class DocumentCameraOptionsBuilder {
 			fun setTimeInMsPerDigit(value: Int) : DocumentCameraOptionsBuilder
@@ -982,4 +874,3 @@ information regarding such designations and their registration status.
 **Acuant Inc.**  **6080 Center Drive, Suite 850,** **Los Angeles, CA 90045**
 
 ----------------------------------------------------
-        

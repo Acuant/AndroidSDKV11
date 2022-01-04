@@ -7,7 +7,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.NFC" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
@@ -24,14 +23,9 @@
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
 
-
-        <meta-data
-            android:name="com.google.android.gms.vision.DEPENDENCIES"
-            android:value="barcode,face"
-            tools:replace="android:value" />
-
         <activity
             android:name=".MainActivity"
+            android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,28 +33,30 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TestMainActivity" />
         <activity
             android:name=".ConfirmationActivity"
+            android:exported="false"
             android:screenOrientation="portrait" />
         <activity
             android:name=".ResultActivity"
+            android:exported="false"
             android:screenOrientation="portrait" />
         <activity
             android:name=".NfcResultActivity"
+            android:exported="false"
             android:screenOrientation="portrait" />
         <activity
             android:name=".MrzHelpActivity"
+            android:exported="false"
             android:screenOrientation="portrait" />
         <activity
             android:name=".NfcConfirmationActivity"
+            android:exported="false"
             android:noHistory="true"
             android:screenOrientation="portrait" />
         <activity android:name=".ClassificationFailureActivity"
+            android:exported="false"
             android:screenOrientation="portrait" />
-        <activity android:name=".FacialLivenessActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.NoActionBar" />
     </application>
 
 </manifest>

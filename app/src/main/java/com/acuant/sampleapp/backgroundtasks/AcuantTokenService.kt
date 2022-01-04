@@ -1,90 +1,39 @@
 package com.acuant.sampleapp.backgroundtasks
 
-import android.os.AsyncTask
+import com.acuant.acuantcommon.background.AcuantWebService
 import com.acuant.acuantcommon.model.Credential
-import com.acuant.acuantcommon.helper.CredentialHelper
+import com.acuant.acuantcommon.model.AcuantError
+import com.acuant.acuantcommon.model.ErrorCodes
+import com.acuant.acuantcommon.model.ErrorDescriptions
+import org.json.JSONException
 import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.io.PrintWriter
-import java.net.HttpURLConnection
 import java.net.URL
-import java.util.*
-import javax.net.ssl.HttpsURLConnection
 
-class AcuantTokenService(private val credential: Credential,
-                         private val listener: AcuantTokenServiceListener) : AsyncTask<Any?, Any?, Any?>() {
-    private var responseText: String? = null
-    private var responseCode = -1
-    private var token = ""
+class AcuantTokenService(private val listener: AcuantTokenServiceListener): AcuantWebService(
+        URL(String.format("%s/oauth/token", Credential.get().endpoints.acasEndpointTrimmed)),
+        listener
+) {
+    init {
+        val settingJsonObject = JSONObject()
+        settingJsonObject.put("grant_type", "client_credentials")
+        // settingJsonObject.put("expires_in", "10") //for testing with token expiry
 
-    override fun doInBackground(objects: Array<Any?>): Any? {
+        setPayload(settingJsonObject)
+    }
+
+    override fun onSuccess(responseCode: Int, responseText: String) {
         try {
-            val formatter = Formatter()
-            val urlEnd = "%s/oauth/token"
-            val urlString = formatter.format(
-                    urlEnd, credential.endpoints.acasEndpointTrimmed).toString()
-            val url = URL(urlString)
-            val conn = url.openConnection() as HttpURLConnection
-            try {
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Authorization", CredentialHelper.getAcuantAuthHeader(credential))
-                conn.setRequestProperty("Accept", "application/json")
-                conn.addRequestProperty("Cache-Control", "no-cache")
-                conn.addRequestProperty("Cache-Control", "max-age=0")
-                conn.addRequestProperty("Content-Type", "application/json")
-                conn.useCaches = false
-                val webservicesTimeout = 60000
-                conn.readTimeout = webservicesTimeout
-                conn.connectTimeout = webservicesTimeout
-                val outputStream = conn.outputStream
-                val charset = "UTF-8"
-                PrintWriter(OutputStreamWriter(outputStream, charset), true)
-                val settingJsonObject = JSONObject()
-                settingJsonObject.put("grant_type", "client_credentials")
-//                settingJsonObject.put("expires_in", "10") //for testing with token expiry
-                val dataBytes = settingJsonObject.toString().toByteArray()
-                outputStream.write(dataBytes, 0, dataBytes.size)
-                outputStream.flush()
-                responseCode = conn.responseCode
-                responseText = conn.responseMessage
-                val response: StringBuffer
-                if (responseCode == HttpsURLConnection.HTTP_OK) {
-                    val `in` = BufferedReader(
-                            InputStreamReader(conn.inputStream))
-                    var output: String?
-                    response = StringBuffer()
-                    while (`in`.readLine().also { output = it } != null) {
-                        response.append(output)
-                    }
-                    `in`.close()
-                    responseText = response.toString()
-                    if (responseText != null) {
-                        val json = JSONObject(responseText!!)
-                        if (json.has("access_token")) {
-                            token = json.getString("access_token")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                throw e
-            } finally {
-                conn.disconnect()
+            val json = JSONObject(responseText)
+            var token = ""
+            if (json.has("access_token")) {
+                token = json.getString("access_token")
             }
-        } catch (e: Exception) {
-            responseText = e.message
-            listener.onFail(responseCode)
+            if (token != "")
+                listener.onSuccess(token)
+            else
+                listener.onError(AcuantError(ErrorCodes.ERROR_InvalidJson, ErrorDescriptions.ERROR_DESC_InvalidJson, responseText))
+        } catch (e: JSONException) {
+            listener.onError(AcuantError(ErrorCodes.ERROR_InvalidJson, ErrorDescriptions.ERROR_DESC_InvalidJson, responseText))
         }
-        return null
     }
-
-    override fun onPostExecute(o: Any?) {
-        super.onPostExecute(o)
-        if (token != "")
-            listener.onSuccess(token)
-        else
-            listener.onFail(-2)
-    }
-
 }

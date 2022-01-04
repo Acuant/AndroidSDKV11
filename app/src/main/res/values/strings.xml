@@ -22,6 +22,9 @@
     <string name="acuant_glare_mrz">Try Repositioning</string>
     <string name="acuant_read_mrz">Read Successful</string>
 
+    <string name="acuant_camera_capturing_barcode">Capturing...</string>
+    <string name="acuant_camera_align_barcode">Capture Barcode</string>
+
     <!--    acuantfacecapture/acuantpassiveliveness -->
     <string name="acuant_face_camera_initial">Align face to start capture</string>
     <string name="acuant_face_camera_face_too_close">Too close! Move away</string>
@@ -29,37 +32,29 @@
     <string name="acuant_face_camera_face_has_angle">Face has angle. Do not tilt</string>
     <string name="acuant_face_camera_face_not_in_frame">Move in frame</string>
     <string name="acuant_face_camera_face_moved">Hold steady</string>
+    <string name="acuant_face_camera_blink">Please blink</string>
     <string name="acuant_face_camera_capturing">Capturing…</string>
     <plurals name="acuant_face_camera_countdown">
         <item quantity="one">Capturing\n%d…</item>
         <item quantity="other">Capturing\n%d…</item>
     </plurals>
 
-    <!--    acuanthgliveness -->
-    <string name="hg_move_in_frame">Move in frame</string>
-    <string name="hg_hold_steady">Hold steady</string>
-    <string name="hg_blink">Blink!</string>
-    <string name="hg_too_close">Too close! Move away</string>
-    <string name="hg_too_far_away">Move closer</string>
-    <string name="hg_align_face_and_blink">Align face to begin</string>
-
     <!--    acuantipliveness -->
     <string name="iproov__language_file">en</string>
-    <string name="iproov__app_name">iProov</string>
-    <string name="iproov__error">Error</string>
-    <string name="iproov__prompt_hold_still">Put your face in the oval</string>
+    <string name="iproov__prompt_genuine_presence_align_face">Put your face in the oval</string>
+    <string name="iproov__prompt_liveness_align_face">Fill the oval with your face</string>
+    <string name="iproov__prompt_liveness_no_target">Put your face in the frame</string>
     <string name="iproov__prompt_connecting">Connecting…</string>
-    <string name="iproov__prompt_connecting_slow">Connecting, network is slow…</string>
     <string name="iproov__prompt_tap_to_begin">Tap the screen to begin</string>
     <string name="iproov__prompt_too_far">Move closer</string>
     <string name="iproov__prompt_too_bright">Go somewhere shadier</string>
     <string name="iproov__progress_streaming">Streaming…</string>
     <string name="iproov__progress_streaming_slow">Streaming, network is slow…</string>
     <string name="iproov__prompt_scanning">Scanning…</string>
-    <string name="iproov__starting_detector">Starting detector…</string>
     <string name="iproov__progress_identifying_face">Identifying face…</string>
     <string name="iproov__progress_confirming_identity">Confirming identity…</string>
     <string name="iproov__progress_assessing_genuine_presence">Assessing genuine presence…</string>
+    <string name="iproov__progress_assessing_liveness">Assessing liveness…</string>
     <string name="iproov__progress_loading">Loading…</string>
     <string name="iproov__progress_creating_identity">Creating identity…</string>
     <string name="iproov__progress_finding_face">Finding face…</string>
@@ -67,15 +62,14 @@
     <string name="iproov__enrol">Enrol</string>
     <string name="iproov__message_format">%1$s to %2$s</string>
     <string name="iproov__prompt_too_close">Too close</string>
-    <string name="iproov__failure_ambiguous_outcome">Sorry, ambiguous outcome</string>
-    <string name="iproov__failure_network_problem">Sorry, network problem</string>
+    <string name="iproov__failure_ambiguous_outcome">Ambiguous outcome</string>
     <string name="iproov__failure_motion_too_much_movement">Please do not move while iProoving</string>
     <string name="iproov__failure_lighting_flash_reflection_too_low">Ambient light too strong or screen brightness too low</string>
     <string name="iproov__failure_lighting_backlit">Strong light source detected behind you</string>
     <string name="iproov__failure_lighting_too_dark">Your environment appears too dark</string>
     <string name="iproov__failure_lighting_face_too_bright">Too much light detected on your face</string>
     <string name="iproov__failure_motion_too_much_mouth_movement">Please do not talk while iProoving</string>
-    <string name="iproov__failure_user_timeout">Sorry, your session has timed out</string>
+    <string name="iproov__failure_user_timeout">Your session has expired</string>
     <string name="iproov__message_format_with_username">%1$s as %2$s to %3$s</string>
     <string name="iproov__prompt_roll_too_high">Avoid tilting your head</string>
     <string name="iproov__prompt_roll_too_low">Avoid tilting your head</string>
@@ -83,21 +77,21 @@
     <string name="iproov__prompt_yaw_too_high">Turn slightly to your left</string>
     <string name="iproov__prompt_pitch_too_high">Hold the device at eye level</string>
     <string name="iproov__prompt_pitch_too_low">Hold the device at eye level</string>
+    <string name="iproov__prompt_liveness_scan_completed">Scan completed</string>
     <string name="iproov__prompt_get_ready">Get ready…</string>
-    <string name="iproov__error_streaming">Streaming error</string>
-    <string name="iproov__error_encoder">Encoder error</string>
+    <string name="iproov__debug_text_default">Loading…</string>
+    <string name="iproov__error_network">Network error</string>
+    <string name="iproov__error_device_not_supported">Device is not supported</string>
     <string name="iproov__error_camera">Camera error</string>
     <string name="iproov__error_camera_permission_denied">Camera permission denied</string>
-    <string name="iproov__error_server_abort">Server abort</string>
-    <string name="iproov__error_lighting_model">Lighting model error</string>
-    <string name="iproov__error_camera_permission_denied_message_android">You must allow access to your camera in order to iProov yourself</string>
-    <string name="iproov__error_flashmark">Malformed flashmark</string>
-    <string name="iproov__error_multi_screen_title">Application is in multi-window mode</string>
-    <string name="iproov__error_multi_screen_message">Application is in multi-window mode.\\nPlease make it full-screen and try again</string>
-    <string name="iproov__error_device_not_supported">Sorry, your device is currently not supported</string>
-    <string name="iproov__error_service_connection_lost">Connection to the Service has been lost</string>
+    <string name="iproov__error_camera_permission_denied_message">Please allow camera access for this app in Android Settings</string>
+    <string name="iproov__error_server">Server error</string>
+    <string name="iproov__error_multi_window_mode_unsupported">Application is in multi-window mode</string>
     <string name="iproov__error_face_detector">Face detector error</string>
     <string name="iproov__error_capture_already_active">An existing capture is already in progress</string>
+    <string name="iproov__error_listener_not_registered">Before calling IProov.launch(), you should register a listener with IProov.registerListener()</string>
+    <string name="iproov__error_invalid_options">Invalid iProov options</string>
+    <string name="iproov__error_unexpected_error">Unexpected error</string>
 
     <!--    SampleApp -->
     <string name="ok">OK</string>

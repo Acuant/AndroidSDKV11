@@ -2,9 +2,6 @@ package com.acuant.sampleapp;
 
 import android.graphics.Bitmap;
 
-/**
- * Created by tapasbehera on 5/16/18.
- */
 public class ProcessedData {
     public static Bitmap frontImage = null;
     public static Bitmap backImage = null;

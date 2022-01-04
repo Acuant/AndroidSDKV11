@@ -2,7 +2,7 @@ package com.acuant.sampleapp
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.view.View
 import android.widget.ImageView
 
@@ -18,7 +18,7 @@ class ClassificationFailureActivity : AppCompatActivity() {
 
     fun retryClassificationClicked(@Suppress("UNUSED_PARAMETER") view: View) {
         val result = Intent()
-        this@ClassificationFailureActivity.setResult(Constants.REQUEST_RETRY, result)
+        this@ClassificationFailureActivity.setResult(RESULT_OK, result)
         this@ClassificationFailureActivity.finish()
     }
 }

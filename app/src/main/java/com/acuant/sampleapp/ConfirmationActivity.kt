@@ -7,7 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Paint.ANTI_ALIAS_FLAG
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.util.DisplayMetrics
 import android.view.View
 import android.widget.Button
@@ -18,7 +18,6 @@ import android.widget.TextView
 class ConfirmationActivity : AppCompatActivity() {
 
     private var isFrontImage: Boolean = true
-    private var isBarcode: Boolean = false
     private var isHealthCard: Boolean = false
     private var barcodeString: String? = null
     private var image: Bitmap? = null
@@ -31,7 +30,6 @@ class ConfirmationActivity : AppCompatActivity() {
         setContentView(R.layout.activity_confirmation)
         isFrontImage = intent.getBooleanExtra("isFrontImage", true)
         isHealthCard = intent.getBooleanExtra("isHealthCard", false)
-        isBarcode = intent.getBooleanExtra("isBarcode", false)
         barcodeString = intent.getStringExtra("barcode")
         sharpness = intent.getIntExtra("sharpness", -1)
         glare = intent.getIntExtra("glare", -1)
@@ -131,7 +129,7 @@ class ConfirmationActivity : AppCompatActivity() {
         val result = Intent()
         result.putExtra("Confirmed", true)
         result.putExtra("isFrontImage", isFrontImage)
-        this@ConfirmationActivity.setResult(Constants.REQUEST_CONFIRMATION, result)
+        this@ConfirmationActivity.setResult(RESULT_OK, result)
         this@ConfirmationActivity.finish()
 
     }
@@ -140,8 +138,7 @@ class ConfirmationActivity : AppCompatActivity() {
         val result = Intent()
         result.putExtra("Confirmed", false)
         result.putExtra("isFrontImage", isFrontImage)
-        result.putExtra("isBarcode", isBarcode)
-        this@ConfirmationActivity.setResult(Constants.REQUEST_CONFIRMATION, result)
+        this@ConfirmationActivity.setResult(RESULT_OK, result)
         this@ConfirmationActivity.finish()
     }
 

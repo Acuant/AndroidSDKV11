@@ -1,6 +1,6 @@
 package com.acuant.acuantcamera.helper
 
-class MrzParser{
+class MrzParser {
 
     companion object {
         private const val FILLER = '<'
@@ -8,7 +8,7 @@ class MrzParser{
         private const val CHECK_SUM_ARRAY = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     }
 
-    fun parseMrz(mrz:String): MrzResult?{
+    internal fun parseMrz(mrz:String): MrzResult? {
         val mrzWithNoSpaces = mrz.replace(" ",  "")
         val mrzLinesTmp = mrzWithNoSpaces.split('\n')
         val mrzLines: MutableList<String> = mutableListOf()
@@ -19,16 +19,13 @@ class MrzParser{
         }
 
         if (mrzLines.size == 2) {
-            //Log.d("MRZLOG", "Follows:\n" + mrzLines[0] + "\n" +mrzLines[1])
             var result = parseFirstLineOfTwoLine(mrzLines[0])
             //not checking result of first line as it is not strictly needed for echip reading
             result = parseSecondLineOfTwoLine(mrzLines[1], result)
 
             result?.threeLineMrz = false
-            //Log.d("MRZLOG", " " + result?.checkSumResult1 + ", "+ result?.checkSumResult2 +", "+ result?.checkSumResult3 +", "+ result?.checkSumResult4 +", "+ result?.checkSumResult5)
             return result
         } else if (mrzLines.size == 3) {
-            //Log.d("MRZLOG", "Follows:\n" + mrzLines[0] + "\n" +mrzLines[1])
             var result = parseFirstLineOfThreeLine(mrzLines[0])
             if (result != null) {
                 result = parseSecondLineOfThreeLine(mrzLines[1], result)

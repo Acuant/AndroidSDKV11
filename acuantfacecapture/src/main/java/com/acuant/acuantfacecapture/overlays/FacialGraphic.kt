@@ -1,29 +1,20 @@
 package com.acuant.acuantfacecapture.overlays
 
 import android.graphics.*
+import com.acuant.acuantfacecapture.camera.facecapture.FaceCameraState
 import com.acuant.acuantfacecapture.model.FaceCaptureOptions
-import com.acuant.acuantfacecapture.model.FaceDetailState
-import com.acuant.acuantfacecapture.model.FaceDetails
-import com.google.android.gms.vision.face.Face
 
-/**
- * Graphics class for rendering eye position and face position.
- */
-internal class FacialGraphic
-//==============================================================================================
-// Methods
-//==============================================================================================
+internal class FacialGraphic(overlay: FacialGraphicOverlay) : FacialGraphicOverlay.Graphic(overlay) {
 
-(overlay: FacialGraphicOverlay) : FacialGraphicOverlay.Graphic(overlay) {
-
-    @Volatile private var face: Face? = null
+    @Volatile private var faceBounds: Rect? = null
     private var options: FaceCaptureOptions? = null
     private var bracketLengthInHorizontal = 155
     private var bracketLengthInVertical = 255
     private var bracketWidth = 7
     private var bracketWidthDivider : Float = 8.4f
-    private var state = FaceDetailState.NONE
+    private var state = FaceCameraState.Align
     private val mFaceRectPaint: Paint = Paint()
+    private var width = 0
 
     init {
         mFaceRectPaint.color = options?.colorGood ?: Color.GREEN
@@ -32,55 +23,46 @@ internal class FacialGraphic
         mFaceRectPaint.strokeCap = Paint.Cap.ROUND
     }
 
-    fun updateLiveFaceDetails(faceDetails: FaceDetails) {
-        face = faceDetails.face
-        state = faceDetails.state
+    fun setWidth(width: Int) {
+        this.width = width
+    }
+
+    fun updateLiveFaceDetails(faceBounds: Rect?, state: FaceCameraState) {
+        this.faceBounds = faceBounds
+        this.state = state
         postInvalidate()
     }
 
-    /**
-     * Draws the current eye state to the supplied canvas.  This will draw the eyes at the last
-     * reported position from the tracker, and the iris positions according to the physics
-     * simulations for each iris given motion and other forces.
-     */
     override fun draw(canvas: Canvas) {
+
+        canvas.save()                            // need to restore after drawing
+        canvas.translate(width.toFloat(), 0.0f)  // reset where 0,0 is located
+        canvas.scale(-1.0f, 1.0f)
+
+
+        when (state) {
+            FaceCameraState.Align -> mFaceRectPaint.color = options?.colorDefault ?: Color.BLACK
+            FaceCameraState.MoveCloser,
+            FaceCameraState.MoveBack,
+            FaceCameraState.FixRotation,
+            FaceCameraState.KeepSteady -> mFaceRectPaint.color = options?.colorError ?: Color.RED
+            else -> mFaceRectPaint.color = options?.colorGood ?: Color.GREEN
+        }
+
         if (options != null && options!!.showOval) {
             drawFaceOval(canvas)
         } else {
             drawFaceBrackets(canvas)
         }
-
+        canvas.restore()
     }
 
     private fun drawFaceBrackets(canvas: Canvas) {
-
-        var centerY = canvas.height * ((FacialGraphicOverlay.heightDivisor + 1) / (FacialGraphicOverlay.heightDivisor * 2f))
-        var centerX = canvas.width / 2f
-        var offsetX = canvas.width / 4f
-        var offsetY = canvas.height / 4f
-
-        if (face != null) {
-            centerX = translateX(face!!.position.x + face!!.width / 2f)
-            centerY = translateY(face!!.position.y + face!!.height / 2f)
-            offsetX = scaleX(face!!.width / 2.6f)
-            offsetY = scaleY(face!!.height / 2f)
-
+        val position = faceBounds
+        if (position != null)
+        {
+            drawBracketsFromCords(canvas, position.bottom.toFloat(), position.left.toFloat(), position.bottom.toFloat(), position.right.toFloat(), position.top.toFloat(), position.right.toFloat(), position.top.toFloat(), position.left.toFloat())
         }
-
-        val left = centerX - offsetX
-        val right = centerX + offsetX
-        val top = centerY - offsetY
-        val bottom = centerY + offsetY
-
-        when (state) {
-            FaceDetailState.NONE -> mFaceRectPaint.color = options?.colorDefault ?: Color.BLACK
-            FaceDetailState.FACE_ANGLE_TOO_SKEWED, FaceDetailState.FACE_MOVED,
-                FaceDetailState.FACE_NOT_IN_FRAME, FaceDetailState.FACE_TOO_CLOSE,
-                FaceDetailState.FACE_TOO_FAR -> mFaceRectPaint.color = options?.colorError ?: Color.RED
-            FaceDetailState.FACE_GOOD_DISTANCE -> mFaceRectPaint.color = options?.colorGood ?: Color.GREEN
-        }
-
-        drawBracketsFromCords(canvas, bottom, left, bottom, right, top, right, top, left)
     }
 
     private fun drawBracketsFromCords(canvas: Canvas, x0 : Float, y0 : Float, x1 : Float, y1 : Float, x2 : Float, y2 : Float, x3 : Float, y3 : Float) {
@@ -104,24 +86,15 @@ internal class FacialGraphic
     }
 
     private fun drawFaceOval(canvas: Canvas) {
-        if (face != null) {
-
-            val centerX = translateX(face!!.position.x + face!!.width / 2f)
-            val centerY = translateY(face!!.position.y + face!!.height / 2f)
-            val offsetX = scaleX(face!!.width / 2f)
-            val offsetY = scaleY(face!!.height / 2f)
-
-            // Draw a box around the face.
-            val left = centerX - offsetX
-            val right = centerX + offsetX
-            val top = centerY - offsetY
-            val bottom = centerY + offsetY
-
-            canvas.drawOval(left, top, right, bottom, mFaceRectPaint)
+        val position = faceBounds
+        if (position != null) {
+            canvas.drawOval(position.left.toFloat(),
+                position.top.toFloat(), position.right.toFloat(),
+                position.bottom.toFloat(), mFaceRectPaint)
         }
     }
 
-    fun setOptions(options: FaceCaptureOptions?) {
+    fun setOptions(options: FaceCaptureOptions) {
         this.options = options
     }
 }

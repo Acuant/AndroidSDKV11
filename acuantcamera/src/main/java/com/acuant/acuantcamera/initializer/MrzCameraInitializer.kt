@@ -5,7 +5,7 @@ import android.util.Log
 import com.acuant.acuantcommon.initializer.IAcuantPackage
 import com.acuant.acuantcommon.initializer.IAcuantPackageCallback
 import com.acuant.acuantcommon.model.Credential
-import com.acuant.acuantcommon.model.Error
+import com.acuant.acuantcommon.model.AcuantError
 import com.acuant.acuantcommon.model.ErrorCodes
 import com.acuant.acuantcommon.model.ErrorDescriptions
 import java.io.*
@@ -18,21 +18,22 @@ class MrzCameraInitializer : IAcuantPackage {
         if(credential.secureAuthorizations != null) {
             try {
                 initializeOcr(context)
-                callback.onInitializeSuccess()
             } catch (e: Exception) {
                 e.printStackTrace()
                 callback.onInitializeFailed(
-                        listOf(Error(ErrorCodes.ERROR_FailedToLoadOcrFiles,
-                                ErrorDescriptions.ERROR_DESC_FailedToLoadOcrFiles)))
+                        listOf(AcuantError(ErrorCodes.ERROR_FailedToLoadOcrFiles,
+                                ErrorDescriptions.ERROR_DESC_FailedToLoadOcrFiles, e.toString())))
+                return
             }
+            callback.onInitializeSuccess()
         } else {
-            callback.onInitializeFailed(listOf(Error(ErrorCodes.ERROR_InvalidCredentials, ErrorDescriptions.ERROR_DESC_InvalidCredentials)))
+            callback.onInitializeFailed(listOf(AcuantError(ErrorCodes.ERROR_InvalidCredentials, ErrorDescriptions.ERROR_DESC_InvalidCredentials)))
         }
     }
 
     @Throws(IOException::class)
     private fun initializeOcr(context: Context) {
-        val tessDataDirectory = File(context.getExternalFilesDir(null)?.absolutePath + "/tessdata")
+        val tessDataDirectory = File(context.filesDir?.absolutePath + "/tessdata")
         if(!tessDataDirectory.exists()){
             tessDataDirectory.mkdirs()
         }
@@ -55,7 +56,7 @@ class MrzCameraInitializer : IAcuantPackage {
                 var out: OutputStream? = null
                 try {
                     inputSteam = assetManager.open("tesseract/$filename")
-                    val outFile = File(context.getExternalFilesDir(null)?.absolutePath + "/tessdata/", filename)
+                    val outFile = File(context.filesDir?.absolutePath + "/tessdata/", filename)
                     out = FileOutputStream(outFile)
                     copyFile(inputSteam, out)
                 } catch (e: IOException) {

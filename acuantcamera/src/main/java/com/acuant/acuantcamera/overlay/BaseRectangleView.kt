@@ -9,7 +9,7 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.animation.LinearInterpolator
 
-abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(context, attr), ISetFromState {
+abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(context, attr) {
 
     internal val paint: Paint = Paint()
     internal val paintBracket: Paint = Paint()
@@ -98,14 +98,13 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
         paint.color = paintColorAlign
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 5.0f
-
     }
 
-    fun setWidth(width: Float){
+    fun setWidth(width: Float) {
         textureViewWidth = width
     }
 
-    override fun setAndDrawPoints(points:Array<Point>?){
+    fun setAndDrawPoints(points:Array<Point>?){
         if(this.points != null) {
             oldPoints = this.points
         }
@@ -147,13 +146,12 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
     }
 
     override fun onDraw(canvas: Canvas) {
-
         if (animateTarget && points != null && points!!.size == 4) {
             canvas.save()                            // need to restore after drawing
             canvas.translate(textureViewWidth, 0.0f)  // reset where 0,0 is located
             canvas.scale(-1.0f, 1.0f)                      // invert
 
-            if(drawBox) {
+            if (drawBox) {
                 paint.style = Paint.Style.FILL
                 paint.alpha = 80
 
@@ -169,7 +167,6 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
     }
 
     private fun drawBrackets(canvas: Canvas) {
-
         paintBracket.style = Paint.Style.STROKE
         paintBracket.strokeCap = bracketPaintCap
         paintBracket.alpha = 0xFF
@@ -203,7 +200,6 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
     }
 
     private fun drawBracketsFromCords(canvas: Canvas, x0 : Float, y0 : Float, x1 : Float, y1 : Float, x2 : Float, y2 : Float, x3 : Float, y3 : Float) {
-
         // top-left corner drawn
         canvas.drawLine((y3 - bracketWidth / bracketWidthDivider), x3, (y3 + bracketLengthInHorizontal), x3, paintBracket)
         canvas.drawLine(y3, (x3 - bracketWidth / bracketWidthDivider), y3, (x3+ bracketLengthInVertical), paintBracket)
@@ -219,40 +215,23 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
         // bottom-left corner drawn
         canvas.drawLine((y0 - bracketWidth / bracketWidthDivider), x0, (y0 + bracketLengthInHorizontal), x0, paintBracket)
         canvas.drawLine(y0, (x0 - bracketWidth / bracketWidthDivider), y0, (x0 - bracketLengthInVertical), paintBracket)
-
     }
-
-    open fun end() {
-        bracketAnimator?.cancel()
-    }
-
 
     override fun onDetachedFromWindow() {
         bracketAnimator?.cancel()
         super.onDetachedFromWindow()
     }
 
-    /**
-     * @param width
-     * @param height
-     * @return
-     */
     private fun calculatePreviewFrame(width: Int, height: Int): Rect {
-        // it will be calculated a frame where the croppedCard's image has to fit.
-
-        // width and height rectangle where the frame has to fit, including margins
         val widthLessMargin = width - 2 * defaultBracketMarginWidth
         val heightLessMargin = height - 2 * defaultBracketMarginHeight
-
-        // calculate widthBracket, heightBracket, the width and height of
-        // the brackets, the max rectangle with the given aspect ratio in
-        // the width and height window.
         val left: Int
         val top: Int
         val right: Int
         val bottom: Int
         var widthBracket: Int
         var heightBracket: Int
+
         heightBracket = (widthLessMargin / this.cardRatio).toInt()
         widthBracket = widthLessMargin
         if (heightBracket > heightLessMargin) {
@@ -260,7 +239,6 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
             widthBracket = (heightBracket * this.cardRatio).toInt()
         }
 
-        // center the frame
         right = (widthLessMargin + widthBracket) / 2 + defaultBracketMarginWidth
         top = (heightLessMargin - heightBracket) / 2 + defaultBracketMarginHeight
         left = (widthLessMargin - widthBracket) / 2 + defaultBracketMarginWidth

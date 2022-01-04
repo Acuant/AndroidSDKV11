@@ -4,7 +4,6 @@
     <string name="request_permission">This sample needs camera permission.</string>
     <string name="ok">OK</string>
     <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
-    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
     <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
     <string name="acuant_face_camera_initial">Align face to start capture</string>
     <string name="acuant_face_camera_face_too_close">Too close! Move away</string>
@@ -12,10 +11,14 @@
     <string name="acuant_face_camera_face_has_angle">Face has angle. Do not tilt</string>
     <string name="acuant_face_camera_face_not_in_frame">Move in frame</string>
     <string name="acuant_face_camera_face_moved">Hold steady</string>
+    <string name="acuant_face_camera_blink">Please blink</string>
     <string name="acuant_face_camera_capturing">Capturing…</string>
     <string name="camera_load_error">Camera Load Error</string>
     <plurals name="acuant_face_camera_countdown">
         <item quantity="one">Capturing\n%d…</item>
         <item quantity="other">Capturing\n%d…</item>
     </plurals>
+    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
+    <string name="cam_perm_request_text">The camera is required to capture a face image. If the permission has been declined you will need to manually go to the app settings to enable it.</string>
+    <string name="error_starting_cam">An error occurred while starting the camera, possibly in use by another application.</string>
 </resources>

@@ -188,7 +188,7 @@
 
     </LinearLayout>
 
-    <android.support.constraint.ConstraintLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/nfc_help_layout"
         android:gravity="center"
         android:orientation="vertical"
@@ -266,6 +266,6 @@
             android:textSize="19sp"
             android:gravity="center" />
 
-    </android.support.constraint.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </RelativeLayout>

@@ -3,8 +3,9 @@
     package="com.acuant.acuantfacecapture">
 
     <application>
-        <activity android:name="com.acuant.acuantfacecapture.FaceCaptureActivity"
+        <activity android:name="com.acuant.acuantfacecapture.camera.AcuantFaceCameraActivity"
             android:screenOrientation="portrait"
+            android:exported="false"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
     </application>
 

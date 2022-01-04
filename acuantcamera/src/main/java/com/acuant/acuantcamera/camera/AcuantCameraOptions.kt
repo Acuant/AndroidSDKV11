@@ -10,27 +10,26 @@ import java.io.Serializable
  *      ACUANT_EXTRA_IS_AUTO_CAPTURE with the autoCapture variable
  *      ACUANT_EXTRA_BORDER_ENABLED with the allowBox variable
  */
+
 //todo this should be refactored into a base class and extensions when allowed to break backwards compatibility
-open class AcuantCameraOptions 
-@Deprecated("Use DocumentCameraOptionsBuilder or MrzCameraOptionsBuilder, constructor will be private in the future.")
-constructor(
-        val timeInMsPerDigit: Int = 900,
-        val digitsToShow: Int = 2,
-        val allowBox : Boolean = true,
-        val autoCapture : Boolean = true,
-        val bracketLengthInHorizontal : Int = 155,
-        val bracketLengthInVertical : Int = 255,
-        val defaultBracketMarginWidth : Int = 160,
-        val defaultBracketMarginHeight : Int = 160,
-        val colorHold : Int = Color.YELLOW,
-        val colorCapturing : Int = Color.GREEN,
-        val colorBracketAlign : Int = Color.BLACK,
-        val colorBracketCloser : Int = Color.RED,
-        val colorBracketHold : Int = Color.YELLOW,
-        val colorBracketCapturing : Int = Color.GREEN,
-        var useGMS: Boolean = true,
-        @Deprecated("This variable is not exposed in any of the OptionsBuilders, and is not intended to be modified externally. When the constructor goes private you will not be able to modify it.")
-        val cardRatio : Float = 0.65f,
+open class AcuantCameraOptions
+internal constructor(
+        internal val timeInMsPerDigit: Int = 900,
+        internal val digitsToShow: Int = 2,
+        internal val allowBox : Boolean = true,
+        internal val autoCapture : Boolean = true,
+        internal val bracketLengthInHorizontal : Int = 155,
+        internal val bracketLengthInVertical : Int = 255,
+        internal val defaultBracketMarginWidth : Int = 160,
+        internal val defaultBracketMarginHeight : Int = 160,
+        internal val colorHold : Int = Color.YELLOW,
+        internal val colorCapturing : Int = Color.GREEN,
+        internal val colorBracketAlign : Int = Color.BLACK,
+        internal val colorBracketCloser : Int = Color.RED,
+        internal val colorBracketHold : Int = Color.YELLOW,
+        internal val colorBracketCapturing : Int = Color.GREEN,
+        internal var useGMS: Boolean = true,
+        internal val cardRatio : Float = 0.65f,
         internal val cameraMode: CameraMode = CameraMode.Document
 ) : Serializable {
 
@@ -59,7 +58,6 @@ constructor(
         private var colorBracketCapturing : Int = Color.GREEN
         private var useGms: Boolean = true
         private val cardRatio : Float = 0.65f
-        private var isMrzMode: Boolean = false
 
         fun setTimeInMsPerDigit(value: Int) : DocumentCameraOptionsBuilder {
             timeInMsPerDigit = value
@@ -206,7 +204,6 @@ constructor(
         private var colorBracketHold : Int = Color.YELLOW
         private var colorBracketCapturing : Int = Color.GREEN
         private var useGMS: Boolean = true
-        //private val cardRatio : Float = 0.15f
         private val cardRatio : Float = 0.65f
         private var isMrzMode: Boolean = true
 

@@ -6,19 +6,13 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
 import com.acuant.acuantfacecapture.R
+import com.acuant.acuantfacecapture.camera.facecapture.FaceCameraState
 import com.acuant.acuantfacecapture.model.FaceCaptureOptions
-import com.acuant.acuantfacecapture.model.FaceDetailState
-import com.google.android.gms.vision.CameraSource
 import java.util.*
 
 internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private var options: FaceCaptureOptions? = null
     private val mLock = Any()
-    private var mPreviewWidth: Int = 0
-    private var mWidthScaleFactor = 1.0f
-    private var mPreviewHeight: Int = 0
-    private var mHeightScaleFactor = 1.0f
-    private var mFacing = CameraSource.CAMERA_FACING_BACK
     private val mGraphics = HashSet<Graphic>()
 
     private var textPaint: Paint? = null
@@ -28,7 +22,7 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
     private var clearPaint: Paint? = null
     private var mTransparentPaint: Paint? = null
     private var mSemiBlackPaint: Paint? = null
-    private var state: FaceDetailState = FaceDetailState.NONE
+    private var state: FaceCameraState = FaceCameraState.Align
     private var countdown: Int = -1
 
     /**
@@ -42,50 +36,9 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
          * Draw the graphic on the supplied canvas.  Drawing should use the following methods to
          * convert to view coordinates for the graphics that are drawn:
          *
-         *  1. [Graphic.scaleX] and [Graphic.scaleY] adjust the size of
-         * the supplied value from the preview scale to the view scale.
-         *  1. [Graphic.translateX] and [Graphic.translateY] adjust the
-         * coordinate from the preview's coordinate system to the view coordinate system.
-         *
-         *
          * @param canvas drawing canvas
          */
         abstract fun draw(canvas: Canvas)
-
-        /**
-         * Adjusts a horizontal value of the supplied value from the preview scale to the view
-         * scale.
-         */
-        fun scaleX(horizontal: Float): Float {
-            return horizontal * mOverlay.mWidthScaleFactor
-        }
-
-        /**
-         * Adjusts a vertical value of the supplied value from the preview scale to the view scale.
-         */
-        fun scaleY(vertical: Float): Float {
-            return vertical * mOverlay.mHeightScaleFactor
-        }
-
-        /**
-         * Adjusts the x coordinate from the preview's coordinate system to the view coordinate
-         * system.
-         */
-        fun translateX(x: Float): Float {
-            return if (mOverlay.mFacing == CameraSource.CAMERA_FACING_FRONT) {
-                mOverlay.width - scaleX(x)
-            } else {
-                scaleX(x)
-            }
-        }
-
-        /**
-         * Adjusts the y coordinate from the preview's coordinate system to the view coordinate
-         * system.
-         */
-        fun translateY(y: Float): Float {
-            return scaleY(y)
-        }
 
         fun postInvalidate() {
             mOverlay.postInvalidate()
@@ -132,32 +85,9 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
         postInvalidate()
     }
 
-    fun setState(state: FaceDetailState, countdown: Int = -1){
+    fun setState(state: FaceCameraState, countdown: Int = -1){
         this.state = state
         this.countdown = countdown
-    }
-
-    /**
-     * Removes a graphic from the overlay.
-     */
-    fun remove(graphic: Graphic) {
-        synchronized(mLock) {
-            mGraphics.remove(graphic)
-        }
-        postInvalidate()
-    }
-
-    /**
-     * Sets the camera attributes for size and facing direction, which informs how to transform
-     * image coordinates later.
-     */
-    fun setCameraInfo(previewWidth: Int, previewHeight: Int, facing: Int) {
-        synchronized(mLock) {
-            mPreviewWidth = previewWidth
-            mPreviewHeight = previewHeight
-            mFacing = facing
-        }
-        postInvalidate()
     }
 
     /**
@@ -167,10 +97,7 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
         super.onDraw(canvas)
 
         synchronized(mLock) {
-            if (mPreviewWidth != 0 && mPreviewHeight != 0) {
-                mWidthScaleFactor = canvas.width.toFloat() / mPreviewWidth.toFloat()
-                mHeightScaleFactor = canvas.height.toFloat() / mPreviewHeight.toFloat()
-            }
+
 
             for (graphic in mGraphics) {
                 graphic.draw(canvas)
@@ -231,39 +158,37 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
 
     private fun drawUI(canvas: Canvas) {
         when (state) {
-            FaceDetailState.NONE -> {
-                // Instruction Text
+            FaceCameraState.Align -> {
                 instructionText = context.getString(R.string.acuant_face_camera_initial)
                 drawSimpleInst(canvas, 60f, options?.colorTextDefault ?: Color.WHITE)
-
             }
-            FaceDetailState.FACE_TOO_FAR -> {
+            FaceCameraState.MoveCloser -> {
                 instructionText = context.getString(R.string.acuant_face_too_far)
                 drawSimpleInst(canvas, 60f, options?.colorTextError ?: Color.RED)
             }
-            FaceDetailState.FACE_TOO_CLOSE -> {
+            FaceCameraState.MoveBack -> {
                 instructionText = context.getString(R.string.acuant_face_camera_face_too_close)
                 drawSimpleInst(canvas, 60f, options?.colorTextError ?: Color.RED)
             }
-            FaceDetailState.FACE_GOOD_DISTANCE -> {
-                instructionText = if (countdown == 0) {
-                    context.getString(R.string.acuant_face_camera_capturing)
-                } else {
-                    resources.getQuantityString(R.plurals.acuant_face_camera_countdown, countdown, countdown)
-                }
-                drawSimpleInst(canvas, 70f, options?.colorTextGood ?: Color.GREEN)
-            }
-            FaceDetailState.FACE_NOT_IN_FRAME -> {
-                instructionText = context.getString(R.string.acuant_face_camera_face_not_in_frame)
+            FaceCameraState.FixRotation -> {
+                instructionText = context.getString(R.string.acuant_face_camera_face_has_angle)
                 drawSimpleInst(canvas, 60f, options?.colorTextError ?: Color.RED)
             }
-            FaceDetailState.FACE_MOVED -> {
+            FaceCameraState.KeepSteady -> {
                 instructionText = context.getString(R.string.acuant_face_camera_face_moved)
                 drawSimpleInst(canvas, 60f, options?.colorTextError ?: Color.RED)
             }
-            FaceDetailState.FACE_ANGLE_TOO_SKEWED -> {
-                instructionText = context.getString(R.string.acuant_face_camera_face_has_angle)
-                drawSimpleInst(canvas, 60f, options?.colorTextError ?: Color.RED)
+            FaceCameraState.Hold -> {
+                instructionText = resources.getQuantityString(R.plurals.acuant_face_camera_countdown, countdown, countdown)
+                drawSimpleInst(canvas, 70f, options?.colorTextGood ?: Color.GREEN)
+            }
+            FaceCameraState.Capturing -> {
+                instructionText = context.getString(R.string.acuant_face_camera_capturing)
+                drawSimpleInst(canvas, 70f, options?.colorTextGood ?: Color.GREEN)
+            }
+            FaceCameraState.Blink -> {
+                instructionText = context.getString(R.string.acuant_face_camera_blink)
+                drawSimpleInst(canvas, 60f, options?.colorTextGood ?: Color.GREEN)
             }
         }
     }
