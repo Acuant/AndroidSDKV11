@@ -4,7 +4,6 @@ apply plugin: 'kotlin-android'
 repositories {
     maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
 }
-
 dependencies {
     implementation "androidx.core:core-ktx:1.7.0"
     implementation 'androidx.appcompat:appcompat:1.4.0'
@@ -20,19 +19,18 @@ dependencies {
 
     //If you do not plan to modify the camera code you can use these two regular maven dependencies
     // in place of the project ones.
-//    implementation 'com.acuant:acuantfacecapture:11.5.0'
-//    implementation 'com.acuant:acuantcamera:11.5.0'
+//    implementation 'com.acuant:acuantfacecapture:11.5.1'
+//    implementation 'com.acuant:acuantcamera:11.5.1'
     implementation project(path: ':acuantcamera')
     implementation project(path: ':acuantfacecapture')
-    implementation 'com.acuant:acuantcommon:11.5.0'
-    implementation 'com.acuant:acuantimagepreparation:11.5.0'
-    implementation 'com.acuant:acuantdocumentprocessing:11.5.0'
-    implementation 'com.acuant:acuantechipreader:11.5.0'
-    implementation 'com.acuant:acuantfacematch:11.5.0'
-    implementation 'com.acuant:acuantipliveness:11.5.0'
-    implementation 'com.acuant:acuantpassiveliveness:11.5.0'
+    implementation 'com.acuant:acuantcommon:11.5.1'
+    implementation 'com.acuant:acuantimagepreparation:11.5.1'
+    implementation 'com.acuant:acuantdocumentprocessing:11.5.1'
+    implementation 'com.acuant:acuantechipreader:11.5.1'
+    implementation 'com.acuant:acuantfacematch:11.5.1'
+    implementation 'com.acuant:acuantipliveness:11.5.1'
+    implementation 'com.acuant:acuantpassiveliveness:11.5.1'
 }
-
 android {
     compileSdkVersion 31
     buildToolsVersion '31'

@@ -117,7 +117,7 @@ Additionally your app level gradle file needs the following under android:
 		}
 		
 -------------------------------------------------------------
-**Copyright 2020 Acuant Inc. All rights reserved.**
+**Copyright 2022 Acuant Inc. All rights reserved.**
 
 This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
 

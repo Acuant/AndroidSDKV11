@@ -8,4 +8,5 @@ const val ACUANT_EXTRA_CAMERA_OPTIONS = "cameraOptions"
 const val ACUANT_EXTRA_MRZ_RESULT = "mrzResult"
 const val ACUANT_EXTRA_ERROR = "error"
 const val RESULT_ERROR = -99
-const val MINIMUM_DPI = 20 // a random low number to filter out small detections due to noise but to not filter any documents even too small ones
+const val MINIMUM_DPI = 100 // a random low number to filter out small detections due to noise but to not filter any documents even too small ones
+const val TARGET_DPI = 600

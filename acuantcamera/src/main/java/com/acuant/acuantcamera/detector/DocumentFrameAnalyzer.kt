@@ -4,7 +4,6 @@ import android.graphics.*
 import android.util.Size
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import com.acuant.acuantcamera.constant.MINIMUM_DPI
 import com.acuant.acuantimagepreparation.helper.ImageUtils
 import com.acuant.acuantcamera.helper.PointsUtils
 import com.acuant.acuantimagepreparation.AcuantImagePreparation
@@ -15,17 +14,56 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import kotlin.concurrent.thread
 
-typealias DocumentFrameListener = (points: Array<Point>?, state: DocumentState, barcode: String?, detectTime: Long) -> Unit
+typealias DocumentFrameListener = (result: DocumentFrameResult, detectTime: Long) -> Unit
 
-enum class DocumentState { NoDocument, TooFar, TooClose, GoodDocument }
-
-class DocumentFrameAnalyzer internal constructor(private val listener: DocumentFrameListener) : ImageAnalysis.Analyzer {
+class DocumentFrameAnalyzer internal constructor(private val trueScreenRatio: Float, private val listener: DocumentFrameListener) : ImageAnalysis.Analyzer {
 
     private var runningThreads = 0
     private var disableDocDetect = false
+    private var minDist = DEFAULT_MIN_DIST
+    private var maxDist = DEFAULT_MAX_DIST
+    private var minDistBound = DEFAULT_MIN_DIST_BOUND
+    private var maxDistBound = DEFAULT_MAX_DIST_BOUND
 
     fun disableDocumentDetection() {
         disableDocDetect = true
+    }
+
+    //we eventually want to set the min and max to be within the focusable distance of the camera.
+    // However as of alpha12 there does not seem to be a stable way of accessing these values
+    @Suppress("unused")
+    fun setNewMaxDistBound(maxBound: Float) {
+        maxDistBound = maxBound
+        capBounds()
+    }
+
+    @Suppress("unused")
+    fun setNewMinDistBound(minBound: Float) {
+        minDistBound = minBound
+        capBounds()
+    }
+
+    fun setNewMinDist(minDist: Float) {
+        this.maxDist = minDist + ALLOWED_RATIO_VARIANCE
+        this.minDist = minDist
+        capBounds()
+    }
+
+    fun setNewMaxDist(maxDist: Float) {
+        this.maxDist = maxDist
+        this.minDist = maxDist - ALLOWED_RATIO_VARIANCE
+        capBounds()
+    }
+
+    private fun capBounds() {
+        if (minDist < minDistBound) {
+            minDist = minDistBound
+            maxDist = minDistBound + ALLOWED_RATIO_VARIANCE
+        }
+        if (maxDist > maxDistBound) {
+            minDist = maxDistBound - ALLOWED_RATIO_VARIANCE
+            maxDist = maxDistBound
+        }
     }
 
     //this is experimental annotation is required due to the weird ownership of the internal image
@@ -42,6 +80,9 @@ class DocumentFrameAnalyzer internal constructor(private val listener: DocumentF
         var state: DocumentState = DocumentState.NoDocument
         var points: Array<Point>? = null
         var barcode: String? = null
+        var documentType: DocumentType = DocumentType.Other
+        var dpi = 0
+        var currentDistRatio: Float? = null
         val mediaImage = image.image //don't close this one
         runningThreads = 0
         if (mediaImage != null) {
@@ -52,47 +93,63 @@ class DocumentFrameAnalyzer internal constructor(private val listener: DocumentF
 
                 //document detection
                 thread {
-                    val origSize = Size(bitmap.width, bitmap.height)
+                    val detectAspectRatio = bitmap.width / bitmap.height.toFloat()
+                    val origSize = if (detectAspectRatio < trueScreenRatio) {
+                        Size(bitmap.width, (bitmap.width / trueScreenRatio).toInt())
+                    } else {
+                        Size((bitmap.height / trueScreenRatio).toInt(), bitmap.height)
+                    }
                     val detectData = DetectData(bitmap)
                     val detectResult = AcuantImagePreparation.detect(detectData)
                     points = detectResult.points
+                    if (points != null) {
+                        documentType = if (detectResult.isPassport) DocumentType.Passport else DocumentType.Id
+                        dpi = detectResult.dpi
+                        currentDistRatio = PointsUtils.getLargeRatio(points!!, origSize)
+                    }
                     state = when {
-                        points == null || detectResult.dpi < MINIMUM_DPI || !detectResult.isCorrectAspectRatio -> DocumentState.NoDocument
-                        PointsUtils.isTooClose(points, origSize, MAX_DIST) -> DocumentState.TooClose
-                        !PointsUtils.isCloseEnough(points, origSize, MIN_DIST) -> DocumentState.TooFar
+                        points == null || !detectResult.isCorrectAspectRatio -> {
+                            documentType = DocumentType.Other
+                            DocumentState.NoDocument
+                        }
+                        !PointsUtils.isNotTooClose(points, origSize, maxDist) -> DocumentState.TooClose
+                        !PointsUtils.isCloseEnough(points, origSize, minDist) -> DocumentState.TooFar
                         else -> DocumentState.GoodDocument
                     }
-                    finishThread(points, state, barcode, startTime)
+                    finishThread(points, currentDistRatio, documentType, dpi, state, barcode, startTime)
                 }
             }
 
             //barcode detection
-            val barcodeInput =
-                InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
+            val barcodeInput = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
             barcodeScanner.process(barcodeInput).addOnSuccessListener { barcodes ->
                 if (barcodes.isNotEmpty()) {
                     barcode = barcodes[0].rawValue
                 }
             }.addOnCompleteListener { //finally
-                finishThread(points, state, barcode, startTime)
+                finishThread(points, currentDistRatio, documentType, dpi, state, barcode, startTime)
                 image.close()
             }
         } else {
-            finishThread(points, state, barcode, startTime)
+            finishThread(points, currentDistRatio, documentType, dpi, state, barcode, startTime)
             image.close()
         }
     }
 
-    private fun finishThread(points: Array<Point>?, state: DocumentState, barcode: String?, startTime: Long) {
+    private fun finishThread(points: Array<Point>?, currentDistRatio: Float?, documentType: DocumentType, dpi: Int, state: DocumentState, barcode: String?, startTime: Long) {
         --runningThreads
         if (runningThreads <= 0) {
-            listener(points, state, barcode, System.currentTimeMillis() - startTime)
+            val result = DocumentFrameResult(points, currentDistRatio, documentType, dpi, state, barcode)
+            listener(result, System.currentTimeMillis() - startTime)
         }
     }
 
     companion object {
-        private const val MIN_DIST = 0.75f
-        private const val MAX_DIST = 0.9f
+        private const val ALLOWED_RATIO_VARIANCE = 0.09f
+        private const val DEFAULT_MIN_DIST = 0.71f
+        private const val DEFAULT_MAX_DIST = DEFAULT_MIN_DIST + ALLOWED_RATIO_VARIANCE
+        private const val DEFAULT_MIN_DIST_BOUND = 0.51f
+        private const val DEFAULT_MAX_DIST_BOUND = 0.91f
 
         private val barcodeScanner = BarcodeScanning.getClient(
             BarcodeScannerOptions.Builder()

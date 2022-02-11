@@ -19,7 +19,7 @@ typealias MrzFrameListener = (points: Array<Point>?, result: MrzResult?, state: 
 
 enum class MrzState { NoMrz, TooFar, GoodMrz }
 
-class MrzFrameAnalyzer internal constructor(contextWeak: WeakReference<Context>, private val listener: MrzFrameListener) : ImageAnalysis.Analyzer {
+class MrzFrameAnalyzer internal constructor(contextWeak: WeakReference<Context>, private val trueScreenRatio: Float, private val listener: MrzFrameListener) : ImageAnalysis.Analyzer {
     private var running = false
     private var tryFlip = false
     private val textRecognizer = TessBaseAPI()
@@ -58,7 +58,12 @@ class MrzFrameAnalyzer internal constructor(contextWeak: WeakReference<Context>,
 
             //document detection
             thread {
-                val origSize = Size(bitmap.width, bitmap.height)
+                val detectAspectRatio = bitmap.width / bitmap.height.toFloat()
+                val origSize = if (detectAspectRatio < trueScreenRatio) {
+                    Size(bitmap.width, (bitmap.width / trueScreenRatio).toInt())
+                } else {
+                    Size((bitmap.height / trueScreenRatio).toInt(), bitmap.height)
+                }
                 val detectData = DetectData(bitmap)
                 val detectResult = AcuantImagePreparation.detectMrz(detectData)
                 points = detectResult.points

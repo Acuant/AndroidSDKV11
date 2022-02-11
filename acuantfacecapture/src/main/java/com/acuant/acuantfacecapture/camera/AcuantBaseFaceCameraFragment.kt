@@ -74,10 +74,11 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
 
     override fun onDestroyView() {
         fragmentCameraBinding = null
-        super.onDestroyView()
-
         // Shut down our background executor
+        imageAnalyzer?.clearAnalyzer()
         cameraExecutor.shutdown()
+        cameraProvider?.unbindAll()
+        super.onDestroyView()
     }
 
     override fun onCreateView(

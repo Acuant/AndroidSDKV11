@@ -92,17 +92,17 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
                     }
 
                     if (dist > TOO_MUCH_MOVEMENT) {
-                        resetCapture()
+                        resetWorkflow()
                     }
 
                     when {
                         state == MrzState.NoMrz || !PointsUtils.correctDirection(points, previewSize) -> {
-                            resetCapture()
+                            resetWorkflow()
                             setTextFromState(MrzCameraState.Align)
                             rectangleView?.setViewFromState(MrzCameraState.Align)
                         }
                         state == MrzState.TooFar -> {
-                            resetCapture()
+                            resetWorkflow()
 
                             setTextFromState(MrzCameraState.MoveCloser)
                             rectangleView?.setViewFromState(MrzCameraState.MoveCloser)
@@ -145,7 +145,7 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
         }
     }
 
-    private fun resetCapture() {
+    override fun resetWorkflow() {
         tries = 0
     }
     
@@ -201,8 +201,8 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
         imageView?.rotation = rotation.toFloat()
     }
 
-    override fun buildImageAnalyzer(screenAspectRatio: Int, rotation: Int) {
-        val frameAnalyzer = MrzFrameAnalyzer (WeakReference(requireContext())) { points, result, state ->
+    override fun buildImageAnalyzer(screenAspectRatio: Int, trueScreenRatio: Float,  rotation: Int) {
+        val frameAnalyzer = MrzFrameAnalyzer (WeakReference(requireContext()), trueScreenRatio) { points, result, state ->
             onMrzDetection(points, result, state)
         }
         imageAnalyzer = ImageAnalysis.Builder()

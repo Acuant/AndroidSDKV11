@@ -13,8 +13,6 @@ import com.acuant.acuantcamera.constant.*
 import com.acuant.acuantcamera.databinding.ActivityCameraBinding
 import com.acuant.acuantcamera.helper.MrzResult
 import com.acuant.acuantcommon.model.AcuantError
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
 
 class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
 
@@ -33,11 +31,6 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
             AcuantCameraOptions.DocumentCameraOptionsBuilder().build()
         } else {
             unserializedOptions as AcuantCameraOptions
-        }
-
-        //if the user wants to use google's barcode reader check if google apis are available
-        if (options.useGMS) {
-            options.useGMS = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS
         }
 
         //start the camera if this si the first time the activity is created (camera already exists otherwise)

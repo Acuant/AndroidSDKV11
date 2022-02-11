@@ -143,9 +143,9 @@ class AcuantBarcodeCameraFragment: AcuantBaseCameraFragment() {
         }
     }
 
-    override fun buildImageAnalyzer(screenAspectRatio: Int, rotation: Int) {
-        val frameAnalyzer = DocumentFrameAnalyzer { _, _, barcode, _ ->
-            onBarcodeDetection(barcode)
+    override fun buildImageAnalyzer(screenAspectRatio: Int, trueScreenRatio: Float,  rotation: Int) {
+        val frameAnalyzer = DocumentFrameAnalyzer (trueScreenRatio) { result, _ ->
+            onBarcodeDetection(result.barcode)
         }
         frameAnalyzer.disableDocumentDetection()
         imageAnalyzer = ImageAnalysis.Builder()
@@ -156,6 +156,10 @@ class AcuantBarcodeCameraFragment: AcuantBaseCameraFragment() {
             .also {
                 it.setAnalyzer(cameraExecutor, frameAnalyzer)
             }
+    }
+
+    override fun resetWorkflow() {
+        //This camera does not have such a workflow to reset
     }
 
     companion object {

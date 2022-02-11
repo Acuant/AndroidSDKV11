@@ -13,6 +13,8 @@ import androidx.camera.core.ImageAnalysis
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.camera.AcuantBaseCameraFragment
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
+import com.acuant.acuantcamera.constant.MINIMUM_DPI
+import com.acuant.acuantcamera.constant.TARGET_DPI
 import com.acuant.acuantcamera.interfaces.IAcuantSavedImage
 import com.acuant.acuantcamera.databinding.DocumentFragmentUiBinding
 import com.acuant.acuantcamera.detector.DocumentFrameAnalyzer
@@ -36,12 +38,15 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
     private var defaultTextDrawable: Drawable? = null
     private var holdTextDrawable: Drawable? = null
     private var tapToCapture = false
-    private var currentDigit: Int = 2
+    private var currentDigit: Int = 0
     private var lastTime: Long = System.currentTimeMillis()
     private var greenTransparent: Int = 0
     private var firstThreeTimings: Array<Long> = arrayOf(-1, -1, -1)
     private var hasFinishedTest = false
     private var oldPoints: Array<Point>? = null
+    private var initialDpi: Int = 0
+    private var hasFoundCorrectBounds = false
+    private var instancesOfCorrectDpi = 0
     private lateinit var frameAnalyzer: DocumentFrameAnalyzer
 
     private fun drawBorder(points: Array<Point>?) {
@@ -54,14 +59,14 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
         }
     }
 
-    private fun onDocumentDetection(points: Array<Point>?, docState: DocumentState, cropDuration: Long) {
+    private fun onDocumentDetection(points: Array<Point>?, ratio: Float?, analyzerDPI: Int, docState: DocumentState, cropDuration: Long) {
         if (!capturing && !tapToCapture) {
             activity?.runOnUiThread {
 
                 if (!hasFinishedTest) {
                     rectangleView?.setViewFromState(DocumentCameraState.Align)
                     setTextFromState(DocumentCameraState.Align)
-                    resetTimer()
+                    resetWorkflow()
 
                     for (i in firstThreeTimings.indices) {
                         if (firstThreeTimings[i] == (-1).toLong()) {
@@ -80,6 +85,7 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
 
                 if (hasFinishedTest && !tapToCapture) {
                     var detectedPoints = points
+                    var realDpi = 0
 
                     val camContainer = fragmentCameraBinding?.root
                     val analyzerSize = imageAnalyzer?.resolutionInfo?.resolution
@@ -87,47 +93,47 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
 
                     val state = if (detectedPoints != null && detectedPoints.size == 4) {
                         detectedPoints = PointsUtils.fixPoints(PointsUtils.scalePoints(detectedPoints, camContainer, analyzerSize, previewSize, rectangleView))
-                         if (previewSize != null) {
-                             val mult = 0.02f
-                             val view = Rect((previewSize.left * (1 + mult)).toInt(), (previewSize.top * (1 + mult)).toInt(), (previewSize.right * (1 - mult)).toInt(), (previewSize.bottom * (1 - mult)).toInt())
-                             var isContained = true
-                             detectedPoints.forEach {
-                                 if (!view.contains(it.y, it.x)) {
-                                     isContained = false
-                                 }
-                             }
-                             if (isContained) {
-                                 docState
-                             } else {
-                                 DocumentState.NoDocument
-                             }
-                         } else {
-                             docState
-                         }
+                        realDpi = PointsUtils.scaleDpi(analyzerDPI, analyzerSize, imageCapture?.resolutionInfo?.resolution)
+                        if (previewSize != null) {
+                            val mult = 0.02f
+                            val view = Rect((previewSize.left * (1 + mult)).toInt(), (previewSize.top * (1 + mult)).toInt(), (previewSize.right * (1 - mult)).toInt(), (previewSize.bottom * (1 - mult)).toInt())
+                            var isContained = true
+                                detectedPoints.forEach {
+                                if (!view.contains(it.y, it.x)) {
+                                    isContained = false
+                                }
+                            }
+                            if (isContained) {
+                                docState
+                            } else {
+                                DocumentState.NoDocument
+                            }
+                        } else {
+                            docState
+                        }
                     } else {
                         docState
                     }
-
 
                     when (state) {
                         DocumentState.NoDocument -> {
                             rectangleView?.setViewFromState(DocumentCameraState.Align)
                             setTextFromState(DocumentCameraState.Align)
-                            resetTimer()
+                            resetWorkflow()
                         }
                         DocumentState.TooClose -> {
                             rectangleView?.setViewFromState(DocumentCameraState.MoveBack)
                             setTextFromState(DocumentCameraState.MoveBack)
-                            resetTimer()
+                            resetWorkflow()
                         }
                         DocumentState.TooFar -> {
                             rectangleView?.setViewFromState(DocumentCameraState.MoveCloser)
                             setTextFromState(DocumentCameraState.MoveCloser)
-                            resetTimer()
+                            resetWorkflow()
                         }
                         else -> { // good document
-                            if (System.currentTimeMillis() - lastTime > (acuantOptions.digitsToShow - currentDigit + 2) * acuantOptions.timeInMsPerDigit)
-                                --currentDigit
+                            if (System.currentTimeMillis() - lastTime > (currentDigit + 1) * acuantOptions.timeInMsPerDigit)
+                                ++currentDigit
 
                             var dist = 0
                             if (oldPoints != null && oldPoints!!.size == 4 && detectedPoints != null && detectedPoints.size == 4) {
@@ -144,13 +150,14 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                                 dist > TOO_MUCH_MOVEMENT -> {
                                     rectangleView?.setViewFromState(DocumentCameraState.HoldSteady)
                                     setTextFromState(DocumentCameraState.HoldSteady)
-                                    resetTimer()
+                                    resetWorkflow()
                                 }
                                 System.currentTimeMillis() - lastTime < acuantOptions.digitsToShow * acuantOptions.timeInMsPerDigit -> {
                                     rectangleView?.setViewFromState(DocumentCameraState.CountingDown)
                                     setTextFromState(DocumentCameraState.CountingDown)
                                 }
                                 else -> {
+                                    val middle = PointsUtils.findMiddleForCamera(points, fragmentCameraBinding?.root?.width, fragmentCameraBinding?.root?.height)
                                     captureImage(object : IAcuantSavedImage {
                                         override fun onSaved(uri: String) {
                                             cameraActivityListener.onCameraDone(uri, latestBarcode)
@@ -160,12 +167,51 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                                             cameraActivityListener.onError(error)
                                         }
 
-                                    }, "AUTO")
+                                    }, middle, captureType = "AUTO")
                                     rectangleView?.setViewFromState(DocumentCameraState.Capturing)
                                     setTextFromState(DocumentCameraState.Capturing)
                                 }
                             }
                         }
+                    }
+
+                    //this adjusts the too close/too far bounds based on dpi
+                    if (!hasFoundCorrectBounds && initialDpi > MINIMUM_DPI && ratio != null) {
+                        if (initialDpi >= TARGET_DPI) {
+                            if (realDpi < TARGET_DPI) {
+                                if (instancesOfCorrectDpi == 0) {
+                                    frameAnalyzer.setNewMinDist(ratio - 0.01f) //we used to be too close and have zoomed out enough
+                                }
+                                ++instancesOfCorrectDpi
+                                if (instancesOfCorrectDpi >= 3) {
+                                    hasFoundCorrectBounds = true
+                                }
+                            } else {
+                                instancesOfCorrectDpi = 0
+                                frameAnalyzer.setNewMaxDist(ratio - 0.3f) //we used to be too close and are still too close
+                            }
+                        } else {
+                            if (realDpi >= TARGET_DPI) {
+                                if (instancesOfCorrectDpi == 0) {
+                                    frameAnalyzer.setNewMinDist(ratio - 0.01f) //we used to be too far and have zoomed in enough
+                                }
+                                ++instancesOfCorrectDpi
+                                if (instancesOfCorrectDpi >= 3) {
+                                    hasFoundCorrectBounds = true
+                                }
+                            } else {
+                                instancesOfCorrectDpi = 0
+                                frameAnalyzer.setNewMinDist(ratio + 0.03f) //we used to be too far and are still too far
+                            }
+                        }
+                    }
+
+                    if (initialDpi == 0 && realDpi > MINIMUM_DPI) {
+                        initialDpi = realDpi
+                    } else if (realDpi < MINIMUM_DPI) { //if real dpi is negligible (document left screen) reset the detected bounds state
+                        initialDpi = 0
+                        hasFoundCorrectBounds = false
+                        instancesOfCorrectDpi = 0
                     }
 
                     oldPoints = detectedPoints
@@ -210,8 +256,8 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                         context?.resources?.getDimension(R.dimen.cam_doc_font_big) ?: 48f
                     textView.text = resources.getQuantityString(
                         R.plurals.acuant_camera_timer,
-                        currentDigit,
-                        currentDigit
+                        acuantOptions.digitsToShow - currentDigit,
+                        acuantOptions.digitsToShow - currentDigit
                     )
                     textView.setTextColor(Color.RED)
                 }
@@ -230,11 +276,7 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                         context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
                     textView.textSize =
                         context?.resources?.getDimension(R.dimen.cam_doc_font_big) ?: 48f
-                    textView.text = resources.getQuantityString(
-                        R.plurals.acuant_camera_timer,
-                        currentDigit,
-                        currentDigit
-                    )
+                    textView.text = getString(R.string.acuant_camera_capturing)
                     textView.setTextColor(Color.RED)
                 }
                 else -> {//align
@@ -254,9 +296,14 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
         textView?.rotation = rotation.toFloat()
     }
 
-    private fun resetTimer() {
+    override fun resetWorkflow() {
         lastTime = System.currentTimeMillis()
-        currentDigit = acuantOptions.digitsToShow
+        currentDigit = 0
+        if (tapToCapture) {
+            setTextFromState(DocumentCameraState.Align)
+            textView?.text = getString(R.string.acuant_camera_align_and_tap)
+            textView?.layoutParams?.width = context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -278,7 +325,7 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
         textView = cameraUiContainerBinding?.documentText
 
         setOptions(rectangleView)
-        currentDigit = acuantOptions.digitsToShow
+        currentDigit = 0
 
         capturingTextDrawable =  AppCompatResources.getDrawable(requireContext(), R.drawable.camera_text_config_capturing)
         defaultTextDrawable = AppCompatResources.getDrawable(requireContext(), R.drawable.camera_text_config_default)
@@ -292,8 +339,8 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
         setTextFromState(DocumentCameraState.Align)
         textView?.text = getString(R.string.acuant_camera_align_and_tap)
         textView?.layoutParams?.width = context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
-        fragmentCameraBinding?.root?.setOnClickListener{
-            activity?.runOnUiThread{
+        fragmentCameraBinding?.root?.setOnClickListenerWithPoint { point ->
+            activity?.runOnUiThread {
                 textView?.setBackgroundColor(greenTransparent)
                 textView?.text = getString(R.string.acuant_camera_capturing)
                 captureImage(object : IAcuantSavedImage {
@@ -304,7 +351,7 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                     override fun onError(error: AcuantError) {
                         cameraActivityListener.onError(error)
                     }
-                }, "TAP")
+                }, point, captureType = "TAP")
             }
         }
     }
@@ -315,10 +362,10 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
         }
     }
 
-    override fun buildImageAnalyzer(screenAspectRatio: Int, rotation: Int) {
-        frameAnalyzer = DocumentFrameAnalyzer { points, state, barcode, detectTime ->
-            onBarcodeDetection(barcode)
-            onDocumentDetection(points, state, detectTime)
+    override fun buildImageAnalyzer(screenAspectRatio: Int, trueScreenRatio: Float, rotation: Int) {
+        frameAnalyzer = DocumentFrameAnalyzer (trueScreenRatio) { result, detectTime ->
+            onBarcodeDetection(result.barcode)
+            onDocumentDetection(result.points, result.currentDistRatio, result.analyzerDpi, result.state, detectTime)
         }
         if (!acuantOptions.autoCapture) {
             setTapToCapture()

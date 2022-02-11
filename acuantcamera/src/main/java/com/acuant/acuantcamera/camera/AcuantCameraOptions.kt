@@ -28,12 +28,14 @@ internal constructor(
         internal val colorBracketCloser : Int = Color.RED,
         internal val colorBracketHold : Int = Color.YELLOW,
         internal val colorBracketCapturing : Int = Color.GREEN,
-        internal var useGMS: Boolean = true,
         internal val cardRatio : Float = 0.65f,
-        internal val cameraMode: CameraMode = CameraMode.Document
+        internal val cameraMode: CameraMode = CameraMode.Document,
+        internal val zoomType: ZoomType = ZoomType.Generic
 ) : Serializable {
 
     enum class CameraMode {Document, Mrz, BarcodeOnly}
+
+    enum class ZoomType {Generic, IdOnly}
 
     companion object {
         const val DEFAULT_TIMEOUT_BARCODE = 20000
@@ -56,7 +58,7 @@ internal constructor(
         private var colorBracketCloser : Int = Color.RED
         private var colorBracketHold : Int = Color.YELLOW
         private var colorBracketCapturing : Int = Color.GREEN
-        private var useGms: Boolean = true
+        private var zoomType: ZoomType = ZoomType.Generic
         private val cardRatio : Float = 0.65f
 
         fun setTimeInMsPerDigit(value: Int) : DocumentCameraOptionsBuilder {
@@ -129,8 +131,26 @@ internal constructor(
             return this
         }
 
+        @Deprecated("No longer reliant on GMS, option is ignored", ReplaceWith(""))
         fun setUseGms(value: Boolean) : DocumentCameraOptionsBuilder {
-            useGms = value
+            return this
+        }
+
+        /**
+         * [ZoomType.Generic] keeps the camera zoomed out to enable you to use nearly all available
+         * capture space. This is the default setting. Use this setting to capture large
+         * documents (ID3) and to use old devices with low-resolution cameras.
+         *
+         * [ZoomType.IdOnly] zooms the camera by approximately 25%, pushing part of the capture
+         * space off the sides of the screen. Generally, IDs are smaller than passports and, on most
+         * devices, the capture space is sufficient for a 600 dpi capture of an ID. The
+         * [ZoomType.IdOnly] experience is more intuitive for users because [ZoomType.Generic] makes
+         * the the ID appear too far away for capture. Using [ZoomType.IdOnly] to capture large
+         * documents (ID3) usually results in a lower resolution capture that can cause
+         * classification/authentication errors.
+         */
+        fun setZoomType(value: ZoomType) : DocumentCameraOptionsBuilder {
+            zoomType = value
             return this
         }
 
@@ -138,7 +158,7 @@ internal constructor(
             @Suppress("DEPRECATION")
             return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture, bracketLengthInHorizontal,
                     bracketLengthInVertical, defaultBracketMarginWidth, defaultBracketMarginHeight, colorHold,
-                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, useGms, cardRatio, cameraMode = CameraMode.Document)
+                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, cardRatio, zoomType = zoomType, cameraMode = CameraMode.Document)
         }
     }
 
@@ -203,7 +223,6 @@ internal constructor(
         private var colorBracketCloser : Int = Color.RED
         private var colorBracketHold : Int = Color.YELLOW
         private var colorBracketCapturing : Int = Color.GREEN
-        private var useGMS: Boolean = true
         private val cardRatio : Float = 0.65f
         private var isMrzMode: Boolean = true
 
@@ -246,7 +265,7 @@ internal constructor(
             @Suppress("DEPRECATION")
             return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture, bracketLengthInHorizontal,
                     bracketLengthInVertical, defaultBracketMarginWidth, defaultBracketMarginHeight, colorHold,
-                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, useGMS, cardRatio, cameraMode = CameraMode.Mrz)
+                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, cardRatio, cameraMode = CameraMode.Mrz)
         }
     }
 }

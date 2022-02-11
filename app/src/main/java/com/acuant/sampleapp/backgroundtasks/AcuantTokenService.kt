@@ -9,7 +9,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
 
-class AcuantTokenService(private val listener: AcuantTokenServiceListener): AcuantWebService(
+class AcuantTokenService(private val listener: AcuantTokenServiceListener): AcuantWebService (
         URL(String.format("%s/oauth/token", Credential.get().endpoints.acasEndpointTrimmed)),
         listener
 ) {

@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.pm.PackageManager
+import android.graphics.Point
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -11,35 +12,38 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.core.impl.utils.Exif
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.Fragment
 import androidx.window.WindowManager
 import com.acuant.acuantcamera.R
+import com.acuant.acuantcamera.databinding.FragmentCameraBinding
 import com.acuant.acuantcamera.interfaces.IAcuantSavedImage
 import com.acuant.acuantcamera.interfaces.ICameraActivityFinish
-import com.acuant.acuantcamera.databinding.FragmentCameraBinding
 import com.acuant.acuantcamera.overlay.BaseRectangleView
 import com.acuant.acuantcommon.model.AcuantError
 import com.acuant.acuantcommon.model.ErrorCodes
 import com.acuant.acuantcommon.model.ErrorDescriptions
 import com.acuant.acuantimagepreparation.AcuantImagePreparation
+import com.google.common.util.concurrent.ListenableFuture
 import org.json.JSONObject
+import java.io.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.io.*
 
 
 abstract class AcuantBaseCameraFragment: Fragment() {
 
     private var displayId: Int = -1
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
-    private var imageCapture: ImageCapture? = null
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var orientationEventListener: OrientationEventListener? = null
     private var preview: Preview? = null
+    private var failedToFocus: Boolean = false
     private lateinit var windowManager: WindowManager
+    protected var imageCapture: ImageCapture? = null
     protected var capturing: Boolean = false
     protected var fragmentCameraBinding: FragmentCameraBinding? = null
     protected var imageAnalyzer: ImageAnalysis? = null //set up by implementations
@@ -69,10 +73,11 @@ abstract class AcuantBaseCameraFragment: Fragment() {
 
     override fun onDestroyView() {
         fragmentCameraBinding = null
-        super.onDestroyView()
-
         // Shut down our background executor
+        imageAnalyzer?.clearAnalyzer()
         cameraExecutor.shutdown()
+        cameraProvider?.unbindAll()
+        super.onDestroyView()
     }
 
     override fun onCreateView(
@@ -143,6 +148,9 @@ abstract class AcuantBaseCameraFragment: Fragment() {
             val binding = fragmentCameraBinding
 
             if (binding != null) {
+                if (acuantOptions.zoomType == AcuantCameraOptions.ZoomType.IdOnly) {
+                    (binding.viewFinder.layoutParams as ConstraintLayout.LayoutParams?)?.dimensionRatio = ""
+                }
                 // Keep track of the display in which this view is attached
                 displayId = binding.viewFinder.display.displayId
 
@@ -236,78 +244,128 @@ abstract class AcuantBaseCameraFragment: Fragment() {
             .setTargetRotation(rotation)
             .build()
 
-        buildImageAnalyzer(screenAspectRatio, rotation)
+        val trueScreenRatio = fragmentCameraBinding!!.viewFinder.height / fragmentCameraBinding!!.viewFinder.width.toFloat()
+
+        buildImageAnalyzer(screenAspectRatio, trueScreenRatio, rotation)
 
         // Must unbind the use-cases before rebinding them
         cameraProvider.unbindAll()
 
         try {
-            // A variable number of use-cases can be passed here -
-            // camera provides access to CameraControl & CameraInfo
-            camera = if (imageAnalyzer == null) {
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture)
-            } else {
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, imageAnalyzer)
+            val useCaseGroupBuilder = UseCaseGroup.Builder().addUseCase(preview!!).addUseCase(imageCapture!!)
+
+            if (imageAnalyzer != null) {
+                useCaseGroupBuilder.addUseCase(imageAnalyzer!!)
             }
+
+            camera = cameraProvider.bindToLifecycle(this, cameraSelector, useCaseGroupBuilder.build())
 
             // Attach the viewfinder's surface provider to preview use case
             preview?.setSurfaceProvider(fragmentCameraBinding!!.viewFinder.surfaceProvider)
             observeCameraState(camera?.cameraInfo!!)
-            //todo camera.cameracontrol startFocusAndMetering to keep focus on the middle of the image and avoid focusing on reflections/background?
         } catch (exc: Exception) {
             Log.e(TAG, "Use case binding failed", exc)
         }
     }
 
-    abstract fun buildImageAnalyzer(screenAspectRatio: Int, rotation: Int)
+    abstract fun buildImageAnalyzer(screenAspectRatio: Int, trueScreenRatio: Float, rotation: Int)
 
-    fun captureImage (listener: IAcuantSavedImage, captureType: String? = null) {
+    abstract fun resetWorkflow()
+
+    fun captureImage (listener: IAcuantSavedImage, middle: Point? = null, captureType: String? = null) {
         if (!capturing) {
-            imageCapture?.let { imageCapture ->
-                capturing = true
-
-                // Create output file to hold the image (will automatically add numbers to create a uuid)
-                val photoFile =
-                    File.createTempFile("AcuantCameraImage", ".jpg", requireActivity().cacheDir)
-
-                // Create output options object which contains file + metadata
-                val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-                // Setup image capture listener which is triggered after photo has been taken
-                imageCapture.takePicture(
-                    outputOptions,
-                    cameraExecutor,
-                    object : ImageCapture.OnImageSavedCallback {
-                        @SuppressLint("RestrictedApi")
-                        override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-
-                            val savedUri = outputFileResults.savedUri?.path ?: photoFile.absolutePath
-
-                            val exif = Exif.createFromFileString(savedUri)
-                            val rotation = exif.rotation
-
-                            if (captureType != null) {
-                                addExif(File(savedUri), captureType, rotation)
+            capturing = true
+            if (!failedToFocus) {
+                val width = fragmentCameraBinding?.root?.width?.toFloat()
+                val height = fragmentCameraBinding?.root?.height?.toFloat()
+                val action: FocusMeteringAction =
+                    if (middle == null || width == null || height == null || middle.x == 0) {
+                        val factory = SurfaceOrientedMeteringPointFactory(1f, 1f)
+                        val point: MeteringPoint = factory.createPoint(0.5f, 0.5f)
+                        FocusMeteringAction.Builder(point).build()
+                    } else {
+                        val factory = SurfaceOrientedMeteringPointFactory(width, height)
+                        val point: MeteringPoint =
+                            factory.createPoint(middle.x.toFloat(), middle.y.toFloat())
+                        FocusMeteringAction.Builder(point).build()
+                    }
+                val future: ListenableFuture<FocusMeteringResult>? =
+                    camera?.cameraControl?.startFocusAndMetering(action)
+                if (future != null) {
+                    future.addListener({
+                        try {
+                            val result = future.get()
+                            if (result.isFocusSuccessful) {
+                                performCapture(listener, captureType)
                             } else {
-                                addExif(File(savedUri), "NOT SPECIFIED (implementer used deprecated constructor that lacks this data)", rotation)
+                                failedToFocus = true
+                                capturing = false
+                                resetWorkflow()
                             }
-
-                            listener.onSaved(savedUri)
+                        } catch (e: Exception) {
+                            failedToFocus = true
+                            capturing = false
+                            resetWorkflow()
                         }
-
-                        override fun onError(exception: ImageCaptureException) {
-                            listener.onError(
-                                AcuantError(
-                                    ErrorCodes.ERROR_SavingImage,
-                                    ErrorDescriptions.ERROR_DESC_SavingImage,
-                                    exception.toString()
-                                )
-                            )
-                        }
-                    })
+                    }, ContextCompat.getMainExecutor(requireContext()))
+                } else {
+                    listener.onError(
+                        AcuantError(
+                            ErrorCodes.ERROR_UnexpectedError,
+                            ErrorDescriptions.ERROR_DESC_UnexpectedError,
+                            "ListenableFuture<FocusMeteringResult> was null, which likely means camera was null. This should not happen."
+                        )
+                    )
+                }
+            } else {
+                performCapture(listener, captureType)
             }
+        }
+    }
+
+    private fun performCapture(listener: IAcuantSavedImage, captureType: String?) {
+
+        imageCapture?.let { imageCapture ->
+
+            // Create output file to hold the image (will automatically add numbers to create a uuid)
+            val photoFile =
+                File.createTempFile("AcuantCameraImage", ".jpg", requireActivity().cacheDir)
+
+            // Create output options object which contains file + metadata
+            val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+            // Setup image capture listener which is triggered after photo has been taken
+            imageCapture.takePicture(
+                outputOptions,
+                cameraExecutor,
+                object : ImageCapture.OnImageSavedCallback {
+                    @SuppressLint("RestrictedApi")
+                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+
+                        val savedUri = outputFileResults.savedUri?.path ?: photoFile.absolutePath
+
+                        val exif = Exif.createFromFileString(savedUri)
+                        val rotation = exif.rotation
+
+                        if (captureType != null) {
+                            addExif(File(savedUri), captureType, rotation)
+                        } else {
+                            addExif(File(savedUri), "NOT SPECIFIED (implementer used deprecated constructor that lacks this data)", rotation)
+                        }
+
+                        listener.onSaved(savedUri)
+                    }
+
+                    override fun onError(exception: ImageCaptureException) {
+                        listener.onError(
+                            AcuantError(
+                                ErrorCodes.ERROR_SavingImage,
+                                ErrorDescriptions.ERROR_DESC_SavingImage,
+                                exception.toString()
+                            )
+                        )
+                    }
+                })
         }
     }
 
@@ -366,6 +424,24 @@ abstract class AcuantBaseCameraFragment: Fragment() {
                 }
                 cameraActivityListener.onError(AcuantError(ErrorCodes.ERROR_UnexpectedError, ErrorDescriptions.ERROR_DESC_UnexpectedError, text))
             }
+        }
+    }
+
+    //extension credit to: https://stackoverflow.com/questions/1967039/onclicklistener-x-y-location-of-event
+    @SuppressLint("ClickableViewAccessibility")
+    protected fun View.setOnClickListenerWithPoint(action: (Point) -> Unit) {
+        val coordinates = Point()
+        val screenPosition = IntArray(2)
+        setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                v.getLocationOnScreen(screenPosition)
+                coordinates.set(event.x.toInt() + screenPosition[0], event.y.toInt() + screenPosition[1])
+            }
+//            v.performClick()
+            false
+        }
+        setOnClickListener {
+            action.invoke(coordinates)
         }
     }
 

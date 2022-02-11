@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.5.0
-**January 2022**
+# Acuant Android SDK v11.5.1
+**February 2022**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -43,25 +43,25 @@ Before 11.5.0, the SDK was not compiled with AndroidX. The SDK could still be us
 
 The SDK includes the following modules:
 
-**Acuant Common Library (AcuantCommon) :**
+**Acuant Common Library (AcuantCommon):**
 
 - Contains shared internal models and supporting classes.
 
-**Acuant Camera Library (AcuantCamera) :**
+**Acuant Camera Library (AcuantCamera):**
 
 - Implemented using CameraX API and uses Google ML Kit for barcode reading. ML Kit model is packaged in the SDK (no outbound call to download model from Google Play services).
 - Encompasses three different versions of the camera for reading document and barcodes, reading MRZ zones, and a backup camera for reading only barcodes.
 - Uses AcuantImagePreparation for document detection and cropping.
 
-**Acuant Image Preparation Library (AcuantImagePreparation) :**
+**Acuant Image Preparation Library (AcuantImagePreparation):**
 
 - Contains all image processing including document detection, cropping, and metrics calculation.
 
-**Acuant Document Processing Library (AcuantDocumentProcessing) :**
+**Acuant Document Processing Library (AcuantDocumentProcessing):**
 
 - Contains all the methods to upload and process document images.
 
-**Acuant Face Match Library (AcuantFaceMatch) :**    
+**Acuant Face Match Library (AcuantFaceMatch):**    
 
 - Contains a method to match two face images.
 
@@ -116,15 +116,15 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-			implementation 'com.acuant:acuantcommon:11.5.0'
-			implementation 'com.acuant:acuantcamera:11.5.0'
-			implementation 'com.acuant:acuantimagepreparation:11.5.0'
-			implementation 'com.acuant:acuantdocumentprocessing:11.5.0'
-			implementation 'com.acuant:acuantechipreader:11.5.0'
-			implementation 'com.acuant:acuantipliveness:11.5.0'
-			implementation 'com.acuant:acuantfacematch:11.5.0'
-			implementation 'com.acuant:acuantfacecapture:11.5.0'
-			implementation 'com.acuant:acuantpassiveliveness:11.5.0'
+			implementation 'com.acuant:acuantcommon:11.5.1'
+			implementation 'com.acuant:acuantcamera:11.5.1'
+			implementation 'com.acuant:acuantimagepreparation:11.5.1'
+			implementation 'com.acuant:acuantdocumentprocessing:11.5.1'
+			implementation 'com.acuant:acuantechipreader:11.5.1'
+			implementation 'com.acuant:acuantipliveness:11.5.1'
+			implementation 'com.acuant:acuantfacematch:11.5.1'
+			implementation 'com.acuant:acuantfacecapture:11.5.1'
+			implementation 'com.acuant:acuantpassiveliveness:11.5.1'
 
 1. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
 
@@ -435,9 +435,15 @@ After you capture a document image and completed crop, it can be processed using
 		
 		fun createInstance(options: IdInstanceOptions, listener: CreateIdInstanceListener)
 		
-		interface CreateIdInstanceListener : AcuantListener {
-		    fun instanceCreated(instance: AcuantIdDocumentInstance)
-		}
+			class IdInstanceOptions (
+				val authenticationSensitivity: AuthenticationSensitivity,
+				val tamperSensitivity: TamperSensitivity,
+				val countryCode: String?
+			)
+			
+			interface CreateIdInstanceListener : AcuantListener {
+			    fun instanceCreated(instance: AcuantIdDocumentInstance)
+			}
 
 1. All further methods will be called on the instanced returned thorough the instanceCreated callback. You can run multiple instances simultaneously. Each instances tracks its own state independently. These are the available methods and relevant objects/interfaces:
 
@@ -769,6 +775,20 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 			fun setColorBracketHold(value: Int) : DocumentCameraOptionsBuilder
 			fun setColorBracketCloser(value: Int) : DocumentCameraOptionsBuilder
 			fun setColorBracketCapturing(value: Int) : DocumentCameraOptionsBuilder
+			/**
+			* [ZoomType.Generic] keeps the camera zoomed out to enable you to use nearly all available
+			* capture space. This is the default setting. Use this setting to capture large
+			* documents (ID3) and to use old devices with low-resolution cameras.
+			*
+			* [ZoomType.IdOnly] zooms the camera by approximately 25%, pushing part of the capture 
+			* space off the sides of the screen. Generally, IDs are smaller than passports and, on most
+			* devices, the capture space is sufficient for a 600 dpi capture of an ID. The 
+			* [ZoomType.IdOnly] experience is more intuitive for users because [ZoomType.Generic] makes
+			* the the ID appear too far away for capture. Using [ZoomType.IdOnly] to capture large 
+			* documents (ID3) usually results in a lower resolution capture that can cause 
+			* classification/authentication errors.
+			*/
+			fun setZoomType(value: ZoomType) : DocumentCameraOptionsBuilder 
 			fun build() : AcuantCameraOptions
 		}
 
@@ -849,7 +869,7 @@ Acuant does not provide obfuscation tools. See the Android developer documentati
 
 -------------------------------------
 
-**Copyright 2021 Acuant Inc. All rights reserved.**
+**Copyright 2022 Acuant Inc. All rights reserved.**
 
 This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
 
