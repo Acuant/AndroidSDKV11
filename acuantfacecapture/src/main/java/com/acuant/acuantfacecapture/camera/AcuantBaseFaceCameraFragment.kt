@@ -15,7 +15,6 @@ import androidx.camera.core.impl.utils.Exif
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.window.WindowManager
 import com.acuant.acuantcommon.model.AcuantError
 import com.acuant.acuantcommon.model.ErrorCodes
 import com.acuant.acuantcommon.model.ErrorDescriptions
@@ -43,7 +42,6 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var preview: Preview? = null
-    private lateinit var windowManager: WindowManager
     protected var capturing: Boolean = false
     protected var fragmentCameraBinding: FragmentFaceCameraBinding? = null
     protected var imageAnalyzer: ImageAnalysis? = null //set up by implementations
@@ -108,9 +106,6 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
         // Initialize our background executor
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        //Initialize WindowManager to retrieve display metrics
-        windowManager = WindowManager(view.context)
-
         // Wait for the views to be properly laid out
         fragmentCameraBinding?.viewFinder?.post {
             val binding = fragmentCameraBinding
@@ -171,9 +166,10 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
     /** Declare and bind preview, capture and analysis use cases */
     private fun bindCameraUseCases() {
 
-        val metrics = windowManager.getCurrentWindowMetrics().bounds
+        val width: Int = requireContext().resources.displayMetrics.widthPixels
+        val height: Int = requireContext().resources.displayMetrics.heightPixels
 
-        val screenAspectRatio = aspectRatio(metrics.width(), metrics.height())
+        val screenAspectRatio = aspectRatio(width, height)
 
         val rotation = fragmentCameraBinding!!.viewFinder.display.rotation
 

@@ -204,7 +204,7 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
     }
 
     companion object {
-        private const val MOVEMENT_THRESHOLD = 15
+        private const val MOVEMENT_THRESHOLD = 22
 
         private fun didFaceMove(facePosition: Rect?, lastFacePosition: Rect?): Boolean {
             if (facePosition == null || lastFacePosition == null)

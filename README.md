@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.5.1
-**February 2022**
+# Acuant Android SDK v11.5.2
+**March 2022**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -112,19 +112,19 @@ The SDK includes the following modules:
 
 			maven { url 'https://maven.google.com' }
 			maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
-            maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
+			maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
    - Add the following dependencies
 
-			implementation 'com.acuant:acuantcommon:11.5.1'
-			implementation 'com.acuant:acuantcamera:11.5.1'
-			implementation 'com.acuant:acuantimagepreparation:11.5.1'
-			implementation 'com.acuant:acuantdocumentprocessing:11.5.1'
-			implementation 'com.acuant:acuantechipreader:11.5.1'
-			implementation 'com.acuant:acuantipliveness:11.5.1'
-			implementation 'com.acuant:acuantfacematch:11.5.1'
-			implementation 'com.acuant:acuantfacecapture:11.5.1'
-			implementation 'com.acuant:acuantpassiveliveness:11.5.1'
+			implementation 'com.acuant:acuantcommon:11.5.2'
+			implementation 'com.acuant:acuantcamera:11.5.2'
+			implementation 'com.acuant:acuantimagepreparation:11.5.2'
+			implementation 'com.acuant:acuantdocumentprocessing:11.5.2'
+			implementation 'com.acuant:acuantechipreader:11.5.2'
+			implementation 'com.acuant:acuantipliveness:11.5.2'
+			implementation 'com.acuant:acuantfacematch:11.5.2'
+			implementation 'com.acuant:acuantfacecapture:11.5.2'
+			implementation 'com.acuant:acuantpassiveliveness:11.5.2'
 
 1. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
 

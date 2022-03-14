@@ -16,7 +16,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.fragment.app.Fragment
-import androidx.window.WindowManager
 import com.acuant.acuantcamera.R
 import com.acuant.acuantcamera.databinding.FragmentCameraBinding
 import com.acuant.acuantcamera.interfaces.IAcuantSavedImage
@@ -42,7 +41,6 @@ abstract class AcuantBaseCameraFragment: Fragment() {
     private var orientationEventListener: OrientationEventListener? = null
     private var preview: Preview? = null
     private var failedToFocus: Boolean = false
-    private lateinit var windowManager: WindowManager
     protected var imageCapture: ImageCapture? = null
     protected var capturing: Boolean = false
     protected var fragmentCameraBinding: FragmentCameraBinding? = null
@@ -139,9 +137,6 @@ abstract class AcuantBaseCameraFragment: Fragment() {
 
         // Initialize our background executor
         cameraExecutor = Executors.newSingleThreadExecutor()
-
-        //Initialize WindowManager to retrieve display metrics
-        windowManager = WindowManager(view.context)
 
         // Wait for the views to be properly laid out
         fragmentCameraBinding?.viewFinder?.post {

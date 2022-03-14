@@ -95,7 +95,7 @@ class FaceFrameAnalyzer internal constructor(private val listener: FaceFrameList
             .build())
 
         private const val TOO_CLOSE_THRESH = 0.815f
-        private const val TOO_FAR_THRESH = 0.685f
+        private const val TOO_FAR_THRESH = 0.635f
         private const val EYE_CLOSED_THRESHOLD = 0.3f
         private const val Y_ROT_ANGLE = 10
         private const val Z_ROT_ANGLE = 15
