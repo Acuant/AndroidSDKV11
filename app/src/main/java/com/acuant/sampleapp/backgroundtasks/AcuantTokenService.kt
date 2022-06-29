@@ -28,10 +28,17 @@ class AcuantTokenService(private val listener: AcuantTokenServiceListener): Acua
             if (json.has("access_token")) {
                 token = json.getString("access_token")
             }
-            if (token != "")
+            if (token != "") {
                 listener.onSuccess(token)
-            else
-                listener.onError(AcuantError(ErrorCodes.ERROR_InvalidJson, ErrorDescriptions.ERROR_DESC_InvalidJson, responseText))
+            } else {
+                listener.onError(
+                    AcuantError(
+                        ErrorCodes.ERROR_InvalidJson,
+                        ErrorDescriptions.ERROR_DESC_InvalidJson,
+                        responseText
+                    )
+                )
+            }
         } catch (e: JSONException) {
             listener.onError(AcuantError(ErrorCodes.ERROR_InvalidJson, ErrorDescriptions.ERROR_DESC_InvalidJson, responseText))
         }

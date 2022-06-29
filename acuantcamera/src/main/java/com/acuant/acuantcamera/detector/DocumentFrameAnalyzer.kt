@@ -108,7 +108,7 @@ class DocumentFrameAnalyzer internal constructor(private val trueScreenRatio: Fl
                         currentDistRatio = PointsUtils.getLargeRatio(points!!, origSize)
                     }
                     state = when {
-                        points == null || !detectResult.isCorrectAspectRatio -> {
+                        points == null || !detectResult.isCorrectAspectRatio || !isParallel(points, detectAspectRatio) -> {
                             documentType = DocumentType.Other
                             DocumentState.NoDocument
                         }
@@ -133,6 +133,19 @@ class DocumentFrameAnalyzer internal constructor(private val trueScreenRatio: Fl
         } else {
             finishThread(points, currentDistRatio, documentType, dpi, state, barcode, startTime)
             image.close()
+        }
+    }
+
+    private fun isParallel(points: Array<Point>?, detectAspectRatio: Float): Boolean {
+        if (points == null || points.size != 4)
+            return false
+        val fixedPoints = PointsUtils.fixPoints(points)
+        val width = PointsUtils.distance(fixedPoints[0], fixedPoints[1])
+        val height = PointsUtils.distance(fixedPoints[0], fixedPoints[3])
+        return if (detectAspectRatio < 1) {
+            width / height >= 1
+        } else {
+            width / height < 1
         }
     }
 

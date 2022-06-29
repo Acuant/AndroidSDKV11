@@ -98,7 +98,7 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                             val mult = 0.02f
                             val view = Rect((previewSize.left * (1 + mult)).toInt(), (previewSize.top * (1 + mult)).toInt(), (previewSize.right * (1 - mult)).toInt(), (previewSize.bottom * (1 - mult)).toInt())
                             var isContained = true
-                                detectedPoints.forEach {
+                            detectedPoints.forEach {
                                 if (!view.contains(it.y, it.x)) {
                                     isContained = false
                                 }
@@ -304,6 +304,11 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
             textView?.text = getString(R.string.acuant_camera_align_and_tap)
             textView?.layoutParams?.width = context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
         }
+    }
+
+    override fun onResume() {
+        lastTime = System.currentTimeMillis()
+        super.onResume()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

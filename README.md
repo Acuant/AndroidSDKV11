@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.5.2
-**March 2022**
+# Acuant Android SDK v11.5.3
+**June 2022**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -116,17 +116,17 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-			implementation 'com.acuant:acuantcommon:11.5.2'
-			implementation 'com.acuant:acuantcamera:11.5.2'
-			implementation 'com.acuant:acuantimagepreparation:11.5.2'
-			implementation 'com.acuant:acuantdocumentprocessing:11.5.2'
-			implementation 'com.acuant:acuantechipreader:11.5.2'
-			implementation 'com.acuant:acuantipliveness:11.5.2'
-			implementation 'com.acuant:acuantfacematch:11.5.2'
-			implementation 'com.acuant:acuantfacecapture:11.5.2'
-			implementation 'com.acuant:acuantpassiveliveness:11.5.2'
+			implementation 'com.acuant:acuantcommon:11.5.3'
+			implementation 'com.acuant:acuantcamera:11.5.3'
+			implementation 'com.acuant:acuantimagepreparation:11.5.3'
+			implementation 'com.acuant:acuantdocumentprocessing:11.5.3'
+			implementation 'com.acuant:acuantechipreader:11.5.3'
+			implementation 'com.acuant:acuantipliveness:11.5.3'
+			implementation 'com.acuant:acuantfacematch:11.5.3'
+			implementation 'com.acuant:acuantfacecapture:11.5.3'
+			implementation 'com.acuant:acuantpassiveliveness:11.5.3'
 
-1. 	Create an xml file with the following tags (If you plan to use bearer tokens to initialize, then username and password can be left blank):
+1. 	Create an .xml file with the following tags. (If you plan to use bearer tokens to initialize, include only the endpoints.):
 
 		<?xml version="1.0" encoding="UTF-8" ?>
 		<setting>
@@ -417,11 +417,9 @@ This section describes how to use **AcuantImagePreparation**.
 	
 	If the sharpness value is greater than 50, then the image is considered sharp (not blurry). If the glare value is 100, then the image does not contain glare. If the glare value is 0, then image contains glare.
 	
-	Preferably, the image must be sharp and not contain glare to get best results in authentication and data extraction. When the image has glare, low sharpness, or both, retake the image.
-	
-	 Acuant recommends against modifying and/or compressing the resulting AcuantImage.image before uploading. Modifying and/or compressing the AcuantImage.image may negatively affect authentication and data extraction results. 
-		
-**Note:** If you are using an independent orchestration layer, then make sure you supply AcuantImage.rawBytes not just AcuantImage.image.
+	Preferably, the image must be sharp and not contain glare to get best results in authentication and data extraction. When the image has glare, low sharpness, or both, retake the image. 
+
+**Note:** If you are using an independent orchestration layer, make sure you supply AcuantImage.rawBytes, and not AcuantImage.image. AcuantImage.image is provided only for visual use within the application (for example, for presenting the crop result to the user for visual verification). Do not modify AcuantImage.rawBytes in any way before upload.
 		
 -------------------------------------
 
@@ -693,7 +691,7 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 			fun tagReadStatus(status: String)
 		}
 
-**Important Note:** All the data in nfcData is directly read from the passport chip except for *age* and *isExpired*. These two fields are extrapolated from the data read from the chip and the current date (obtained through Calendar.getInstance().time). Potentially, this can lead to inaccuracy due to either the device time being wrong or the DOB or DOE being calculated incorrectly from the data on the chip. This is an unfortunate restraint of passport chips that occurs because the DOE and DOB are stored in YYMMDD format, which is susceptible to the Y2K issue. Given a year of 22, we cannot determine with 100 percent certainty whether the 22 represents 1922 or 2022 or, theoretically, 2122. The workaround is as follows: For age, the current year is the breakpoint (for example, in 2020, 25 would be interpreted as 1925. However, in 2030, 25 would be interpreted as 2025. For isExpired, we use the same logic but going forward 20 years from the current year.
+**Important Note:** Most, but not all, of the data in NfcData is directly read from the passport chip. *age* and *isExpired* are extrapolated from the data read from the chip and the current date (obtained through Calendar.getInstance().time). Potentially, this can lead to inaccuracy due to either the device time being wrong or the DOB or DOE being calculated incorrectly from the data on the chip. This is an unfortunate restraint of passport chips that occurs because the DOE and DOB are stored in YYMMDD format, which is susceptible to the Y2K issue. Given a year of 22, we cannot determine with 100 percent certainty whether the 22 represents 1922 or 2022 or, theoretically, 2122. The workaround is as follows: For age, the current year is the breakpoint (for example, in 2020, 25 would be interpreted as 1925. However, in 2030, 25 would be interpreted as 2025. For isExpired, we use the same logic but going forward 20 years from the current year. Additionally, *translatedDocumentType* is an extrapolated form of the 2 character document type/subtype within the eChip. Some countries do not include a second character and some use unstandard subtype correlations, meaning that this field can also be inaccurate.
 
 -------------------------------------
 
@@ -837,6 +835,32 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 ### NfcData (used in eChip workflow) ###
 
 		public class NfcData {
+		
+			enum class OzoneResultStatus {
+				SUCCESS, FAILED, UNKNOWN, NOT_PERFORMED
+			}
+
+			enum class ByteGroup {
+				DG1, DG2, DG3, DG4, DG5, DG6, DG7, DG8, DG9, DG10, DG11, DG12, DG13, DG14, DG15, SOD, COM
+			}
+
+			enum class AuthStatus {
+				Success, Failure, Skipped
+			}
+			
+			enum class TranslatedDocumentType {
+				Default("Default"),
+				NationalPassport("National Passport"),
+				EmergencyPassport("Emergency Passport"),
+				DiplomaticPassport("Diplomatic Passport"),
+				OfficialOrServicePassport("Official/Service Passport"),
+				RefugeePassport("Refugee Passport"),
+				AlienPassport("Alien Passport"),
+				StatelessPassport("Stateless Passport"),
+				TravelDocument("Travel Document"),
+				MilitaryPassport("Military Passport");
+			}
+		
 			var dateOfBirth: String
 			var documentExpiryDate: String
 			var documentCode: String
@@ -847,11 +871,17 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 			var firstName: String
 			var lastName: String
 			var documentType: String 
-			var documentSubType: String 
+			var documentSubType: String
+			var translatedDocumentType: TranslatedDocumentType //extrapolated
 			var gender: String 
 			val age: Int? //extrapolated
 			val isExpired: Boolean? //extrapolated
 			var image: Bitmap?
+			var signatureImage: Bitmap?
+			var BACStatus: AuthStatus
+			var PACEStatus: AuthStatus
+			var activeAuthenticationStatus: AuthStatus
+			var chipAuthenticationStatus: AuthStatus
 			var passportDataValid: Boolean //Data Group Hash Check Status
 			var passportCountrySigned: OzoneResultStatus
 			var passportSigned: OzoneResultStatus

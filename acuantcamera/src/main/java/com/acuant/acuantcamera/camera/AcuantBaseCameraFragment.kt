@@ -40,6 +40,7 @@ abstract class AcuantBaseCameraFragment: Fragment() {
     private var cameraProvider: ProcessCameraProvider? = null
     private var orientationEventListener: OrientationEventListener? = null
     private var preview: Preview? = null
+    private var fullyDone: Boolean = false
     private var failedToFocus: Boolean = false
     protected var imageCapture: ImageCapture? = null
     protected var capturing: Boolean = false
@@ -95,6 +96,14 @@ abstract class AcuantBaseCameraFragment: Fragment() {
     override fun onStop() {
         super.onStop()
         orientationEventListener?.disable()
+    }
+
+    override fun onPause() {
+        if (!fullyDone) {
+            capturing = false
+            resetWorkflow()
+        }
+        super.onPause()
     }
 
     @SuppressLint("MissingPermission")
@@ -320,6 +329,9 @@ abstract class AcuantBaseCameraFragment: Fragment() {
 
     private fun performCapture(listener: IAcuantSavedImage, captureType: String?) {
 
+        if (!capturing)
+            return
+
         imageCapture?.let { imageCapture ->
 
             // Create output file to hold the image (will automatically add numbers to create a uuid)
@@ -348,6 +360,7 @@ abstract class AcuantBaseCameraFragment: Fragment() {
                             addExif(File(savedUri), "NOT SPECIFIED (implementer used deprecated constructor that lacks this data)", rotation)
                         }
 
+                        fullyDone = true
                         listener.onSaved(savedUri)
                     }
 

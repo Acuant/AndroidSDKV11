@@ -64,6 +64,10 @@ class NfcResultActivity : AppCompatActivity() {
                 if (image != null) {
                     imageView!!.setImageBitmap(image)
                 }
+                val signImage = cardDetails.signatureImage
+                if (signImage != null) {
+                    signImageView!!.setImageBitmap(signImage)
+                }
 
                 currentId = signImageView!!.id
             }
@@ -106,8 +110,8 @@ class NfcResultActivity : AppCompatActivity() {
         addField(key, value)
 
         if (data.isExpired != null) {
-            key = "Is expired"
-            addBooleanField(key, data.isExpired!!)
+            key = "Is unexpired"
+            addBooleanField(key, !data.isExpired!!)
         }
 
         key = "Document code"
@@ -117,6 +121,12 @@ class NfcResultActivity : AppCompatActivity() {
         key = "Document type"
         value = data.documentType
         addField(key, value)
+
+        if (data.translatedDocumentType != NfcData.TranslatedDocumentType.Default) {
+            key = "Translated Document type"
+            value = data.translatedDocumentType.toString()
+            addField(key, value)
+        }
 
         key = "Issuing state"
         value = data.issuingAuthority
@@ -130,16 +140,34 @@ class NfcResultActivity : AppCompatActivity() {
         value = data.personalNumber
         addField(key, value)
 
-        key = "BAC authentication"
-        addBooleanField(key, true)
+        if (data.BACStatus != NfcData.AuthStatus.Skipped) {
+            key = "BAC authentication"
+            addBooleanField(key, data.BACStatus == NfcData.AuthStatus.Success)
+        }
+
+        if (data.PACEStatus != NfcData.AuthStatus.Skipped) {
+            key = "PACE authentication"
+            addBooleanField(key, data.PACEStatus == NfcData.AuthStatus.Success)
+        }
 
         key = "Data group hash authentication"
         addBooleanField(key, data.passportDataValid)
+
+        if (data.chipAuthenticationStatus != NfcData.AuthStatus.Skipped) {
+            key = "Chip Authentication"
+            addBooleanField(key, data.chipAuthenticationStatus == NfcData.AuthStatus.Success)
+        }
+
+        if (data.activeAuthenticationStatus != NfcData.AuthStatus.Skipped) {
+            key = "Active Authentication"
+            addBooleanField(key, data.activeAuthenticationStatus == NfcData.AuthStatus.Success)
+        }
 
         if (data.passportSigned != NfcData.OzoneResultStatus.NOT_PERFORMED) {
             key = "Document signer (Ozone)"
             addBooleanField(key, data.passportSigned == NfcData.OzoneResultStatus.SUCCESS)
         }
+
         if (data.passportCountrySigned != NfcData.OzoneResultStatus.NOT_PERFORMED) {
             key = "Country Signer (Ozone)"
             addBooleanField(key, data.passportCountrySigned == NfcData.OzoneResultStatus.SUCCESS)

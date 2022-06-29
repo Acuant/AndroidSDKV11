@@ -53,8 +53,6 @@ class AcuantBarcodeCameraFragment: AcuantBaseCameraFragment() {
     }
 
     override fun onPause() {
-        autoCancelCountdown?.cancel()
-        captureCountdown?.cancel()
         autoCancelCountdown = null
         captureCountdown = null
         super.onPause()
@@ -159,7 +157,8 @@ class AcuantBarcodeCameraFragment: AcuantBaseCameraFragment() {
     }
 
     override fun resetWorkflow() {
-        //This camera does not have such a workflow to reset
+        autoCancelCountdown?.cancel()
+        captureCountdown?.cancel()
     }
 
     companion object {

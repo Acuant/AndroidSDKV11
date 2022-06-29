@@ -23,6 +23,7 @@ import com.acuant.acuantfacecapture.interfaces.IFaceCameraActivityFinish
 import com.acuant.acuantfacecapture.model.FaceCaptureOptions
 import com.acuant.acuantfacecapture.R
 import com.acuant.acuantfacecapture.interfaces.IAcuantSavedImage
+import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -49,7 +50,6 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
     protected lateinit var cameraActivityListener: IFaceCameraActivityFinish
     protected lateinit var acuantOptions: FaceCaptureOptions
 
-
     private val permissionRequest = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -68,6 +68,14 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
             }
             alertDialog.show()
         }
+    }
+
+    abstract fun resetWorkflow()
+
+    override fun onPause() {
+        capturing = false
+        resetWorkflow()
+        super.onPause()
     }
 
     override fun onDestroyView() {
@@ -255,31 +263,35 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
                             val exif = Exif.createFromFile(file)
                             val rotation = exif.rotation
 
-                            if (rotation != 0) {
-                                val instream = file.inputStream()
-                                var bmp: Bitmap = BitmapFactory.decodeStream(instream)
+                            val instream = file.inputStream()
+                            var bmp: Bitmap = BitmapFactory.decodeStream(instream)
 
+
+                            if (rotation != 0) {
                                 val matrix = Matrix()
                                 matrix.postRotate(rotation.toFloat())
                                 bmp = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, matrix, true)
-                                instream.close()
+                            }
 
-                                var fOut: FileOutputStream? = null
-                                try {
-                                    val newPhotoFile =
-                                        File.createTempFile("AcuantCameraImage", ".jpg", requireActivity().cacheDir)
-                                    fOut = newPhotoFile.outputStream()
-                                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, fOut)
-                                    file.delete()
-                                    savedUri = newPhotoFile.absolutePath
-                                } catch (e1: FileNotFoundException) {
-                                    e1.printStackTrace()
-                                } catch (e: IOException) {
-                                    e.printStackTrace()
-                                } finally {
-                                    fOut?.flush()
-                                    fOut?.close()
-                                }
+                            bmp = AcuantImagePreparation.resize(bmp, 720) ?: bmp
+
+                            instream.close()
+
+                            var fOut: FileOutputStream? = null
+                            try {
+                                val newPhotoFile =
+                                    File.createTempFile("AcuantCameraImage", ".jpg", requireActivity().cacheDir)
+                                fOut = newPhotoFile.outputStream()
+                                bmp.compress(Bitmap.CompressFormat.JPEG, 100, fOut)
+                                file.delete()
+                                savedUri = newPhotoFile.absolutePath
+                            } catch (e1: FileNotFoundException) {
+                                e1.printStackTrace()
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            } finally {
+                                fOut?.flush()
+                                fOut?.close()
                             }
 
                             listener.onSaved(savedUri)

@@ -70,18 +70,17 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
         }
     }
 
-    override fun onPause() {
-        resetTimer()
-        mFacialGraphicOverlay?.clear()
-        mFacialGraphic?.updateLiveFaceDetails(null, FaceCameraState.Align)
-        super.onPause()
-    }
-
     override fun onDestroy() {
         mFacialGraphicOverlay?.clear()
         mFacialGraphicOverlay = null
         mFacialGraphic = null
         super.onDestroy()
+    }
+
+    override fun resetWorkflow() {
+        resetTimer()
+        mFacialGraphicOverlay?.clear()
+        mFacialGraphic?.updateLiveFaceDetails(null, FaceCameraState.Align)
     }
 
     fun changeToHGLiveness() {

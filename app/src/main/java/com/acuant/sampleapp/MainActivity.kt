@@ -66,6 +66,9 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.KeyPairGenerator
+import java.security.Signature
+import java.security.spec.ECGenParameterSpec
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.concurrent.thread
