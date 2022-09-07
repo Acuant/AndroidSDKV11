@@ -147,8 +147,8 @@ class AcuantBarcodeCameraFragment: AcuantBaseCameraFragment() {
         }
         frameAnalyzer.disableDocumentDetection()
         imageAnalyzer = ImageAnalysis.Builder()
-//            .setTargetAspectRatio(screenAspectRatio)
             .setTargetResolution(Size(1280, 960))
+//            .setTargetAspectRatio(screenAspectRatio)
             .setTargetRotation(rotation)
             .build()
             .also {

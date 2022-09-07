@@ -5,6 +5,7 @@ import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
@@ -376,7 +377,8 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
             setTapToCapture()
         }
         imageAnalyzer = ImageAnalysis.Builder()
-            .setTargetAspectRatio(screenAspectRatio)
+            .setTargetResolution(Size(1280, 960))
+//            .setTargetAspectRatio(screenAspectRatio)
             .setTargetRotation(rotation)
             .build()
             .also {

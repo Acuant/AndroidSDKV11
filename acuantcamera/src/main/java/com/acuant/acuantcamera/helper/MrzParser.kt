@@ -207,7 +207,11 @@ class MrzParser {
     // one another. This list can however get expanded if we get definitive misreads happening on
     // specific characters
     private fun trySubstitutions(phrase: String, checksum: Char, onlyModifyChecksum: Boolean = false): Pair<String, Char> {
-        val subList = listOf(Pair('O', '0'), Pair('5', 'S'))
+
+        //numbers should be second in this list as the order of substitutions will try to sub first
+        // for second before second for first.
+        val subList = listOf(Pair('O', '0'), Pair('S', '5'))
+
         if (checkSum(phrase, checksum)) {
             return Pair(phrase, checksum)
         }

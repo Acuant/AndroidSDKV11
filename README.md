@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.5.3
-**June 2022**
+# Acuant Android SDK v11.5.4
+**September 2022**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -36,7 +36,7 @@ Before 11.5.0, the SDK was not compiled with AndroidX. The SDK could still be us
 
 ## Prerequisites ##
 
-- Supports Android SDK versions 21-31 (compiled with 31)
+- Supports Android SDK versions 21-32 (compiled with 32)
 
 
 ## Modules ##
@@ -116,15 +116,15 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-			implementation 'com.acuant:acuantcommon:11.5.3'
-			implementation 'com.acuant:acuantcamera:11.5.3'
-			implementation 'com.acuant:acuantimagepreparation:11.5.3'
-			implementation 'com.acuant:acuantdocumentprocessing:11.5.3'
-			implementation 'com.acuant:acuantechipreader:11.5.3'
-			implementation 'com.acuant:acuantipliveness:11.5.3'
-			implementation 'com.acuant:acuantfacematch:11.5.3'
-			implementation 'com.acuant:acuantfacecapture:11.5.3'
-			implementation 'com.acuant:acuantpassiveliveness:11.5.3'
+			implementation 'com.acuant:acuantcommon:11.5.4'
+			implementation 'com.acuant:acuantcamera:11.5.4'
+			implementation 'com.acuant:acuantimagepreparation:11.5.4'
+			implementation 'com.acuant:acuantdocumentprocessing:11.5.4'
+			implementation 'com.acuant:acuantechipreader:11.5.4'
+			implementation 'com.acuant:acuantipliveness:11.5.4'
+			implementation 'com.acuant:acuantfacematch:11.5.4'
+			implementation 'com.acuant:acuantfacecapture:11.5.4'
+			implementation 'com.acuant:acuantpassiveliveness:11.5.4'
 
 1. 	Create an .xml file with the following tags. (If you plan to use bearer tokens to initialize, include only the endpoints.):
 
@@ -773,6 +773,7 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 			fun setColorBracketHold(value: Int) : DocumentCameraOptionsBuilder
 			fun setColorBracketCloser(value: Int) : DocumentCameraOptionsBuilder
 			fun setColorBracketCapturing(value: Int) : DocumentCameraOptionsBuilder
+			fun setPreventScreenshots(value: Boolean) : DocumentCameraOptionsBuilder
 			/**
 			* [ZoomType.Generic] keeps the camera zoomed out to enable you to use nearly all available
 			* capture space. This is the default setting. Use this setting to capture large
@@ -798,6 +799,7 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 			fun setDefaultBracketMarginHeight(value: Int) : MrzCameraOptionsBuilder
 			fun setColorCapturing(value: Int) : MrzCameraOptionsBuilder
 			fun setColorBracketCapturing(value: Int) : MrzCameraOptionsBuilder
+			fun setPreventScreenshots(value: Boolean) : MrzCameraOptionsBuilder
 			fun build() : AcuantCameraOptions
 		}
 		
@@ -806,6 +808,7 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 			fun setTimeToWaitUntilTimeout(value: Int) : BarcodeCameraOptionsBuilder
 			fun setColorCapturing(value: Int) : BarcodeCameraOptionsBuilder
 			fun setColorAlign(value: Int) : BarcodeCameraOptionsBuilder
+			fun setPreventScreenshots(value: Boolean) : BarcodeCameraOptionsBuilder
 			fun build() : AcuantCameraOptions
 		}
 

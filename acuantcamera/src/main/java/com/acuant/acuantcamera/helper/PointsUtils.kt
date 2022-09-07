@@ -91,8 +91,8 @@ object PointsUtils {
     internal fun scalePoints(points: Array<Point>, camContainer: ViewGroup?, analyzerSize: Size?, previewSize: ViewGroup?, rectangleView: BaseRectangleView?) : Array<Point> {
         if (camContainer != null && previewSize != null && analyzerSize != null) {
 
-            val scale: Float = previewSize.height.toFloat() / analyzerSize.width.toFloat()
-            val yOffset: Int = ((previewSize.width.toFloat() - analyzerSize.height * scale) / 2).toInt()
+            val scale: Float = max(previewSize.height, previewSize.width).toFloat() / max(analyzerSize.height, analyzerSize.width).toFloat()
+            val yOffset: Int = ((min(previewSize.height, previewSize.width).toFloat() - min(analyzerSize.height, analyzerSize.width).toFloat() * scale) / 2).toInt()
             val xOffset: Int = ((camContainer.height - previewSize.height) / 2)
 
             rectangleView?.setWidth(camContainer.width.toFloat())

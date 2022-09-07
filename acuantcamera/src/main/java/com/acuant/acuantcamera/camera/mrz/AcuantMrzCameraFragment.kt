@@ -206,7 +206,7 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
             onMrzDetection(points, result, state)
         }
         imageAnalyzer = ImageAnalysis.Builder()
-            .setTargetResolution(Size(960, 1280))
+            .setTargetResolution(Size(1280, 960))
 //            .setTargetAspectRatio(screenAspectRatio)
             .setTargetRotation(rotation)
             .build()

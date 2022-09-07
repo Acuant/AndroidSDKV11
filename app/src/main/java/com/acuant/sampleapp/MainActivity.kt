@@ -66,9 +66,6 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.KeyPairGenerator
-import java.security.Signature
-import java.security.spec.ECGenParameterSpec
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.concurrent.thread
@@ -615,13 +612,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 //                        }
                         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                         setProgress(false)
-                        if (isKeyless) {
-                            handleKeyless(image)
-                        } else {
-                            recentImage = image
-
-                            showConfirmation(!frontCaptured)
-                        }
+                        recentImage = image
+                        showConfirmation(!frontCaptured)
                     }
 
                     override fun onError(error: AcuantError) {
@@ -767,88 +759,107 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             if (isConfirmed) {
                 if (isFront) {
                     capturedFrontImage = recentImage
-                    if (isHealthCard) {
-                        frontCaptured = true
-                        showAcuDialog(R.string.scan_back_side_health_insurance_card, "Message",
-                                { dialog, _ ->
-                                    dialog.dismiss()
-                                    showDocumentCaptureCamera()
-                                }, { dialog, _ ->
-                            dialog.dismiss()
-                            uploadHealthCard()
-                        })
-
+                    if (isKeyless) {
+                        handleKeyless(recentImage)
                     } else {
-                        uploadIdFront()
+                        if (isHealthCard) {
+                            frontCaptured = true
+                            showAcuDialog(R.string.scan_back_side_health_insurance_card, "Message",
+                                    { dialog, _ ->
+                                        dialog.dismiss()
+                                        showDocumentCaptureCamera()
+                                    }, { dialog, _ ->
+                                dialog.dismiss()
+                                uploadHealthCard()
+                            })
+
+                        } else {
+                            uploadIdFront()
+                        }
                     }
                 } else {
                     capturedBackImage = recentImage
-                    if (!isHealthCard) {
-                        val alert = AlertDialog.Builder(this@MainActivity)
-                        alert.setTitle("Message")
-                        if (capturedBarcodeString != null && capturedBarcodeString!!.trim().isNotEmpty()) {
-                            if (livenessSelected != 0) {
-                                alert.setMessage("Following barcode is captured.\n\n"
-                                        + "Barcode String :\n\n"
-                                        + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt())
-                                        + "...\n\n"
-                                        + "Capture Selfie Image now.")
-                            } else {
-                                alert.setMessage("Following barcode is captured.\n\n"
-                                        + "Barcode String :\n\n"
-                                        + capturedBarcodeString!!.subSequence(0, (capturedBarcodeString!!.length * 0.25).toInt()))
-                            }
-                            alert.setPositiveButton("OK") { dialog, _ ->
-                                dialog.dismiss()
-                                setProgress(true, "Getting Data...")
-                                uploadIdBack()
-                                showFaceCamera()
-                            }
-                            if (livenessSelected != 0) {
-                                alert.setNegativeButton("CANCEL") { dialog, _ ->
-                                    setProgress(true, "Getting Data...")
-                                    facialLivelinessResultString = "Facial Liveliness Failed"
-                                    capturingSelfieImage = false
-                                    uploadIdBack()
-                                    dialog.dismiss()
-                                }
-                            }
-                        } else if (barcodeExpected) {
-                            alert.setMessage("A barcode was expected but was not captured. Please try capturing the barcode.")
-
-                            alert.setPositiveButton("OK") { dialog, _ ->
-                                dialog.dismiss()
-                                setProgress(true, "Uploading...")
-                                uploadIdBack()
-                                showBarcodeCaptureCamera()
-                            }
-                        } else {
-                            if (livenessSelected != 0) {
-                                alert.setMessage("Capture Selfie Image now.")
-                            } else {
-                                alert.setMessage("Continue.")
-                            }
-                            alert.setPositiveButton("OK") { dialog, _ ->
-                                dialog.dismiss()
-                                setProgress(true, "Getting Data...")
-                                uploadIdBack()
-                                showFaceCamera()
-                            }
-                            if (livenessSelected != 0) {
-                                alert.setNegativeButton("CANCEL") { dialog, _ ->
-                                    setProgress(true, "Getting Data...")
-                                    facialLivelinessResultString = "Facial Liveliness Failed"
-                                    capturingSelfieImage = false
-                                    uploadIdFront()
-                                    dialog.dismiss()
-                                }
-                            }
-                        }
-                        alert.show()
+                    if (isKeyless) {
+                        handleKeyless(recentImage)
                     } else {
-                        uploadHealthCard()
-                    }
+                        if (!isHealthCard) {
+                            val alert = AlertDialog.Builder(this@MainActivity)
+                            alert.setTitle("Message")
+                            if (capturedBarcodeString != null && capturedBarcodeString!!.trim()
+                                    .isNotEmpty()
+                            ) {
+                                if (livenessSelected != 0) {
+                                    alert.setMessage(
+                                        "Following barcode is captured.\n\n"
+                                                + "Barcode String :\n\n"
+                                                + capturedBarcodeString!!.subSequence(
+                                            0,
+                                            (capturedBarcodeString!!.length * 0.25).toInt()
+                                        )
+                                                + "...\n\n"
+                                                + "Capture Selfie Image now."
+                                    )
+                                } else {
+                                    alert.setMessage(
+                                        "Following barcode is captured.\n\n"
+                                                + "Barcode String :\n\n"
+                                                + capturedBarcodeString!!.subSequence(
+                                            0,
+                                            (capturedBarcodeString!!.length * 0.25).toInt()
+                                        )
+                                    )
+                                }
+                                alert.setPositiveButton("OK") { dialog, _ ->
+                                    dialog.dismiss()
+                                    setProgress(true, "Getting Data...")
+                                    uploadIdBack()
+                                    showFaceCamera()
+                                }
+                                if (livenessSelected != 0) {
+                                    alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                        setProgress(true, "Getting Data...")
+                                        facialLivelinessResultString = "Facial Liveliness Failed"
+                                        capturingSelfieImage = false
+                                        uploadIdBack()
+                                        dialog.dismiss()
+                                    }
+                                }
+                            } else if (barcodeExpected) {
+                                alert.setMessage("A barcode was expected but was not captured. Please try capturing the barcode.")
 
+                                alert.setPositiveButton("OK") { dialog, _ ->
+                                    dialog.dismiss()
+                                    setProgress(true, "Uploading...")
+                                    uploadIdBack()
+                                    showBarcodeCaptureCamera()
+                                }
+                            } else {
+                                if (livenessSelected != 0) {
+                                    alert.setMessage("Capture Selfie Image now.")
+                                } else {
+                                    alert.setMessage("Continue.")
+                                }
+                                alert.setPositiveButton("OK") { dialog, _ ->
+                                    dialog.dismiss()
+                                    setProgress(true, "Getting Data...")
+                                    uploadIdBack()
+                                    showFaceCamera()
+                                }
+                                if (livenessSelected != 0) {
+                                    alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                        setProgress(true, "Getting Data...")
+                                        facialLivelinessResultString = "Facial Liveliness Failed"
+                                        capturingSelfieImage = false
+                                        uploadIdFront()
+                                        dialog.dismiss()
+                                    }
+                                }
+                            }
+                            alert.show()
+                        } else {
+                            uploadHealthCard()
+                        }
+                    }
                 }
             } else {
                 showDocumentCaptureCamera()

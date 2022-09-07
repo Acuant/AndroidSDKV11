@@ -29,6 +29,7 @@ internal constructor(
         internal val colorBracketHold : Int = Color.YELLOW,
         internal val colorBracketCapturing : Int = Color.GREEN,
         internal val cardRatio : Float = 0.65f,
+        internal val preventScreenshots : Boolean = true,
         internal val cameraMode: CameraMode = CameraMode.Document,
         internal val zoomType: ZoomType = ZoomType.Generic
 ) : Serializable {
@@ -59,6 +60,7 @@ internal constructor(
         private var colorBracketHold : Int = Color.YELLOW
         private var colorBracketCapturing : Int = Color.GREEN
         private var zoomType: ZoomType = ZoomType.Generic
+        private var preventScreenshots : Boolean = true
         private val cardRatio : Float = 0.65f
 
         fun setTimeInMsPerDigit(value: Int) : DocumentCameraOptionsBuilder {
@@ -131,6 +133,11 @@ internal constructor(
             return this
         }
 
+        fun setPreventScreenshots(value: Boolean) : DocumentCameraOptionsBuilder {
+            preventScreenshots = value
+            return this
+        }
+
         @Deprecated("No longer reliant on GMS, option is ignored", ReplaceWith(""))
         fun setUseGms(value: Boolean) : DocumentCameraOptionsBuilder {
             return this
@@ -156,9 +163,12 @@ internal constructor(
 
         fun build() : AcuantCameraOptions {
             @Suppress("DEPRECATION")
-            return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture, bracketLengthInHorizontal,
-                    bracketLengthInVertical, defaultBracketMarginWidth, defaultBracketMarginHeight, colorHold,
-                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, cardRatio, zoomType = zoomType, cameraMode = CameraMode.Document)
+            return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture,
+                bracketLengthInHorizontal, bracketLengthInVertical, defaultBracketMarginWidth,
+                defaultBracketMarginHeight, colorHold, colorCapturing, colorBracketAlign,
+                colorBracketCloser, colorBracketHold, colorBracketCapturing, cardRatio,
+                preventScreenshots = preventScreenshots, zoomType = zoomType,
+                cameraMode = CameraMode.Document)
         }
     }
 
@@ -168,6 +178,7 @@ internal constructor(
         private var digitsToShow : Int = DEFAULT_TIMEOUT_BARCODE
         private var colorCapturing : Int = Color.GREEN
         private var colorHold : Int = Color.WHITE
+        private var preventScreenshots : Boolean = true
 
         /**
          * Only an aesthetic difference to prevent jarring transition from the camera (default: [DEFAULT_DELAY_BARCODE]).
@@ -198,11 +209,16 @@ internal constructor(
             return this
         }
 
+        fun setPreventScreenshots(value: Boolean) : BarcodeCameraOptionsBuilder {
+            preventScreenshots = value
+            return this
+        }
+
         fun build() : AcuantCameraOptions {
             @Suppress("DEPRECATION")
-            return AcuantCameraOptions(timeInMsPerDigit = timeInMsPerDigit, digitsToShow = digitsToShow,
-                    colorCapturing = colorCapturing, colorHold = colorHold,
-                    cameraMode = CameraMode.BarcodeOnly)
+            return AcuantCameraOptions(timeInMsPerDigit = timeInMsPerDigit,
+                digitsToShow = digitsToShow, colorCapturing = colorCapturing, colorHold = colorHold,
+                preventScreenshots = preventScreenshots, cameraMode = CameraMode.BarcodeOnly)
         }
     }
 
@@ -223,8 +239,9 @@ internal constructor(
         private var colorBracketCloser : Int = Color.RED
         private var colorBracketHold : Int = Color.YELLOW
         private var colorBracketCapturing : Int = Color.GREEN
-        private val cardRatio : Float = 0.65f
         private var isMrzMode: Boolean = true
+        private var preventScreenshots : Boolean = true
+        private val cardRatio : Float = 0.65f
 
         fun setAllowBox(value: Boolean) : MrzCameraOptionsBuilder {
             allowBox = value
@@ -261,11 +278,18 @@ internal constructor(
             return this
         }
 
+        fun setPreventScreenshots(value: Boolean) : MrzCameraOptionsBuilder {
+            preventScreenshots = value
+            return this
+        }
+
         fun build() : AcuantCameraOptions {
             @Suppress("DEPRECATION")
-            return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture, bracketLengthInHorizontal,
-                    bracketLengthInVertical, defaultBracketMarginWidth, defaultBracketMarginHeight, colorHold,
-                    colorCapturing, colorBracketAlign, colorBracketCloser, colorBracketHold, colorBracketCapturing, cardRatio, cameraMode = CameraMode.Mrz)
+            return AcuantCameraOptions(timeInMsPerDigit, digitsToShow, allowBox, autoCapture,
+                bracketLengthInHorizontal, bracketLengthInVertical, defaultBracketMarginWidth,
+                defaultBracketMarginHeight, colorHold, colorCapturing, colorBracketAlign,
+                colorBracketCloser, colorBracketHold, colorBracketCapturing, cardRatio,
+                preventScreenshots = preventScreenshots, cameraMode = CameraMode.Mrz)
         }
     }
 }

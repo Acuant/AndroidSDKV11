@@ -2,6 +2,7 @@ package com.acuant.acuantcamera.camera
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.acuant.acuantcamera.R
@@ -22,8 +23,6 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCameraBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        hideTopMenu()
 
         val unserializedOptions = intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS)
 
@@ -33,7 +32,14 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
             unserializedOptions as AcuantCameraOptions
         }
 
-        //start the camera if this si the first time the activity is created (camera already exists otherwise)
+        if (options.preventScreenshots) {
+            window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        }
+
+        setContentView(binding.root)
+        hideTopMenu()
+
+        //start the camera if this is the first time the activity is created (camera already exists otherwise)
         if (savedInstanceState == null) {
             val cameraFragment: AcuantBaseCameraFragment = when (options.cameraMode) {
                 AcuantCameraOptions.CameraMode.BarcodeOnly -> {
