@@ -16,8 +16,10 @@ import com.acuant.acuantfacecapture.constant.Constants.ACUANT_EXTRA_FACE_IMAGE_U
 import com.acuant.acuantfacecapture.constant.Constants.RESULT_ERROR
 import com.acuant.acuantfacecapture.databinding.ActivityFaceCameraBinding
 import com.acuant.acuantfacecapture.interfaces.IFaceCameraActivityFinish
+import com.acuant.acuantfacecapture.language.LocaleManager
 import com.acuant.acuantfacecapture.model.CameraMode
 import com.acuant.acuantfacecapture.model.FaceCaptureOptions
+import java.util.*
 
 class AcuantFaceCameraActivity: AppCompatActivity(), IFaceCameraActivityFinish {
 
@@ -25,10 +27,6 @@ class AcuantFaceCameraActivity: AppCompatActivity(), IFaceCameraActivityFinish {
 
     //Camera Launch
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityFaceCameraBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        hideTopMenu()
 
         val unserializedOptions = intent.getSerializableExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS)
 
@@ -37,6 +35,16 @@ class AcuantFaceCameraActivity: AppCompatActivity(), IFaceCameraActivityFinish {
         } else {
             unserializedOptions as FaceCaptureOptions
         }
+
+        LocaleManager.updateResources(this, Locale(options.language))
+
+
+        super.onCreate(savedInstanceState)
+        binding = ActivityFaceCameraBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        hideTopMenu()
+
+
 
         //start the camera if this is the first time the activity is created (camera already exists otherwise)
         if (savedInstanceState == null) {
