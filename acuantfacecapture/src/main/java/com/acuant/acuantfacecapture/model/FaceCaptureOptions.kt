@@ -9,6 +9,7 @@ enum class CameraMode { FaceCapture, HgLiveness }
  * Serializable options object that can be passed in to change the face capture ui.
  */
 class FaceCaptureOptions @JvmOverloads constructor(
+    var language: String = "en",
     val totalCaptureTime: Int = 2,
     val colorGood: Int = Color.GREEN,
     val colorDefault: Int = Color.BLACK,
@@ -17,6 +18,5 @@ class FaceCaptureOptions @JvmOverloads constructor(
     val colorTextDefault: Int = Color.WHITE,
     val colorTextError: Int = Color.RED,
     val showOval: Boolean = false,
-    val cameraMode: CameraMode = CameraMode.FaceCapture,
-    var language: String = "en"
+    val cameraMode: CameraMode = CameraMode.FaceCapture
 ) : Serializable
