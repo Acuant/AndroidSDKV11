@@ -30,6 +30,18 @@ android {
     buildFeatures {
         viewBinding true
     }
+
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                groupId = 'com.github.hrayr09amiraghyan'
+                artifactId = 'acuantcamera'
+                version = '1.5.6'
+            }
+        }
+    }
+
 }
 dependencies {
     // Kotlin lang
@@ -54,4 +66,5 @@ dependencies {
     implementation 'com.rmtheis:tess-two:9.1.0'
     implementation 'com.acuant:acuantcommon:11.5.4'
     implementation 'com.acuant:acuantimagepreparation:11.5.4'
+
 }
