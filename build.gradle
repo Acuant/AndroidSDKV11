@@ -1,4 +1,5 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+apply plugin:'maven-publish'
 
 buildscript {
     ext.kotlin_version = '1.6.10'
@@ -49,6 +50,27 @@ allprojects {
     version = '11.5.7'
     group = 'com.github.hrayr09amiraghyan' // Maven Group ID for the artifact
 }
+
+subprojects{
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                groupId = 'com.github.hrayr09amiraghyan'
+                artifactId = 'acuantcamera'
+                version = '1.5.7'
+            }
+        }
+
+        publications {
+            mavenJava(MavenPublication) {
+                groupId = 'com.github.hrayr09amiraghyan'
+                artifactId = 'acuantfacecapture'
+                version = '1.5.7'
+            }
+        }
+    }
+}
+
 
 task clean(type: Delete) {
     delete rootProject.buildDir

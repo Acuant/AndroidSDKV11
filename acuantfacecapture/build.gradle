@@ -28,15 +28,15 @@ android {
     }
 
 
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                groupId = 'com.github.hrayr09amiraghyan'
-                artifactId = 'acuantfacecapture'
-                version = '11.5.7'
-            }
-        }
-    }
+//    publishing {
+//        publications {
+//            mavenJava(MavenPublication) {
+//                groupId = 'com.github.hrayr09amiraghyan'
+//                artifactId = 'acuantfacecapture'
+//                version = '11.5.7'
+//            }
+//        }
+//    }
 }
 dependencies {
     // Kotlin lang

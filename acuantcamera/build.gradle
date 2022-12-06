@@ -32,15 +32,15 @@ android {
     }
 
 
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                groupId = 'com.github.hrayr09amiraghyan'
-                artifactId = 'acuantcamera'
-                version = '1.5.7'
-            }
-        }
-    }
+//    publishing {
+//        publications {
+//            mavenJava(MavenPublication) {
+//                groupId = 'com.github.hrayr09amiraghyan'
+//                artifactId = 'acuantcamera'
+//                version = '1.5.7'
+//            }
+//        }
+//    }
 
 }
 dependencies {
