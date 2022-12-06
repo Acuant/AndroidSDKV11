@@ -45,8 +45,8 @@ allprojects {
     }
 
     project.ext.set("versionCode", 11500)
-    project.ext.set("versionName", '11.5.6')
-    version = '11.5.6'
+    project.ext.set("versionName", '11.5.7')
+    version = '11.5.7'
     group = 'com.github.hrayr09amiraghyan' // Maven Group ID for the artifact
 }
 

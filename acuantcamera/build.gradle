@@ -37,7 +37,7 @@ android {
             mavenJava(MavenPublication) {
                 groupId = 'com.github.hrayr09amiraghyan'
                 artifactId = 'acuantcamera'
-                version = '1.5.6'
+                version = '1.5.7'
             }
         }
     }
