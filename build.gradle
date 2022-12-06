@@ -45,9 +45,9 @@ allprojects {
     }
 
     project.ext.set("versionCode", 11500)
-    project.ext.set("versionName", '11.5.0')
+    project.ext.set("versionName", '11.5.5')
     version = '11.5.0'
-    group = 'com.acuant' // Maven Group ID for the artifact
+    group = 'com.github.hrayr09amiraghyan' // Maven Group ID for the artifact
 }
 
 task clean(type: Delete) {
