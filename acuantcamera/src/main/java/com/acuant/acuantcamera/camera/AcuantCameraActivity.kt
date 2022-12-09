@@ -13,17 +13,16 @@ import com.acuant.acuantcamera.interfaces.ICameraActivityFinish
 import com.acuant.acuantcamera.constant.*
 import com.acuant.acuantcamera.databinding.ActivityCameraBinding
 import com.acuant.acuantcamera.helper.MrzResult
+import com.acuant.acuantcamera.language.LocaleManager
 import com.acuant.acuantcommon.model.AcuantError
+import java.util.*
 
-class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
+class AcuantCameraActivity : AppCompatActivity(), ICameraActivityFinish {
 
     private lateinit var binding: ActivityCameraBinding
 
     //Camera Launch
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityCameraBinding.inflate(layoutInflater)
-
         val unserializedOptions = intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS)
 
         val options: AcuantCameraOptions = if (unserializedOptions == null) {
@@ -31,9 +30,14 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
         } else {
             unserializedOptions as AcuantCameraOptions
         }
-
+        LocaleManager.updateResources(this, Locale(options.language))
+        super.onCreate(savedInstanceState)
+        binding = ActivityCameraBinding.inflate(layoutInflater)
         if (options.preventScreenshots) {
-            window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE
+            )
         }
 
         setContentView(binding.root)
