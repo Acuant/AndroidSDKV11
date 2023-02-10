@@ -104,8 +104,8 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
         textureViewWidth = width
     }
 
-    fun setAndDrawPoints(points:Array<Point>?){
-        if(this.points != null) {
+    fun setAndDrawPoints(points:Array<Point>?) {
+        if (this.points != null) {
             oldPoints = this.points
         }
         this.points = points
@@ -128,7 +128,7 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
 
     private fun calcPath() {
         path = Path()
-        if(points != null && points!!.size == 4) {
+        if (points != null && points!!.size == 4) {
 
             path.moveTo(points!![3].y.toFloat(), points!![3].x.toFloat())
             path.lineTo(points!![0].y.toFloat(), points!![0].x.toFloat())
@@ -139,10 +139,11 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
     }
 
     internal fun setDrawBox(drawBox : Boolean) {
-        if(allowBox)
+        if (allowBox) {
             this.drawBox = drawBox
-        else
+        } else {
             this.drawBox = false
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -181,7 +182,7 @@ abstract class BaseRectangleView(context: Context, attr: AttributeSet?) : View(c
                     frame!!.top.toFloat(), frame!!.right.toFloat(), frame!!.top.toFloat(), frame!!.left.toFloat())
 
         } else {
-            if(oldPoints == null || oldPoints!!.size != 4) {
+            if (oldPoints == null || oldPoints!!.size != 4) {
                 drawBracketsFromCords(canvas, points!![0].x.toFloat(), points!![0].y.toFloat(), points!![1].x.toFloat(), points!![1].y.toFloat(),
                         points!![2].x.toFloat(), points!![2].y.toFloat(), points!![3].x.toFloat(), points!![3].y.toFloat())
             } else {

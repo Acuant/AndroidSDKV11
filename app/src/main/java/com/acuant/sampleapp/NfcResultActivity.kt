@@ -16,6 +16,11 @@ import com.acuant.acuantechipreader.model.NfcData
 
 class NfcResultActivity : AppCompatActivity() {
 
+    companion object {
+        const val FACE_MATCH_RESULT = "FaceMatchResult"
+        const val FACE_LIVENESS_RESULT = "FaceLivenessResult"
+    }
+
     private var progressDialog: LinearLayout? = null
     private var progressText: TextView? = null
     private var resultLayout: RelativeLayout? = null
@@ -56,11 +61,17 @@ class NfcResultActivity : AppCompatActivity() {
         val intent = intent
 
         if (intent != null) {
-            val cardDetails = NfcStore.cardDetails
+            val cardDetails: NfcData? = NfcStore.cardDetails
+            val faceMatch = intent.getStringExtra(FACE_MATCH_RESULT)
+            val faceLiveness = intent.getStringExtra(FACE_LIVENESS_RESULT)
             if (cardDetails != null) {
                 setProgress(false)
+                if (faceLiveness != null && faceMatch != null) {
+                    addField("Face Liveness", faceLiveness)
+                    addField("Face Match", faceMatch)
+                }
                 setData(cardDetails)
-                val image = cardDetails.image
+                val image = cardDetails.faceImage
                 if (image != null) {
                     imageView!!.setImageBitmap(image)
                 }

@@ -9,7 +9,8 @@
     <string name="acuant_camera_align">ALINEAR</string>
     <string name="acuant_camera_align_and_tap">ALINEAR Y TOCAR</string>
     <string name="acuant_camera_move_closer">MUÉVETE MAS CERCA</string>
-    <string name="acuant_camera_not_in_frame">DEMASIADO CERCA!</string>
+    <string name="acuant_camera_too_close">DEMASIADO CERCA</string>
+    <string name="acuant_camera_out_of_bounds">FUERA DE CUADRO</string>
     <string name="acuant_camera_hold_steady">MANTENER ESTABLE</string>
     <string name="acuant_camera_capturing">CAPTURA</string>
 

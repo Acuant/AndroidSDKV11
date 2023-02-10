@@ -32,9 +32,12 @@ import com.acuant.acuantcommon.model.*
 import com.acuant.acuantcommon.helper.CredentialHelper
 import com.acuant.acuantdocumentprocessing.AcuantDocumentProcessor
 import com.acuant.acuantdocumentprocessing.model.*
-import com.acuant.acuantdocumentprocessing.resultmodel.*
+import com.acuant.acuantdocumentprocessing.documentresultmodel.*
+import com.acuant.acuantdocumentprocessing.documentresultmodel.enums.DocumentDataType
+import com.acuant.acuantdocumentprocessing.documentresultmodel.enums.DocumentSide
+import com.acuant.acuantdocumentprocessing.documentresultmodel.enums.LightSource
+import com.acuant.acuantdocumentprocessing.healthinsuranceresultmodel.HealthInsuranceCardResult
 import com.acuant.acuantdocumentprocessing.service.listener.*
-import com.acuant.acuantechipreader.initializer.EchipInitializer
 import com.acuant.acuantfacecapture.camera.AcuantFaceCameraActivity
 import com.acuant.acuantfacecapture.constant.Constants.ACUANT_EXTRA_FACE_CAPTURE_OPTIONS
 import com.acuant.acuantfacecapture.constant.Constants.ACUANT_EXTRA_FACE_IMAGE_URL
@@ -46,7 +49,6 @@ import com.acuant.acuantfacematchsdk.model.FacialMatchResult
 import com.acuant.acuantfacematchsdk.service.FacialMatchListener
 import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.acuant.acuantimagepreparation.background.EvaluateImageListener
-import com.acuant.acuantimagepreparation.initializer.ImageProcessorInitializer
 import com.acuant.acuantimagepreparation.model.AcuantImage
 import com.acuant.acuantimagepreparation.model.CroppingData
 import com.acuant.acuantipliveness.AcuantIPLiveness
@@ -59,6 +61,8 @@ import com.acuant.acuantpassiveliveness.AcuantPassiveLiveness
 import com.acuant.acuantpassiveliveness.model.PassiveLivenessData
 import com.acuant.acuantpassiveliveness.model.PassiveLivenessResult
 import com.acuant.acuantpassiveliveness.service.PassiveLivenessListener
+import com.acuant.sampleapp.NfcResultActivity.Companion.FACE_LIVENESS_RESULT
+import com.acuant.sampleapp.NfcResultActivity.Companion.FACE_MATCH_RESULT
 import com.acuant.sampleapp.backgroundtasks.AcuantTokenService
 import com.acuant.sampleapp.backgroundtasks.AcuantTokenServiceListener
 import com.acuant.sampleapp.utils.CommonUtils
@@ -66,8 +70,6 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.*
-import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
@@ -78,8 +80,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var isHealthCard: Boolean = false
     private var capturingImageData: Boolean = true
     private var capturingSelfieImage: Boolean = false
-    private var capturingFacialMatch: Boolean = false
-    private var facialResultString: String? = null
+    private var faceMatchResultString: String? = null
     private var facialLivelinessResultString: String? = null
     private var documentIdInstance: AcuantIdDocumentInstance? = null
     private var documentHealthInstance: AcuantHealthInsuranceDocumentInstance? = null
@@ -89,6 +90,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var livenessSelected = 0
     private var isKeyless = false
     private var processingFacialLiveness = false
+    private var processingFacialMatch: Boolean = false
     private var usingPassive = true
     private var recentImage: AcuantImage? = null
     private val useTokenInit = true
@@ -126,7 +128,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         }
 
     fun cleanUpTransaction() {
-        facialResultString = null
+        faceMatchResultString = null
         capturedFrontImage = null
         capturedBackImage = null
         capturedSelfieImage = null
@@ -193,15 +195,18 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private fun initializeAcuantSdk(callback: IAcuantPackageCallback) {
         try {
             // Or, if required to initialize without a config file , then can be done the following way
-            /*Credential.init("**username**",
-                    "**password**",
-                    "**subscription**",
-                    "https://frm.acuant.net",
-                    "https://services.assureid.net",
-                    "https://medicscan.acuant.net",
-                    "https://us.passlive.acuant.net",
-                    "https://acas.acuant.net",
-                    "https://ozone.acuant.net")
+            /*Credential.init(
+                username: String,
+                password: String,
+                subscription: String?,
+                acasEndpoint: String,
+                assureIdEndpoint: String? = null,
+                frmEndpoint: String? = null,
+                passiveLivenessEndpoint: String? = null,
+                ipLivenessEndpoint: String? = null,
+                ozoneEndpoint: String? = null,
+                healthInsuranceEndpoint: String? = null
+            )
 
             AcuantInitializer.initialize(null, ...proceed as normal from here...
             */
@@ -224,7 +229,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 override fun onInitializeSuccess() {
 
                     isInitialized = true
-                    if(Credential.get().subscription == null || Credential.get().subscription.isEmpty() ){
+                    if (Credential.get().subscription?.isEmpty() != false) {
                         isKeyless = true
                         livenessSpinner.visibility = View.INVISIBLE
                         callback.onInitializeSuccess()
@@ -259,7 +264,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     val task = AcuantInitializer.initializeWithToken("acuant.config.xml",
                         token,
                         this@MainActivity,
-                        listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
+                        listOf(MrzCameraInitializer()),
                         initCallback)
                     if (task != null)
                         backgroundTasks.add(task)
@@ -281,26 +286,31 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             if (useTokenInit) {
                 Toast.makeText(this@MainActivity, "Using Token Init", Toast.LENGTH_SHORT).show()
                 Credential.initFromXml("acuant.config.xml", this)
-                if (Credential.get().token != null && Credential.get().token.isValid) {
-                    finishTokenInit(Credential.get().token.value)
+                val token = Credential.get().token
+                if (token != null && token.isValid) {
+                    finishTokenInit(token.value)
                 } else {
                     Credential.removeToken()
-                    val task = AcuantTokenService(object : AcuantTokenServiceListener {
-                        override fun onSuccess(token: String) {
-                            finishTokenInit(token)
-                        }
+                    if (Credential.get().endpoints.isAcasEndpointValid) {
+                        val task = AcuantTokenService(object : AcuantTokenServiceListener {
+                            override fun onSuccess(token: String) {
+                                finishTokenInit(token)
+                            }
 
-                        override fun onError(error: AcuantError) {
-                            initCallback.onInitializeFailed(listOf(error))
-                        }
-                    }).execute()
-                    backgroundTasks.add(task)
+                            override fun onError(error: AcuantError) {
+                                initCallback.onInitializeFailed(listOf(error))
+                            }
+                        }).execute()
+                        backgroundTasks.add(task)
+                    } else {
+                        initCallback.onInitializeFailed(listOf(AcuantError(ErrorCodes.ERROR_InvalidEndpoint, ErrorDescriptions.ERROR_DESC_InvalidEndpoint)))
+                    }
                 }
             } else {
                 Toast.makeText(this@MainActivity, "Using Credential Init", Toast.LENGTH_SHORT).show()
                 val task = AcuantInitializer.initialize("acuant.config.xml",
                         this@MainActivity,
-                        listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()),
+                        listOf(MrzCameraInitializer()),
                         initCallback)
                 if (task != null)
                     backgroundTasks.add(task)
@@ -466,7 +476,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     }
 
                     override fun onError(error: AcuantError) {
-                        capturingSelfieImage = false
                         facialLivelinessResultString = "Facial Liveliness Failed"
                         showAcuDialog(error, "Error Retrieving Facial Data")
                     }
@@ -499,7 +508,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         if (!hasInternetConnection()) {
             showAcuDialog("No internet connection available.")
         } else {
-            if (isInitialized && (!useTokenInit || Credential.get()?.token?.isValid == true)) {
+            if (isInitialized && (!useTokenInit || Credential.get().token?.isValid == true)) {
                 cleanUpTransaction()
                 showDocumentCaptureCamera()
             } else {
@@ -526,7 +535,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         if (!hasInternetConnection()) {
             showAcuDialog("No internet connection available.")
         } else {
-            if (isInitialized && (!useTokenInit || Credential.get()?.token?.isValid == true)) {
+            if (isInitialized && (!useTokenInit || Credential.get().token?.isValid == true)) {
                 cleanUpTransaction()
                 isHealthCard = true
                 showDocumentCaptureCamera()
@@ -556,7 +565,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         if (!hasInternetConnection()) {
             showAcuDialog("No internet connection available.")
         } else {
-            if (isInitialized && (!useTokenInit || Credential.get()?.token?.isValid == true)) {
+            if (isInitialized && (!useTokenInit || Credential.get().token?.isValid == true)) {
                 cleanUpTransaction()
                 showMrzHelpScreen()
             } else {
@@ -592,11 +601,11 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var docCameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val data: Intent? = result.data
-            val url = data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL)
+            val bytes = AcuantCameraActivity.getLatestCapturedBytes(clearBytesAfterRead = true)
             capturedBarcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
-            if (url != null) {
+            if (bytes != null) {
                 setProgress(true, "Cropping...")
-                AcuantImagePreparation.evaluateImage(this, CroppingData(url), object : EvaluateImageListener {
+                AcuantImagePreparation.evaluateImage(this, CroppingData(bytes), object : EvaluateImageListener {
 
                     override fun onSuccess(image: AcuantImage) {
 
@@ -621,14 +630,19 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     }
                 })
             } else {
-                showAcuDialog("Camera failed to return valid image path")
+                showAcuDialog("Camera failed to return valid image bytes")
             }
         } else if (result.resultCode == RESULT_CANCELED) {
             Log.d(TAG, "User canceled document capture")
         } else {
             val data: Intent? = result.data
-            val error = data?.getSerializableExtra(ACUANT_EXTRA_ERROR)
-            if (error is AcuantError) {
+            val error = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                data?.getSerializableExtra(ACUANT_EXTRA_ERROR, AcuantError::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                data?.getSerializableExtra(ACUANT_EXTRA_ERROR) as AcuantError?
+            }
+            if (error != null) {
                 showAcuDialog(error)
             }
         }
@@ -655,16 +669,18 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var mrzCameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val data: Intent? = result.data
-            val mrzResult = data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult?
+            val mrzResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT, MrzResult::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                data?.getSerializableExtra(ACUANT_EXTRA_MRZ_RESULT) as MrzResult?
+            }
 
-            val confirmNFCDataActivity = Intent(this, NfcConfirmationActivity::class.java)
-            confirmNFCDataActivity.putExtra("DOB", mrzResult?.dob)
-            confirmNFCDataActivity.putExtra("DOE", mrzResult?.passportExpiration)
-            confirmNFCDataActivity.putExtra("DOCNUMBER", mrzResult?.passportNumber)
-            confirmNFCDataActivity.putExtra("COUNTRY", mrzResult?.country)
-            confirmNFCDataActivity.putExtra("THREELINE", mrzResult?.threeLineMrz)
-
-            this.startActivity(confirmNFCDataActivity)
+            if (mrzResult != null) {
+                showNfcConfirmation(mrzResult)
+            } else {
+                showAcuDialog("MRZ Read Error", "MRZ was returned blank, or missformatted.")
+            }
         } else if (result.resultCode == RESULT_CANCELED) {
             Log.d(TAG, "User canceled mrz capture")
         }
@@ -681,6 +697,52 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 .build()
         )
         mrzCameraLauncher.launch(cameraIntent)
+    }
+
+    private var nfcLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val nfcData = NfcStore.cardDetails
+            if (nfcData != null) {
+
+                facialLivelinessResultString = null
+                faceMatchResultString = null
+                capturingImageData = false
+
+                if (livenessSelected != 0) {
+                    setProgress(true, "Getting Data...")
+                    capturedDocumentFaceImage = nfcData.faceImage
+                    showFaceCamera()
+                }
+
+                thread {
+                    while (capturingSelfieImage || processingFacialLiveness || processingFacialMatch) {
+                        Thread.sleep(100)
+                    }
+
+                    setProgress(false)
+
+                    val intent = Intent(this@MainActivity, NfcResultActivity::class.java)
+                    intent.putExtra(FACE_LIVENESS_RESULT, facialLivelinessResultString)
+                    intent.putExtra(FACE_MATCH_RESULT, faceMatchResultString)
+                    startActivity(intent)
+                }
+            } else {
+                //this shouldn't really happen
+                showAcuDialog("NFC Data was null", "Activity returned OK code, but no Nfc Data.")
+            }
+        } //else cancelled, we don't care
+    }
+
+    private fun showNfcConfirmation(mrzResult: MrzResult) {
+
+        val confirmNFCDataActivity = Intent(this, NfcConfirmationActivity::class.java)
+        confirmNFCDataActivity.putExtra("DOB", mrzResult.dob)
+        confirmNFCDataActivity.putExtra("DOE", mrzResult.passportExpiration)
+        confirmNFCDataActivity.putExtra("DOCNUMBER", mrzResult.passportNumber)
+        confirmNFCDataActivity.putExtra("COUNTRY", mrzResult.country)
+        confirmNFCDataActivity.putExtra("THREELINE", mrzResult.threeLineMrz)
+
+        nfcLauncher.launch(confirmNFCDataActivity)
     }
 
     private var barcodeCameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -728,7 +790,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             alert.setNegativeButton("CANCEL") { dialog, _ ->
                 setProgress(true, "Getting Data...")
                 facialLivelinessResultString = "Facial Liveliness Failed"
-                capturingSelfieImage = false
                 getData()
                 dialog.dismiss()
             }
@@ -901,6 +962,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     }
 
     private var faceCameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        capturingSelfieImage = false
         when (result.resultCode) {
             RESULT_OK -> {
                 val data = result.data
@@ -909,14 +971,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 if (url == null) {
                     showFaceCaptureError()
                 } else {
-                    processingFacialLiveness = true
-
                     val bytes = readFromFile(url)
                     capturedSelfieImage = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     val plData = PassiveLivenessData(capturedSelfieImage as Bitmap)
                     AcuantPassiveLiveness.processFaceLiveness(plData, object : PassiveLivenessListener {
                         override fun passiveLivenessFinished(result: PassiveLivenessResult) {
-                            facialLivelinessResultString = when (result.livenessAssessment) {
+                            facialLivelinessResultString = when (result.livenessResult?.livenessAssessment) {
                                 AcuantPassiveLiveness.LivenessAssessment.Live -> {
                                     "Facial Liveliness: live"
                                 }
@@ -965,6 +1025,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     }
 
     private var hgCameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        capturingSelfieImage = false
         when (result.resultCode) {
             RESULT_OK -> {
                 val data = result.data
@@ -1003,6 +1064,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         when (livenessSelected) {
             1 -> {
                 capturingSelfieImage = true
+                processingFacialMatch = true
+                processingFacialLiveness = true
                 if (usingPassive) {
                     if (!isKeyless) {
                         showFaceCapture()
@@ -1015,6 +1078,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             }
             else -> {
                 capturingSelfieImage = false
+                processingFacialMatch = false
+                processingFacialLiveness = false
                 //just go to results
             }
         }
@@ -1041,10 +1106,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     }
 
                     override fun onSuccess(userId: String, token: String, frame: Bitmap?) {
+                        capturingSelfieImage = false
                         startFacialLivelinessRequest(token, userId)
                     }
 
                     override fun onFail(error: AcuantError) {
+                        capturingSelfieImage = false
                         showFaceCaptureError()
                     }
 
@@ -1055,6 +1122,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     }
 
                     override fun onError(error: AcuantError) {
+                        capturingSelfieImage = false
                         showAcuDialog(error)
                     }
                 })
@@ -1193,45 +1261,56 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     setProgress(true, "Classifying...")
                     val task = instance.getClassification(object : ClassificationListener {
                         override fun documentClassified(classified: Boolean, classification: Classification) {
-                            setProgress(false)
-                            if (classified) {
-                                frontCaptured = true
-                                barcodeExpected = classification.type?.referenceDocumentDataTypes?.contains(0) ?: false
-                                if (isBackSideRequired(classification)) {
-                                    this@MainActivity.runOnUiThread {
-                                        showAcuDialog(R.string.scan_back_side_id, "Message", { dialog, _ ->
+                            runOnUiThread {
+                                setProgress(false)
+                                if (classified) {
+                                    frontCaptured = true
+                                    capturedFrontImage = null
+                                    barcodeExpected =
+                                        classification.type?.referenceDocumentDataTypes?.contains(
+                                            DocumentDataType.Barcode2D
+                                        ) ?: false
+                                    if (isBackSideRequired(classification)) {
+                                        this@MainActivity.runOnUiThread {
+                                            showAcuDialog(
+                                                R.string.scan_back_side_id,
+                                                "Message",
+                                                { dialog, _ ->
+                                                    dialog.dismiss()
+                                                    showDocumentCaptureCamera()
+                                                },
+                                                { dialog, _ ->
+                                                    dialog.dismiss()
+                                                })
+                                        }
+                                    } else {
+                                        val alert = AlertDialog.Builder(this@MainActivity)
+                                        alert.setTitle("Message")
+                                        if (livenessSelected != 0) {
+                                            alert.setMessage("Capture Selfie Image")
+                                        } else {
+                                            alert.setMessage("Continue")
+                                        }
+                                        alert.setPositiveButton("OK") { dialog, _ ->
                                             dialog.dismiss()
-                                            showDocumentCaptureCamera()
-                                        }, { dialog, _ ->
-                                            dialog.dismiss()
-                                        })
+                                            setProgress(true, "Getting Data...")
+                                            showFaceCamera()
+                                            getData()
+                                        }
+                                        if (livenessSelected != 0) {
+                                            alert.setNegativeButton("CANCEL") { dialog, _ ->
+                                                facialLivelinessResultString =
+                                                    "Facial Liveliness Failed"
+                                                setProgress(true, "Getting Data...")
+                                                getData()
+                                                dialog.dismiss()
+                                            }
+                                        }
+                                        alert.show()
                                     }
                                 } else {
-                                    val alert = AlertDialog.Builder(this@MainActivity)
-                                    alert.setTitle("Message")
-                                    if (livenessSelected != 0) {
-                                        alert.setMessage("Capture Selfie Image")
-                                    } else {
-                                        alert.setMessage("Continue")
-                                    }
-                                    alert.setPositiveButton("OK") { dialog, _ ->
-                                        dialog.dismiss()
-                                        setProgress(true, "Getting Data...")
-                                        showFaceCamera()
-                                        getData()
-                                    }
-                                    if (livenessSelected != 0) {
-                                        alert.setNegativeButton("CANCEL") { dialog, _ ->
-                                            facialLivelinessResultString = "Facial Liveliness Failed"
-                                            setProgress(true, "Getting Data...")
-                                            getData()
-                                            dialog.dismiss()
-                                        }
-                                    }
-                                    alert.show()
+                                    showClassificationError()
                                 }
-                            } else {
-                                showClassificationError()
                             }
                         }
 
@@ -1264,6 +1343,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
             val task = instance.uploadBackImage(backData, object : UploadImageListener {
                 override fun imageUploaded() {
+                    capturedBackImage = null
                     if (barcodeExpected && capturedBarcodeString != null) {
                         val task = instance.uploadBarcode(BarcodeData(capturedBarcodeString!!), object : UploadBarcodeListener {
                             override fun barcodeUploaded() {
@@ -1294,7 +1374,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         if (instance != null) {
             val task = instance.getData(object : GetIdDataListener {
                 override fun processingResultReceived(result: IDResult) {
-                    if (result.fields == null || result.fields.dataFieldReferences == null) {
+                    if (result.fields.isEmpty()) {
                         showAcuDialog("Unknown error happened.\nCould not extract data")
                         return
                     }
@@ -1305,7 +1385,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                     var signImageUri: String? = null
                     var faceImageUri: String? = null
                     var resultString: String? = ""
-                    val fieldReferences = result.fields.dataFieldReferences
+                    val fieldReferences = result.fields
                     for (reference in fieldReferences) {
                         if (reference.key == "Document Class Name" && reference.type == "string") {
                             if (reference.value == "Driver License") {
@@ -1314,7 +1394,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                                 cardType = "ID3"
                             }
                         } else if (reference.key == "Document Number" && reference.type == "string") {
-                            docNumber = reference.value
+                            docNumber = reference.value ?: ""
                         } else if (reference.key == "Photo" && reference.type == "uri") {
                             faceImageUri = reference.value
                         } else if (reference.key == "Signature" && reference.type == "uri") {
@@ -1322,22 +1402,24 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                         }
                     }
 
-                    for (image in result.images.images) {
-                        if (image.side == 0) {
+                    val images = result.images
+                    for (image in images) {
+                        if (image.side == DocumentSide.Front) {
                             frontImageUri = image.uri
-                        } else if (image.side == 1) {
+                        } else if (image.side == DocumentSide.Back) {
                             backImageUri = image.uri
                         }
                     }
 
                     for (reference in fieldReferences) {
                         if (reference.type == "string") {
-                            resultString = resultString + reference.key + ":" + reference.value + System.lineSeparator()
+                            resultString =
+                                resultString + reference.key + ":" + reference.value + System.lineSeparator()
                         }
                     }
 
                     resultString = "Authentication Result : " +
-                            AuthenticationResult.getString(Integer.parseInt(result.result)) +
+                            result.result +
                             System.lineSeparator() +
                             System.lineSeparator() +
                             resultString
@@ -1364,7 +1446,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                                 }
 
                             })
-                            showResults(result.biographic.birthDate, result.biographic.expirationDate, docNumber, frontImage, backImage, faceImage, signImage, resultString, cardType)
+                            showResults(result.biographic?.birthDate, result.biographic?.expirationDate, docNumber, frontImage, backImage, faceImage, signImage, resultString, cardType)
                         }
                     }
                 }
@@ -1381,7 +1463,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     //process Facial Match
     fun processFacialMatch() {
-        //MainActivity@ capturingFacialMatch = true
         thread {
             while (capturingImageData) {
                 Thread.sleep(100)
@@ -1394,26 +1475,23 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 if (facialMatchData.faceImageOne != null && facialMatchData.faceImageTwo != null) {
                     val task = AcuantFaceMatch.processFacialMatch(facialMatchData, object : FacialMatchListener {
                         override fun facialMatchFinished(result: FacialMatchResult) {
-                            capturingSelfieImage = false
-                            capturingFacialMatch = false
 
                             this@MainActivity.runOnUiThread {
-                                facialResultString = "isMatch: ${result.isMatch}\n"
-                                facialResultString += "score: ${result.score}\n"
-                                facialResultString += "transactionId: ${result.transactionId}\n"
+                                faceMatchResultString = "isMatch: ${result.isMatch}\n"
+                                faceMatchResultString += "score: ${result.score}\n"
+                                faceMatchResultString += "transactionId: ${result.transactionId}\n"
                             }
+                            processingFacialMatch = false
                         }
 
                         override fun onError(error: AcuantError) {
-                            capturingSelfieImage = false
-                            capturingFacialMatch = false
+                            processingFacialMatch = false
                             showAcuDialog(error)
                         }
                     })
                     backgroundTasks.add(task)
                 } else {
-                    capturingSelfieImage = false
-                    capturingFacialMatch = false
+                    processingFacialMatch = false
                 }
             }
         }
@@ -1446,12 +1524,12 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         ProcessedData.documentNumber = documentNumber
         ProcessedData.cardType = cardType
         thread {
-            while (capturingFacialMatch || processingFacialLiveness) {
+            while (capturingSelfieImage || processingFacialLiveness || processingFacialMatch) {
                 Thread.sleep(100)
             }
             this@MainActivity.runOnUiThread {
-                facialResultString = if (facialResultString == null) "Facial Match Failed" else facialResultString
-                ProcessedData.formattedString = (facialLivelinessResultString ?: "No Liveness Test Performed") + System.lineSeparator() + facialResultString+ System.lineSeparator() + resultString
+                faceMatchResultString = if (faceMatchResultString == null) "Facial Match Failed" else faceMatchResultString
+                ProcessedData.formattedString = (facialLivelinessResultString ?: "No Liveness Test Performed") + System.lineSeparator() + faceMatchResultString+ System.lineSeparator() + resultString
                 val resultIntent = Intent(
                         this@MainActivity,
                         ResultActivity::class.java
@@ -1478,13 +1556,14 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     fun isBackSideRequired(classification : Classification?): Boolean {
         var isBackSideScanRequired = false
-        if (classification?.type != null && classification.type.supportedImages != null) {
-            val list = classification.type.supportedImages as ArrayList<HashMap<String, Int>>
-            for (i in list.indices) {
-                val map = list[i]
-                if (map["Light"] == 0) {
-                    if (map["Side"] == 1) {
-                        isBackSideScanRequired = true
+        if (classification?.type != null && classification.type?.supportedImages != null) {
+            val list = classification.type?.supportedImages
+            if (list != null) {
+                for (supportedImage in list) {
+                    if (supportedImage.light == LightSource.White) {
+                        if (supportedImage.side == DocumentSide.Back) {
+                            isBackSideScanRequired = true
+                        }
                     }
                 }
             }

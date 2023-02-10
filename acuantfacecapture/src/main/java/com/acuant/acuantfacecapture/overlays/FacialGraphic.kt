@@ -1,6 +1,8 @@
 package com.acuant.acuantfacecapture.overlays
 
+import android.animation.ValueAnimator
 import android.graphics.*
+import android.view.animation.LinearInterpolator
 import com.acuant.acuantfacecapture.camera.facecapture.FaceCameraState
 import com.acuant.acuantfacecapture.model.FaceCaptureOptions
 
@@ -15,6 +17,9 @@ internal class FacialGraphic(overlay: FacialGraphicOverlay) : FacialGraphicOverl
     private var state = FaceCameraState.Align
     private val mFaceRectPaint: Paint = Paint()
     private var width = 0
+    private var bracketAnimator : ValueAnimator? = null
+    private var distanceMoved : Float = 0f
+    private var oldPoints: Rect? = null
 
     init {
         mFaceRectPaint.color = options?.colorGood ?: Color.GREEN
@@ -30,6 +35,19 @@ internal class FacialGraphic(overlay: FacialGraphicOverlay) : FacialGraphicOverl
     fun updateLiveFaceDetails(faceBounds: Rect?, state: FaceCameraState) {
         this.faceBounds = faceBounds
         this.state = state
+        if (this.faceBounds != null) {
+            oldPoints = this.faceBounds
+        }
+        bracketAnimator?.cancel()
+        bracketAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            addUpdateListener {
+                distanceMoved = it.animatedValue as Float
+                postInvalidate()
+            }
+            duration = 250L
+            interpolator = LinearInterpolator()
+            start()
+        }
         postInvalidate()
     }
 
@@ -49,19 +67,57 @@ internal class FacialGraphic(overlay: FacialGraphicOverlay) : FacialGraphicOverl
             else -> mFaceRectPaint.color = options?.colorGood ?: Color.GREEN
         }
 
-        if (options != null && options!!.showOval) {
-            drawFaceOval(canvas)
-        } else {
-            drawFaceBrackets(canvas)
+        val options = options
+        if (options != null) {
+            drawFace(canvas, options.showOval)
         }
         canvas.restore()
     }
 
-    private fun drawFaceBrackets(canvas: Canvas) {
+    private fun drawFace(canvas: Canvas, oval: Boolean) {
         val position = faceBounds
+        val oldPoints = oldPoints
         if (position != null)
         {
-            drawBracketsFromCords(canvas, position.bottom.toFloat(), position.left.toFloat(), position.bottom.toFloat(), position.right.toFloat(), position.top.toFloat(), position.right.toFloat(), position.top.toFloat(), position.left.toFloat())
+            if (oldPoints == null) {
+                if (oval) {
+                    drawFaceOval(canvas, position.left.toFloat(),
+                            position.top.toFloat(), position.right.toFloat(),
+                            position.bottom.toFloat())
+                } else {
+                    drawBracketsFromCords(
+                        canvas,
+                        position.bottom.toFloat(),
+                        position.left.toFloat(),
+                        position.bottom.toFloat(),
+                        position.right.toFloat(),
+                        position.top.toFloat(),
+                        position.right.toFloat(),
+                        position.top.toFloat(),
+                        position.left.toFloat()
+                    )
+                }
+            } else {
+                if (oval) {
+                    val bottom = oldPoints.bottom + (position.bottom - oldPoints.bottom) * distanceMoved
+                    val left = oldPoints.left + (position.left - oldPoints.left) * distanceMoved
+                    val right = oldPoints.right + (position.right - oldPoints.right) * distanceMoved
+                    val top = oldPoints.top + (position.top - oldPoints.top) * distanceMoved
+
+                    drawFaceOval(canvas, left, top, right, bottom)
+                } else {
+                    val x0 = oldPoints.bottom + (position.bottom - oldPoints.bottom) * distanceMoved
+                    val y0 = oldPoints.left + (position.left - oldPoints.left) * distanceMoved
+                    val x1 = oldPoints.bottom + (position.bottom - oldPoints.bottom) * distanceMoved
+                    val y1 = oldPoints.right + (position.right - oldPoints.right) * distanceMoved
+                    val x2 = oldPoints.top + (position.top - oldPoints.top) * distanceMoved
+                    val y2 = oldPoints.right + (position.right - oldPoints.right) * distanceMoved
+                    val x3 = oldPoints.top + (position.top - oldPoints.top) * distanceMoved
+                    val y3 = oldPoints.left + (position.left - oldPoints.left) * distanceMoved
+
+                    drawBracketsFromCords(canvas, x0, y0, x1, y1, x2, y2, x3, y3)
+                }
+            }
         }
     }
 
@@ -85,12 +141,10 @@ internal class FacialGraphic(overlay: FacialGraphicOverlay) : FacialGraphicOverl
 
     }
 
-    private fun drawFaceOval(canvas: Canvas) {
+    private fun drawFaceOval(canvas: Canvas, left: Float, top: Float, right: Float, bottom: Float) {
         val position = faceBounds
         if (position != null) {
-            canvas.drawOval(position.left.toFloat(),
-                position.top.toFloat(), position.right.toFloat(),
-                position.bottom.toFloat(), mFaceRectPaint)
+            canvas.drawOval(left, top, right, bottom, mFaceRectPaint)
         }
     }
 

@@ -15,20 +15,16 @@ import java.lang.Exception
 class MrzCameraInitializer : IAcuantPackage {
 
     override fun initialize(credential: Credential, context: Context, callback: IAcuantPackageCallback) {
-        if(credential.secureAuthorizations != null) {
-            try {
-                initializeOcr(context)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                callback.onInitializeFailed(
-                        listOf(AcuantError(ErrorCodes.ERROR_FailedToLoadOcrFiles,
-                                ErrorDescriptions.ERROR_DESC_FailedToLoadOcrFiles, e.toString())))
-                return
-            }
-            callback.onInitializeSuccess()
-        } else {
-            callback.onInitializeFailed(listOf(AcuantError(ErrorCodes.ERROR_InvalidCredentials, ErrorDescriptions.ERROR_DESC_InvalidCredentials)))
+        try {
+            initializeOcr(context)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            callback.onInitializeFailed(
+                    listOf(AcuantError(ErrorCodes.ERROR_FailedToLoadOcrFiles,
+                            ErrorDescriptions.ERROR_DESC_FailedToLoadOcrFiles, e.toString())))
+            return
         }
+        callback.onInitializeSuccess()
     }
 
     @Throws(IOException::class)

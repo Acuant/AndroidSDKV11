@@ -209,14 +209,15 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
     }
 
     override fun tagReadSucceeded(nfcData: NfcData) {
-        setProgress(false)
-        error = false
-        val intent = Intent(this, NfcResultActivity::class.java)
-        NfcStore.cardDetails = nfcData
-        startActivity(intent)
         if (this.nfcAdapter != null) {
             this.nfcAdapter!!.disableForegroundDispatch(this)
         }
+        setProgress(false)
+        error = false
+        val intent = Intent()
+        NfcStore.cardDetails = nfcData
+        this.setResult(RESULT_OK, intent)
+        this.finish()
     }
 
     override fun tagReadStatus(status: String) {

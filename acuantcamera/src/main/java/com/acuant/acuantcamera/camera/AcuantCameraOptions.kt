@@ -139,6 +139,7 @@ internal constructor(
         }
 
         @Deprecated("No longer reliant on GMS, option is ignored", ReplaceWith(""))
+        @Suppress("unused")
         fun setUseGms(value: Boolean) : DocumentCameraOptionsBuilder {
             return this
         }

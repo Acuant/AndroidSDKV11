@@ -2,6 +2,8 @@
 
 package com.acuant.acuantcamera.constant
 
+@Suppress("unused")
+@Deprecated("This form of returning an image has been removed", ReplaceWith("AcuantCameraActivity.getLatestCapturedBytes()"))
 const val ACUANT_EXTRA_IMAGE_URL = "imageUrl"
 const val ACUANT_EXTRA_PDF417_BARCODE = "barCodeString"
 const val ACUANT_EXTRA_CAMERA_OPTIONS = "cameraOptions"

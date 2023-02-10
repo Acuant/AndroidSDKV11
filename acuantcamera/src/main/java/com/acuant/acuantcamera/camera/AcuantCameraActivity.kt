@@ -1,6 +1,7 @@
 package com.acuant.acuantcamera.camera
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
@@ -24,13 +25,16 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
         super.onCreate(savedInstanceState)
         binding = ActivityCameraBinding.inflate(layoutInflater)
 
-        val unserializedOptions = intent.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS)
 
-        val options: AcuantCameraOptions = if (unserializedOptions == null) {
-            AcuantCameraOptions.DocumentCameraOptionsBuilder().build()
+        var options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS, AcuantCameraOptions::class.java)
         } else {
-            unserializedOptions as AcuantCameraOptions
+            @Suppress("DEPRECATION")
+            intent?.getSerializableExtra(ACUANT_EXTRA_CAMERA_OPTIONS) as AcuantCameraOptions?
         }
+
+        if (options == null)
+            options = AcuantCameraOptions.DocumentCameraOptionsBuilder().build()
 
         if (options.preventScreenshots) {
             window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -59,10 +63,11 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
         }
     }
 
-    //Camera Responses
-    override fun onCameraDone(imageUrl: String, barCodeString: String?) {
+    override fun onCameraDone(imageBytes: ByteArray, barCodeString: String?) {
         val intent = Intent()
-        intent.putExtra(ACUANT_EXTRA_IMAGE_URL, imageUrl)
+        //We can not do this as the maximum transaction size is way too small.
+//        intent.putExtra(ACUANT_EXTRA_IMAGE_BYTES, imageBytes)
+        AcuantCameraActivity.imageBytes = imageBytes
         intent.putExtra(ACUANT_EXTRA_PDF417_BARCODE, barCodeString)
         this@AcuantCameraActivity.setResult(RESULT_OK, intent)
         this@AcuantCameraActivity.finish()
@@ -108,5 +113,24 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
     override fun onResume() {
         super.onResume()
         hideTopMenu()
+    }
+
+    companion object {
+        private var imageBytes: ByteArray? = null
+
+        @JvmStatic
+        @Synchronized
+        fun getLatestCapturedBytes(clearBytesAfterRead: Boolean): ByteArray? {
+            val bytes = imageBytes?.clone()
+            if (clearBytesAfterRead) {
+                if (imageBytes != null) {
+                    for (i in imageBytes!!.indices) {
+                        imageBytes!![i] = (0).toByte()
+                    }
+                    imageBytes = null
+                }
+            }
+            return bytes
+        }
     }
 }

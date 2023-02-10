@@ -27,7 +27,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-enum class DocumentCameraState { Align, MoveCloser, MoveBack, HoldSteady, CountingDown, Capturing }
+enum class DocumentCameraState { Align, NotInFrame, MoveCloser, MoveBack, HoldSteady, CountingDown, Capturing }
 
 class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
 
@@ -78,7 +78,7 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
 
                     if (!firstThreeTimings.contains((-1).toLong())) {
                         hasFinishedTest = true
-                        if (firstThreeTimings.minOrNull() ?: (TOO_SLOW_FOR_AUTO_THRESHOLD + 10) > TOO_SLOW_FOR_AUTO_THRESHOLD) {
+                        if ((firstThreeTimings.minOrNull() ?: (TOO_SLOW_FOR_AUTO_THRESHOLD + 10)) > TOO_SLOW_FOR_AUTO_THRESHOLD) {
                             setTapToCapture()
                         }
                     }
@@ -96,8 +96,8 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                         detectedPoints = PointsUtils.fixPoints(PointsUtils.scalePoints(detectedPoints, camContainer, analyzerSize, previewSize, rectangleView))
                         realDpi = PointsUtils.scaleDpi(analyzerDPI, analyzerSize, imageCapture?.resolutionInfo?.resolution)
                         if (previewSize != null) {
-                            val mult = 0.02f
-                            val view = Rect((previewSize.left * (1 + mult)).toInt(), (previewSize.top * (1 + mult)).toInt(), (previewSize.right * (1 - mult)).toInt(), (previewSize.bottom * (1 - mult)).toInt())
+                            val insetFromEdges = 0.02f
+                            val view = Rect((previewSize.left * (1 + insetFromEdges)).toInt(), (previewSize.top * (1 + insetFromEdges)).toInt(), (previewSize.right * (1 - insetFromEdges)).toInt(), (previewSize.bottom * (1 - insetFromEdges)).toInt())
                             var isContained = true
                             detectedPoints.forEach {
                                 if (!view.contains(it.y, it.x)) {
@@ -107,7 +107,7 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                             if (isContained) {
                                 docState
                             } else {
-                                DocumentState.NoDocument
+                                DocumentState.OutOfBounds
                             }
                         } else {
                             docState
@@ -120,6 +120,11 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                         DocumentState.NoDocument -> {
                             rectangleView?.setViewFromState(DocumentCameraState.Align)
                             setTextFromState(DocumentCameraState.Align)
+                            resetWorkflow()
+                        }
+                        DocumentState.OutOfBounds -> {
+                            rectangleView?.setViewFromState(DocumentCameraState.NotInFrame)
+                            setTextFromState(DocumentCameraState.NotInFrame)
                             resetWorkflow()
                         }
                         DocumentState.TooClose -> {
@@ -160,8 +165,8 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                                 else -> {
                                     val middle = PointsUtils.findMiddleForCamera(points, fragmentCameraBinding?.root?.width, fragmentCameraBinding?.root?.height)
                                     captureImage(object : IAcuantSavedImage {
-                                        override fun onSaved(uri: String) {
-                                            cameraActivityListener.onCameraDone(uri, latestBarcode)
+                                        override fun onSaved(bytes: ByteArray) {
+                                            cameraActivityListener.onCameraDone(bytes, latestBarcode)
                                         }
 
                                         override fun onError(error: AcuantError) {
@@ -246,7 +251,16 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                         context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
                     textView.textSize =
                         context?.resources?.getDimension(R.dimen.cam_doc_font) ?: 24f
-                    textView.text = getString(R.string.acuant_camera_not_in_frame)
+                    textView.text = getString(R.string.acuant_camera_too_close)
+                    textView.setTextColor(Color.WHITE)
+                }
+                DocumentCameraState.NotInFrame -> {
+                    textView.background = defaultTextDrawable
+                    textView.layoutParams?.width =
+                        context?.resources?.getDimension(R.dimen.cam_info_width)?.toInt() ?: 300
+                    textView.textSize =
+                        context?.resources?.getDimension(R.dimen.cam_doc_font) ?: 24f
+                    textView.text = getString(R.string.acuant_camera_out_of_bounds)
                     textView.setTextColor(Color.WHITE)
                 }
                 DocumentCameraState.CountingDown -> {
@@ -350,8 +364,8 @@ class AcuantDocCameraFragment: AcuantBaseCameraFragment() {
                 textView?.setBackgroundColor(greenTransparent)
                 textView?.text = getString(R.string.acuant_camera_capturing)
                 captureImage(object : IAcuantSavedImage {
-                    override fun onSaved(uri: String) {
-                        cameraActivityListener.onCameraDone(uri, latestBarcode)
+                    override fun onSaved(bytes: ByteArray) {
+                        cameraActivityListener.onCameraDone(bytes, latestBarcode)
                     }
 
                     override fun onError(error: AcuantError) {

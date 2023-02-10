@@ -1,6 +1,7 @@
 package com.acuant.acuantfacecapture.camera
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
@@ -30,13 +31,15 @@ class AcuantFaceCameraActivity: AppCompatActivity(), IFaceCameraActivityFinish {
         setContentView(binding.root)
         hideTopMenu()
 
-        val unserializedOptions = intent.getSerializableExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS)
-
-        val options: FaceCaptureOptions = if (unserializedOptions == null) {
-            FaceCaptureOptions()
+        var options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getSerializableExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS, FaceCaptureOptions::class.java)
         } else {
-            unserializedOptions as FaceCaptureOptions
+            @Suppress("DEPRECATION")
+            intent?.getSerializableExtra(ACUANT_EXTRA_FACE_CAPTURE_OPTIONS) as FaceCaptureOptions?
         }
+
+        if (options == null)
+            options = FaceCaptureOptions()
 
         //start the camera if this is the first time the activity is created (camera already exists otherwise)
         if (savedInstanceState == null) {

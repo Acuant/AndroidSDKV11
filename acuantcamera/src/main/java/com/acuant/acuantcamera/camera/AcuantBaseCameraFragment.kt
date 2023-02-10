@@ -354,14 +354,20 @@ abstract class AcuantBaseCameraFragment: Fragment() {
                         val exif = Exif.createFromFileString(savedUri)
                         val rotation = exif.rotation
 
+                        val file = File(savedUri)
+
                         if (captureType != null) {
-                            addExif(File(savedUri), captureType, rotation)
+                            addExif(file, captureType, rotation)
                         } else {
-                            addExif(File(savedUri), "NOT SPECIFIED (implementer used deprecated constructor that lacks this data)", rotation)
+                            addExif(file, "NOT SPECIFIED (implementer used deprecated constructor that lacks this data)", rotation)
                         }
 
                         fullyDone = true
-                        listener.onSaved(savedUri)
+
+                        val bytes = file.readBytes()
+                        file.delete()
+
+                        listener.onSaved(bytes)
                     }
 
                     override fun onError(exception: ImageCaptureException) {

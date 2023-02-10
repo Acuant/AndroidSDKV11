@@ -30,28 +30,28 @@ class ResultActivity : AppCompatActivity() {
         textViewCardInfo = findViewById(R.id.textViewLicenseCardInfo)
         nfcScanningBtn = findViewById(R.id.buttonNFC)
 
-        if(ProcessedData.cardType.equals("ID3",true) && (Credential.get().secureAuthorizations.ozoneAuth || Credential.get().secureAuthorizations.chipExtract)){
+        if (ProcessedData.cardType.equals("ID3",true) && (Credential.get().secureAuthorizations.ozoneAuth || Credential.get().secureAuthorizations.chipExtract)) {
             nfcScanningBtn.visibility = View.VISIBLE
-        }else{
+        } else {
             nfcScanningBtn.visibility = View.GONE
         }
 
-        if(ProcessedData.frontImage != null){
+        if (ProcessedData.frontImage != null) {
             frontSideCardImageView.setImageBitmap(ProcessedData.frontImage)
         }
-        if(ProcessedData.backImage != null){
+        if (ProcessedData.backImage != null) {
             backSideCardImageView.setImageBitmap(ProcessedData.backImage)
         }
-        if(ProcessedData.faceImage != null){
+        if (ProcessedData.faceImage != null) {
             imgFaceViewer.setImageBitmap(ProcessedData.faceImage)
         }
-        if(ProcessedData.capturedFaceImage != null){
+        if (ProcessedData.capturedFaceImage != null) {
             imgCapturedFaceViewer.setImageBitmap(ProcessedData.capturedFaceImage)
         }
-        if(ProcessedData.signImage != null){
+        if (ProcessedData.signImage != null) {
             imgSignatureViewer.setImageBitmap(ProcessedData.signImage)
         }
-        if(ProcessedData.formattedString != null){
+        if (ProcessedData.formattedString != null) {
             textViewCardInfo.text = ProcessedData.formattedString
         }
 
@@ -69,11 +69,11 @@ class ResultActivity : AppCompatActivity() {
     private fun formatDateForNfc(date: String) : String {
         var pattern = Regex("[0-9]{2}-[0-9]{2}-[0-9]{4}")
         var out = ""
-        if(pattern.matches(date)) {
+        if (pattern.matches(date)) {
             out = date.substring(8,10) + date.substring(0,2) + date.substring(3,5)
         }
         pattern = Regex("[0-9]{2}-[0-9]{2}-[0-9]{2}")
-        if(pattern.matches(date)) {
+        if (pattern.matches(date)) {
             out = date.substring(6,8) + date.substring(0,2) + date.substring(3,5)
         }
         return out

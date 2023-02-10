@@ -11,7 +11,7 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
-typealias FaceFrameListener = (boundingBox: Rect?, state: FaceState) -> Unit
+typealias FaceFrameListener = (boundingBox: Rect?, state: FaceState, sizeRatio: Float) -> Unit
 
 enum class FaceState {
     NoFace, FaceTooFar, FaceTooClose, FaceAngled, EyesClosed, GoodFace
@@ -32,6 +32,7 @@ class FaceFrameAnalyzer internal constructor(private val listener: FaceFrameList
         }
         var faceState = FaceState.NoFace
         var detectedBounds: Rect? = null
+        var sizeRatio = 0f
         running = true
 
         val mediaImage = image.image //don't close this one
@@ -49,7 +50,7 @@ class FaceFrameAnalyzer internal constructor(private val listener: FaceFrameList
                             // like the shape of a face
                             bounds = Rect((bounds.centerX() - bounds.width() * 0.5f * 0.85f).toInt(), bounds.top, (bounds.centerX() + bounds.width() * 0.5f * 0.85f).toInt(), bounds.bottom)
                             detectedBounds = bounds
-                            val sizeRatio = sizeRatio(bounds, origSize)
+                            sizeRatio = sizeRatio(bounds, origSize)
                             val rotY = face.headEulerAngleY
                             val rotZ = face.headEulerAngleZ
 
@@ -63,7 +64,8 @@ class FaceFrameAnalyzer internal constructor(private val listener: FaceFrameList
                                 abs(rotY) > Y_ROT_ANGLE || abs(rotZ) > Z_ROT_ANGLE -> {
                                     faceState = FaceState.FaceAngled
                                 }
-                                face.rightEyeOpenProbability ?: 1f < EYE_CLOSED_THRESHOLD && face.leftEyeOpenProbability ?: 1f < EYE_CLOSED_THRESHOLD -> {
+                                (face.rightEyeOpenProbability ?: 1f) < EYE_CLOSED_THRESHOLD &&
+                                        (face.leftEyeOpenProbability ?: 1f) < EYE_CLOSED_THRESHOLD -> {
                                     faceState = FaceState.EyesClosed
                                 }
                                 else -> {
@@ -76,13 +78,13 @@ class FaceFrameAnalyzer internal constructor(private val listener: FaceFrameList
 //                .addOnFailureListener { e -> //catch
 //                }
                 .addOnCompleteListener { //finally
-                    listener(detectedBounds, faceState)
+                    listener(detectedBounds, faceState, sizeRatio)
                     running = false
                     image.close()
                 }
         } else {
             running = false
-            listener(detectedBounds, faceState)
+            listener(detectedBounds, faceState, sizeRatio)
             image.close()
         }
     }
@@ -94,8 +96,9 @@ class FaceFrameAnalyzer internal constructor(private val listener: FaceFrameList
             .setMinFaceSize(0.5f)
             .build())
 
-        private const val TOO_CLOSE_THRESH = 0.815f
-        private const val TOO_FAR_THRESH = 0.635f
+        const val TOO_CLOSE_THRESH = 0.785f
+        const val TOO_FAR_THRESH = 0.5125f
+        const val TOO_FAR_THRESH_WITH_BUFFER = TOO_FAR_THRESH + 0.05f
         private const val EYE_CLOSED_THRESHOLD = 0.3f
         private const val Y_ROT_ANGLE = 10
         private const val Z_ROT_ANGLE = 15

@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.5.4
-**September 2022**
+# Acuant Android SDK v11.6.0
+**February 2023**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -22,7 +22,7 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ## Updates
 
-**v11.5.0:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.5.0).
+**v11.6.0:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.6.0).
 
 ----------
 
@@ -116,15 +116,15 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-			implementation 'com.acuant:acuantcommon:11.5.4'
-			implementation 'com.acuant:acuantcamera:11.5.4'
-			implementation 'com.acuant:acuantimagepreparation:11.5.4'
-			implementation 'com.acuant:acuantdocumentprocessing:11.5.4'
-			implementation 'com.acuant:acuantechipreader:11.5.4'
-			implementation 'com.acuant:acuantipliveness:11.5.4'
-			implementation 'com.acuant:acuantfacematch:11.5.4'
-			implementation 'com.acuant:acuantfacecapture:11.5.4'
-			implementation 'com.acuant:acuantpassiveliveness:11.5.4'
+			implementation 'com.acuant:acuantcommon:11.6.0'
+			implementation 'com.acuant:acuantcamera:11.6.0'
+			implementation 'com.acuant:acuantimagepreparation:11.6.0'
+			implementation 'com.acuant:acuantdocumentprocessing:11.6.0'
+			implementation 'com.acuant:acuantechipreader:11.6.0'
+			implementation 'com.acuant:acuantipliveness:11.6.0'
+			implementation 'com.acuant:acuantfacematch:11.6.0'
+			implementation 'com.acuant:acuantfacecapture:11.6.0'
+			implementation 'com.acuant:acuantpassiveliveness:11.6.0'
 
 1. 	Create an .xml file with the following tags. (If you plan to use bearer tokens to initialize, include only the endpoints.):
 
@@ -191,7 +191,7 @@ Before you use the SDK, you must initialize it, either by using the credentials 
 			AcuantInitializer.initializeWithToken("PATH/TO/CONFIG/FILENAME.XML",
 					token,
 					context, 
-					listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()), 
+					listOf(MrzCameraInitializer()), 
 					listener)
 		} catch(e: AcuantException) {
 			Log.e("Acuant Error", e.toString())
@@ -202,7 +202,7 @@ Before you use the SDK, you must initialize it, either by using the credentials 
 		try {
 			AcuantInitializer.initialize("PATH/TO/CONFIG/FILENAME.XML",
 					context, 
-					listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()), 
+					listOf(MrzCameraInitializer()), 
 					listener)
 		} catch(e: AcuantException) {
 			Log.e("Acuant Error", e.toString())
@@ -211,19 +211,22 @@ Before you use the SDK, you must initialize it, either by using the credentials 
 * Using credentials hardcoded in the code (not recommended):
 
 		try {
-			Credential.init("xxxxxxx",
-					"xxxxxxxx",
-					"xxxxxxxxxx",
-					"https://frm.acuant.net",
-					"https://services.assureid.net",
-					"https://medicscan.acuant.net",
-					"https://us.passlive.acuant.net",
-					"https://acas.acuant.net",
-					"https://ozone.acuant.net")
+			Credential.init(
+				username: String,
+				password: String,
+				subscription: String?,
+				acasEndpoint: String,
+				assureIdEndpoint: String? = null,
+				frmEndpoint: String? = null,
+				passiveLivenessEndpoint: String? = null,
+				ipLivenessEndpoint: String? = null,
+				ozoneEndpoint: String? = null,
+				healthInsuranceEndpoint: String? = null
+			)
 			
 			AcuantInitializer.initialize(null, 
 					context, 
-					listOf(ImageProcessorInitializer(), EchipInitializer(), MrzCameraInitializer()), 
+					listOf(MrzCameraInitializer()), 
 					listener)
 		} catch(e: AcuantException) {
 			Log.e("Acuant Error", e.toString())
@@ -273,7 +276,7 @@ The SDK can be initialized by providing only a username and a password. However,
 	
 		if (result.resultCode == RESULT_OK) {
 			val data: Intent? = result.data
-			val url = data?.getStringExtra(ACUANT_EXTRA_IMAGE_URL)
+			val bytes = AcuantCameraActivity.getLatestCapturedBytes(clearBytesAfterRead = true)
 			val barcodeString = data?.getStringExtra(ACUANT_EXTRA_PDF417_BARCODE)
 			//...
 		} else if (result.resultCode == RESULT_CANCELED) {
@@ -284,7 +287,9 @@ The SDK can be initialized by providing only a username and a password. However,
 			if (error is AcuantError) {
 				//...
 			}
-		}	
+		}
+
+1. (Optional) Add localized strings in app's string resources as indicated [here](#language-localization)
 
 ### Capturing a document barcode ###
 
@@ -321,6 +326,7 @@ The SDK can be initialized by providing only a username and a password. However,
 				//...
 			}
 		}	
+1. (Optional) Add localized strings in app's string resources as indicated [here](#language-localization)
 
 ### Capturing MRZ data in a passport document ###
 
@@ -334,7 +340,7 @@ The SDK can be initialized by providing only a username and a password. However,
 
 	Capturing the MRZ data using AcuantCamera is similar to document capture.
 
-  	1. Start camera activity:
+	1. Start camera activity:
 
 			val cameraIntent = Intent(
 				this@MainActivity,
@@ -350,8 +356,7 @@ The SDK can be initialized by providing only a username and a password. However,
 			
 			//start activity for result
 
-  	1. Get activity result:
-
+  1. Get activity result:
 
 			if (result.resultCode == RESULT_OK) {
 				val data: Intent? = result.data
@@ -365,8 +370,10 @@ The SDK can be initialized by providing only a username and a password. However,
 				if (error is AcuantError) {
 					//...
 				}
-			}	
-	
+			}
+
+	1. (Optional) Add localized strings in app's string resources as indicated [here](#language-localization)
+
 ----------
 		 
 ## AcuantImagePreparation ##
@@ -387,7 +394,7 @@ This section describes how to use **AcuantImagePreparation**.
 	
 	passing in the cropping data:
 	
-		class CroppingData(imageUrlString: String)
+		class CroppingData(imageBytes: ByteArray)
 	
 	and a callback listener:
 	
@@ -397,9 +404,9 @@ This section describes how to use **AcuantImagePreparation**.
 
 	* **Important note:** Most listeners/callbacks in the SDK are extended off of AcuantListener, which contains the onError function shown below.
 	
-			interface AcuantListener {
-				fun onError(error: AcuantError)
-			}
+		interface AcuantListener {
+			fun onError(error: AcuantError)
+		}
 
 	The **AcuantImage** can be used to verify the crop, sharpness, and glare of the image, and then upload the document in the next step (see [AcuantDocumentProcessing](#acuantdocumentprocessing)).
 
@@ -435,7 +442,7 @@ After you capture a document image and completed crop, it can be processed using
 		
 			class IdInstanceOptions (
 				val authenticationSensitivity: AuthenticationSensitivity,
-				val tamperSensitivity: TamperSensitivity,
+				val tamperSensitivity: AuthenticationSensitivity,
 				val countryCode: String?
 			)
 			
@@ -533,7 +540,7 @@ For most workflows, the steps resemble the following, with reuploads on error or
 			}
 		})
 
-3. Get the facial capture result (call after onSuccess in IPLivenessListener):
+1. Get the facial capture result (call after onSuccess in IPLivenessListener):
 		
 		AcuantIPLiveness.getFacialLiveness(
 			token,
@@ -549,7 +556,9 @@ For most workflows, the steps resemble the following, with reuploads on error or
 			}
 		)
 
--------------------------------------
+1. (Optional) Add localized strings in app's string resources as indicated [here](#language-localization)
+
+----------
 
 ## AcuantFaceCapture ##
 
@@ -581,11 +590,13 @@ This module is used to automate capturing an image of a face appropriate for use
 			//error...
 		}
 
+3. (Optional) Add localized strings in app's string resources as indicated [here](#language-localization)
+
 **Note:** HGLiveness/Blink Test Liveness can be accessed by modifying the options as follows:
 
 		FaceCaptureOptions(cameraMode = CameraMode.HgLiveness)
 
--------------------------------------
+----------
 
 ## AcuantPassiveLiveness ##
 
@@ -602,11 +613,17 @@ This module is used to determine liveness from a single selfie image.
 		}
 		
 		class PassiveLivenessResult {
-			var livenessAssessment: LivenessAssessment? = null
-			var transactionId: String? = null
-			var score = 0
-			var errorDesc: String? = null
-			var errorCode: PassiveLivenessErrorCode? = null
+			var livenessResult: LivenessResult?
+			var transactionId: String?
+			var errorDesc: String?
+			var unparsedErrorCode: String?
+			val errorCode: PassiveLivenessErrorCode?
+		}
+			
+		class LivenessResult {
+			var unparsedLivenessAssessment: String?
+			val livenessAssessment: LivenessAssessment?
+			var score: Int
 		}
 
 		enum class LivenessAssessment {
@@ -694,6 +711,105 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 **Important Note:** Most, but not all, of the data in NfcData is directly read from the passport chip. *age* and *isExpired* are extrapolated from the data read from the chip and the current date (obtained through Calendar.getInstance().time). Potentially, this can lead to inaccuracy due to either the device time being wrong or the DOB or DOE being calculated incorrectly from the data on the chip. This is an unfortunate restraint of passport chips that occurs because the DOE and DOB are stored in YYMMDD format, which is susceptible to the Y2K issue. Given a year of 22, we cannot determine with 100 percent certainty whether the 22 represents 1922 or 2022 or, theoretically, 2122. The workaround is as follows: For age, the current year is the breakpoint (for example, in 2020, 25 would be interpreted as 1925. However, in 2030, 25 would be interpreted as 2025. For isExpired, we use the same logic but going forward 20 years from the current year. Additionally, *translatedDocumentType* is an extrapolated form of the 2 character document type/subtype within the eChip. Some countries do not include a second character and some use unstandard subtype correlations, meaning that this field can also be inaccurate.
 
 -------------------------------------
+
+## Language localization
+
+In order to display texts in the corresponding language you need to add the following strings to your app's strings resources:
+
+#### AcuantCamera
+
+	<string name="description_info">Info</string>
+	<string name="request_permission">This sample needs camera permission.</string>
+	<string name="acuant_camera_error">This device doesn\'t support Camera2 API.</string>
+
+	<string name="acuant_camera_align">ALIGN</string>
+	<string name="acuant_camera_align_and_tap">ALIGN AND TAP</string>
+	<string name="acuant_camera_move_closer">MOVE CLOSER</string>
+	<string name="acuant_camera_too_close">TOO CLOSE</string>
+	<string name="acuant_camera_out_of_bounds">NOT IN FRAME</string>
+	<string name="acuant_camera_hold_steady">HOLD STEADY</string>
+	<string name="acuant_camera_capturing">CAPTURING</string>
+
+	<string name="acuant_reading_mrz">Reading MRZ</string>
+	<string name="acuant_align_mrz">Align</string>
+	<string name="acuant_closer_mrz">Move Closer</string>
+	<string name="acuant_glare_mrz">Try Repositioning</string>
+	<string name="acuant_read_mrz">Read Successful</string>
+
+	<string name="acuant_camera_capturing_barcode">Capturing...</string>
+	<string name="acuant_camera_align_barcode">Capture Barcode</string>
+
+#### AcuantFaceCapture
+
+	<string name="acuant_face_camera_initial">Align face to start capture</string>
+	<string name="acuant_face_camera_face_too_close">Too close! Move away</string>
+	<string name="acuant_face_too_far">Move closer</string>
+	<string name="acuant_face_camera_face_has_angle">Face has angle. Do not tilt</string>
+	<string name="acuant_face_camera_face_not_in_frame">Move in frame</string>
+	<string name="acuant_face_camera_face_moved">Hold steady</string>
+	<string name="acuant_face_camera_blink">Please blink</string>
+	<string name="acuant_face_camera_capturing">Capturing…</string>
+	<plurals name="acuant_face_camera_countdown">
+			<item quantity="one">Capturing\n%d…</item>
+			<item quantity="other">Capturing\n%d…</item>
+	</plurals>
+
+#### AcuantIPLiveness
+
+	<string name="iproov__language_file">en</string>
+	<string name="iproov__prompt_genuine_presence_align_face">Put your face in the oval</string>
+	<string name="iproov__prompt_liveness_align_face">Fill the oval with your face</string>
+	<string name="iproov__prompt_liveness_no_target">Put your face in the frame</string>
+	<string name="iproov__prompt_connecting">Connecting…</string>
+	<string name="iproov__prompt_tap_to_begin">Tap the screen to begin</string>
+	<string name="iproov__prompt_too_far">Move closer</string>
+	<string name="iproov__prompt_too_bright">Go somewhere shadier</string>
+	<string name="iproov__progress_streaming">Streaming…</string>
+	<string name="iproov__progress_streaming_slow">Streaming, network is slow…</string>
+	<string name="iproov__prompt_scanning">Scanning…</string>
+	<string name="iproov__progress_identifying_face">Identifying face…</string>
+	<string name="iproov__progress_confirming_identity">Confirming identity…</string>
+	<string name="iproov__progress_assessing_genuine_presence">Assessing genuine presence…</string>
+	<string name="iproov__progress_assessing_liveness">Assessing liveness…</string>
+	<string name="iproov__progress_loading">Loading…</string>
+	<string name="iproov__progress_creating_identity">Creating identity…</string>
+	<string name="iproov__progress_finding_face">Finding face…</string>
+	<string name="iproov__authenticate">Authenticate</string>
+	<string name="iproov__enrol">Enrol</string>
+	<string name="iproov__message_format">%1$s to %2$s</string>
+	<string name="iproov__prompt_too_close">Too close</string>
+	<string name="iproov__failure_ambiguous_outcome">Ambiguous outcome</string>
+	<string name="iproov__failure_motion_too_much_movement">Please do not move while iProoving</string>
+	<string name="iproov__failure_lighting_flash_reflection_too_low">Ambient light too strong or screen brightness too low</string>
+	<string name="iproov__failure_lighting_backlit">Strong light source detected behind you</string>
+	<string name="iproov__failure_lighting_too_dark">Your environment appears too dark</string>
+	<string name="iproov__failure_lighting_face_too_bright">Too much light detected on your face</string>
+	<string name="iproov__failure_motion_too_much_mouth_movement">Please do not talk while iProoving</string>
+	<string name="iproov__failure_user_timeout">Your session has expired</string>
+	<string name="iproov__message_format_with_username">%1$s as %2$s to %3$s</string>
+	<string name="iproov__prompt_roll_too_high">Avoid tilting your head</string>
+	<string name="iproov__prompt_roll_too_low">Avoid tilting your head</string>
+	<string name="iproov__prompt_yaw_too_low">Turn slightly to your right</string>
+	<string name="iproov__prompt_yaw_too_high">Turn slightly to your left</string>
+	<string name="iproov__prompt_pitch_too_high">Hold the device at eye level</string>
+	<string name="iproov__prompt_pitch_too_low">Hold the device at eye level</string>
+	<string name="iproov__prompt_liveness_scan_completed">Scan completed</string>
+	<string name="iproov__prompt_get_ready">Get ready…</string>
+	<string name="iproov__debug_text_default">Loading…</string>
+	<string name="iproov__error_network">Network error</string>
+	<string name="iproov__error_device_not_supported">Device is not supported</string>
+	<string name="iproov__error_camera">Camera error</string>
+	<string name="iproov__error_camera_permission_denied">Camera permission denied</string>
+	<string name="iproov__error_camera_permission_denied_message">Please allow camera access for this app in Android Settings</string>
+	<string name="iproov__error_server">Server error</string>
+	<string name="iproov__error_multi_window_mode_unsupported">Application is in multi-window mode</string>
+	<string name="iproov__error_face_detector">Face detector error</string>
+	<string name="iproov__error_capture_already_active">An existing capture is already in progress</string>
+	<string name="iproov__error_listener_not_registered">Before calling IProov.launch(), you should register a listener with IProov.registerListener()</string>
+	<string name="iproov__error_invalid_options">Invalid iProov options</string>
+	<string name="iproov__error_unexpected_error">Unexpected error</string>
+
+----------
 
 ### Error codes ###
 
@@ -896,13 +1012,39 @@ Must include EchipInitializer() in initialization (See **Initializing the SDK**)
 
 ## Frequently Asked Questions ##
 
+#### Why is the SDK so large ####
+
+The SDK is large because there are several ml-kit models bundled into it. This bundling has pros and cons. Bundling models into the SDK enables it to work in areas and on devices that do not have access to Google Play services. If the size of the SDK is an issue, you can reduce the size by downloading the models from Google Play services the first time the application is launched. The download can occur in the background. To enable the download, use the open versions of the face capture and camera modules. Within the Gradles of those models, remove the following lines:
+
+		implementation 'com.google.mlkit:face-detection:XXX'
+		implementation 'com.google.mlkit:barcode-scanning:XXX'
+		
+and replace them with the following respectively (where XXX is the current version number on the previous lines):
+
+		implementation 'com.google.android.gms:play-services-mlkit-face-detection:XXX'
+		implementation 'com.google.android.gms:play-services-mlkit-barcode-scanning:XXX'
+		
+Then, add the following to your manifest:
+
+		<application ...>
+			 ...
+			 <meta-data
+				android:name="com.google.mlkit.vision.DEPENDENCIES"
+				android:value="barcode,face" >
+		</application>
+		
+**Important:** If the models can’t be accessed, the SDK behaves unexpectedly. Use this size-saving procedure only if you are sure that all of your clients will use phones that have access to Google Play from regions that don’t block it.
+
+To read more about this and the ml-kit, see https://developers.google.com/ml-kit/guides.
+		
+
 #### How do I obfuscate my Android application? ####
 
 Acuant does not provide obfuscation tools. See the Android developer documentation about obfuscation at: [https://developer.android.com/studio/build/shrink-code](https://developer.android.com/studio/build/shrink-code). Then open proguard-rules.pro for your project and set the obfuscation rules. 
 
 -------------------------------------
 
-**Copyright 2022 Acuant Inc. All rights reserved.**
+**Copyright 2023 Acuant Inc. All rights reserved.**
 
 This document contains proprietary and confidential information and creative works owned by Acuant and its respective licensors, if any. Any use, copying, publication, distribution, display, modification, or transmission of such technology, in whole or in part, in any form or by any means, without the prior express written permission of Acuant is strictly prohibited. Except where expressly provided by Acuant in writing, possession of this information shall not be construed to confer any license or rights under any Acuant intellectual property rights, whether by estoppel, implication, or otherwise.
 

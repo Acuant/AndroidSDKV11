@@ -7,25 +7,16 @@ import com.acuant.acuantcamera.camera.document.DocumentCameraState
 class DocRectangleView(context: Context, attr: AttributeSet?) : BaseRectangleView(context, attr) {
     fun setViewFromState(state: DocumentCameraState) {
         when(state) {
-            DocumentCameraState.MoveCloser -> {
+            DocumentCameraState.MoveCloser,
+            DocumentCameraState.MoveBack,
+            DocumentCameraState.NotInFrame -> {
                 setDrawBox(false)
                 paint.color = paintColorCloser
                 paintBracket.color = paintColorBracketCloser
                 animateTarget = false
             }
-            DocumentCameraState.MoveBack -> {
-                setDrawBox(false)
-                paint.color = paintColorCloser
-                paintBracket.color = paintColorBracketCloser
-                animateTarget = false
-            }
-            DocumentCameraState.CountingDown -> {
-                setDrawBox(true)
-                paint.color = paintColorHold
-                paintBracket.color = paintColorBracketHold
-                animateTarget = true
-            }
-            DocumentCameraState.HoldSteady -> {
+            DocumentCameraState.CountingDown,
+            DocumentCameraState.HoldSteady-> {
                 setDrawBox(true)
                 paint.color = paintColorHold
                 paintBracket.color = paintColorBracketHold

@@ -36,6 +36,7 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
     private var userHasBlinked = false
     private var userHasHadOpenEyes = false
     private var lastState: FaceState = FaceState.NoFace
+    private var isMovingCloser = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -95,7 +96,7 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
         startTime = System.currentTimeMillis()
     }
 
-    private fun onFaceDetected(rect: Rect?, state: FaceState) {
+    private fun onFaceDetected(rect: Rect?, state: FaceState, sizeRatio: Float) {
         if (capturing || !isAdded)
             return
         val analyzerSize = imageAnalyzer?.resolutionInfo?.resolution
@@ -126,6 +127,7 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
             }
             FaceState.FaceTooFar -> {
                 mFacialGraphicOverlay?.setState(FaceCameraState.MoveCloser)
+                isMovingCloser = true
                 mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.MoveCloser)
                 resetTimer()
             }
@@ -140,40 +142,47 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
                 resetTimer()
             }
             else -> { //good face or closed eyes
-                when {
-                    didFaceMove(boundingBox, lastFacePosition) -> {
-                        mFacialGraphicOverlay?.setState(FaceCameraState.KeepSteady)
-                        mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.KeepSteady)
-                        resetTimer()
-                    }
-                    requireBlink && !userHasBlinked -> {
-                        if (userHasHadOpenEyes && lastState == FaceState.EyesClosed && realState == FaceState.GoodFace) {
-                            userHasBlinked = true
+                if (isMovingCloser && sizeRatio < FaceFrameAnalyzer.TOO_FAR_THRESH_WITH_BUFFER) {
+                    mFacialGraphicOverlay?.setState(FaceCameraState.MoveCloser)
+                    mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.MoveCloser)
+                    resetTimer()
+                } else {
+                    isMovingCloser = false
+                    when {
+                        didFaceMove(boundingBox, lastFacePosition) -> {
+                            mFacialGraphicOverlay?.setState(FaceCameraState.KeepSteady)
+                            mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.KeepSteady)
+                            resetTimer()
                         }
-                        if (realState == FaceState.GoodFace) {
-                            userHasHadOpenEyes = true
+                        requireBlink && !userHasBlinked -> {
+                            if (userHasHadOpenEyes && lastState == FaceState.EyesClosed && realState == FaceState.GoodFace) {
+                                userHasBlinked = true
+                            }
+                            if (realState == FaceState.GoodFace) {
+                                userHasHadOpenEyes = true
+                            }
+                            mFacialGraphicOverlay?.setState(FaceCameraState.Blink)
+                            mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.Blink)
+                            resetTimer(resetBlinkState = false)
                         }
-                        mFacialGraphicOverlay?.setState(FaceCameraState.Blink)
-                        mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.Blink)
-                        resetTimer(resetBlinkState = false)
-                    }
-                    System.currentTimeMillis() - startTime < acuantOptions.totalCaptureTime * 1000 -> {
-                        mFacialGraphicOverlay?.setState(FaceCameraState.Hold, acuantOptions.totalCaptureTime - ceil(((System.currentTimeMillis() - startTime) / 1000).toDouble()).toInt())
-                        mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.Hold)
-                    }
-                    else -> {
-                        mFacialGraphicOverlay?.setState(FaceCameraState.Capturing)
-                        mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.Capturing)
-                        if (!capturing) {
-                            captureImage(object : IAcuantSavedImage {
-                                override fun onSaved(uri: String) {
-                                    cameraActivityListener.onCameraDone(uri)
-                                }
+                        System.currentTimeMillis() - startTime < acuantOptions.totalCaptureTime * 1000 -> {
+                            mFacialGraphicOverlay?.setState(FaceCameraState.Hold, acuantOptions.totalCaptureTime - ceil(((System.currentTimeMillis() - startTime) / 1000).toDouble()).toInt())
+                            mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.Hold)
+                        }
+                        else -> {
+                            mFacialGraphicOverlay?.setState(FaceCameraState.Capturing)
+                            mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.Capturing)
+                            if (!capturing) {
+                                captureImage(object : IAcuantSavedImage {
+                                    override fun onSaved(uri: String) {
+                                        cameraActivityListener.onCameraDone(uri)
+                                    }
 
-                                override fun onError(error: AcuantError) {
-                                    cameraActivityListener.onError(error)
-                                }
-                            })
+                                    override fun onError(error: AcuantError) {
+                                        cameraActivityListener.onError(error)
+                                    }
+                                })
+                            }
                         }
                     }
                 }
@@ -185,8 +194,8 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
 
     override fun buildImageAnalyzer(screenAspectRatio: Int, rotation: Int) {
         val frameAnalyzer = try {
-                FaceFrameAnalyzer { boundingBox, state ->
-                    onFaceDetected(boundingBox, state)
+                FaceFrameAnalyzer { boundingBox, state, sizeRatio ->
+                    onFaceDetected(boundingBox, state, sizeRatio)
                 }
         } catch (e: IllegalStateException) {
             cameraActivityListener.onError(AcuantError(ErrorCodes.ERROR_UnexpectedError, ErrorDescriptions.ERROR_DESC_UnexpectedError, e.toString()))
@@ -203,7 +212,7 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
     }
 
     companion object {
-        private const val MOVEMENT_THRESHOLD = 22
+        private const val MOVEMENT_THRESHOLD = 32
 
         private fun didFaceMove(facePosition: Rect?, lastFacePosition: Rect?): Boolean {
             if (facePosition == null || lastFacePosition == null)

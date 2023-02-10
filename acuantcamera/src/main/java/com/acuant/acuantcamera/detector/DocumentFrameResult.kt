@@ -4,7 +4,7 @@ import android.graphics.Point
 
 enum class DocumentType {Id, Passport, Other}
 
-enum class DocumentState { NoDocument, TooFar, TooClose, GoodDocument }
+enum class DocumentState { NoDocument, TooFar, TooClose, GoodDocument, OutOfBounds }
 
 class DocumentFrameResult (val points: Array<Point>?,
                            val currentDistRatio: Float?,
