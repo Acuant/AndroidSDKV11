@@ -50,7 +50,7 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
                     AcuantBarcodeCameraFragment.newInstance(options)
                 }
                 AcuantCameraOptions.CameraMode.Mrz -> {
-                    AcuantMrzCameraFragment.newInstance(options)
+                    //AcuantMrzCameraFragment.newInstance(options)
                 }
                 else -> { //Document
                     AcuantDocCameraFragment.newInstance(options)

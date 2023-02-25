@@ -171,6 +171,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         loadLastLiveness()
         livenessSpinner.onItemSelectedListener = this
 
+        Log.d("Commit","checking comaparition")
+
         val autoCaptureSwitch = findViewById<SwitchMaterial>(R.id.autoCaptureSwitch)
         autoCaptureSwitch.setOnCheckedChangeListener { _, isChecked ->
             autoCaptureEnabled = isChecked
