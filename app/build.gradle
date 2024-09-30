@@ -19,17 +19,17 @@ dependencies {
 
     //If you do not plan to modify the camera code you can use these two regular maven dependencies
     // in place of the project ones.
-//    implementation 'com.acuant:acuantfacecapture:11.6.0'
-//    implementation 'com.acuant:acuantcamera:11.6.0'
+//    implementation 'com.acuant:acuantfacecapture:11.6.1'
+//    implementation 'com.acuant:acuantcamera:11.6.1'
     implementation project(path: ':acuantcamera')
     implementation project(path: ':acuantfacecapture')
-    implementation 'com.acuant:acuantcommon:11.6.0'
-    implementation 'com.acuant:acuantimagepreparation:11.6.0'
-    implementation 'com.acuant:acuantdocumentprocessing:11.6.0'
-    implementation 'com.acuant:acuantechipreader:11.6.0'
-    implementation 'com.acuant:acuantfacematch:11.6.0'
-    implementation 'com.acuant:acuantipliveness:11.6.0'
-    implementation 'com.acuant:acuantpassiveliveness:11.6.0'
+    implementation 'com.acuant:acuantcommon:11.6.1'
+    implementation 'com.acuant:acuantimagepreparation:11.6.1'
+    implementation 'com.acuant:acuantdocumentprocessing:11.6.1'
+    implementation 'com.acuant:acuantechipreader:11.6.1'
+    implementation 'com.acuant:acuantfacematch:11.6.1'
+    implementation 'com.acuant:acuantipliveness:11.6.1'
+    implementation 'com.acuant:acuantpassiveliveness:11.6.1'
 }
 android {
     compileSdkVersion 33
@@ -40,7 +40,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 33
         versionCode 1
-        versionName
+        versionName versionName
         multiDexEnabled true
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }

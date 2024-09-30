@@ -37,12 +37,12 @@ data class MrzResult(
     }
 
     internal fun cleanFields(char: Char = '<') {
-        surName.trim().trim(char)
-        givenName.trim().trim(char)
-        country.trim().trim(char)
-        passportNumber.trim().trim(char)
-        nationality.trim().trim(char)
-        gender.trim().trim(char)
-        personalDocNumber.trim().trim(char)
+        surName = surName.trim().trim(char)
+        givenName = givenName.trim().trim(char)
+        country = country.trim().trim(char)
+        passportNumber = passportNumber.trim().trim(char)
+        nationality = nationality.trim().trim(char)
+        gender = gender.trim().trim(char)
+        personalDocNumber = personalDocNumber.trim().trim(char)
     }
 }

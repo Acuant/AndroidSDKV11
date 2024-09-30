@@ -80,6 +80,14 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
         this@AcuantCameraActivity.finish()
     }
 
+    override fun onCameraDone(imageBytes: ByteArray, mrzResult: MrzResult) {
+        val intent = Intent()
+        AcuantCameraActivity.imageBytes = imageBytes
+        intent.putExtra(ACUANT_EXTRA_MRZ_RESULT, mrzResult)
+        this@AcuantCameraActivity.setResult(RESULT_OK, intent)
+        this@AcuantCameraActivity.finish()
+    }
+
     override fun onCameraDone(barCodeString: String) {
         val intent = Intent()
         intent.putExtra(ACUANT_EXTRA_PDF417_BARCODE, barCodeString)

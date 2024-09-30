@@ -1,15 +1,11 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.6.10'
+    ext.kotlin_version = '1.7.10'
 
     repositories {
         google()
         mavenCentral()
-
-        //We still use at least 1 dependency from there
-        //noinspection JcenterRepositoryObsolete,GrDeprecatedAPIUsage
-        jcenter()
 
         //for local (before it is released). You don't need a line like this in your projects.
         maven { url '../../AndroidSdkMaven/maven/' }
@@ -33,10 +29,6 @@ allprojects {
         google()
         mavenCentral()
 
-        //We still use at least 1 dependency from there
-        //noinspection JcenterRepositoryObsolete,GrDeprecatedAPIUsage
-        jcenter()
-
         //for local (before it is released). You don't need a line like this in your projects.
         maven { url '../../AndroidSdkMaven/maven/' }
 
@@ -44,9 +36,9 @@ allprojects {
         maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
     }
 
-    project.ext.set("versionCode", 11500)
-    project.ext.set("versionName", '11.5.0')
-    version = '11.5.0'
+    project.ext.set("versionCode", 11601)
+    project.ext.set("versionName", '11.6.1')
+    version = '11.6.1'
     group = 'com.acuant' // Maven Group ID for the artifact
 }
 

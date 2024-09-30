@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.6.0
-**February 2023**
+# Acuant Android SDK v11.6.1
+**September 2024**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -36,7 +36,7 @@ Before 11.5.0, the SDK was not compiled with AndroidX. The SDK could still be us
 
 ## Prerequisites ##
 
-- Supports Android SDK versions 21-32 (compiled with 32)
+- Supports Android SDK versions 21-34 (compiled with 33)
 
 
 ## Modules ##
@@ -372,7 +372,13 @@ The SDK can be initialized by providing only a username and a password. However,
 				}
 			}
 
-	1. (Optional) Add localized strings in app's string resources as indicated [here](#language-localization)
+	1. (Optional) Get the captured frame using the following method:
+			
+			val bytes = AcuantCameraActivity.getLatestCapturedBytes(clearBytesAfterRead = true)
+			
+		Note: No document detection or quality checks were performed on this uncropped frame.
+		
+	1. (Optional) Add localized strings to the app's string resources as indicated [here](#language-localization)
 
 ----------
 		 

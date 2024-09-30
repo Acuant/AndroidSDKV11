@@ -21,7 +21,9 @@ import com.acuant.acuantcamera.detector.MrzFrameAnalyzer
 import com.acuant.acuantcamera.detector.MrzState
 import com.acuant.acuantcamera.helper.MrzResult
 import com.acuant.acuantcamera.helper.PointsUtils
+import com.acuant.acuantcamera.interfaces.IAcuantSavedImage
 import com.acuant.acuantcamera.overlay.MrzRectangleView
+import com.acuant.acuantcommon.model.AcuantError
 import java.lang.ref.WeakReference
 import kotlin.math.*
 
@@ -36,6 +38,8 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
     private var tries = 0
     private var handler: Handler? = null
     private var oldPoints: Array<Point>? = null
+    private var capturedBytes: ByteArray? = null
+    private var validMrzResult: MrzResult? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -73,7 +77,7 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
     }
 
     private fun onMrzDetection(points: Array<Point>?, result: MrzResult?, state: MrzState) {
-        if (!capturing) {
+        if (validMrzResult == null) {
             activity?.runOnUiThread {
 
                 var detectedPoints = points
@@ -82,12 +86,24 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
                     val camContainer = fragmentCameraBinding?.root
                     val analyzerSize = imageAnalyzer?.resolutionInfo?.resolution
                     val previewSize = fragmentCameraBinding?.viewFinder
-                    detectedPoints = PointsUtils.fixPoints(PointsUtils.scalePoints(detectedPoints, camContainer, analyzerSize, previewSize, rectangleView))
+                    detectedPoints = PointsUtils.fixPoints(
+                        PointsUtils.scalePoints(
+                            detectedPoints,
+                            camContainer,
+                            analyzerSize,
+                            previewSize,
+                            rectangleView
+                        )
+                    )
 
                     var dist = 0
                     if (oldPoints != null && oldPoints!!.size == 4 && detectedPoints.size == 4) {
                         for (i in 0..3) {
-                            dist += sqrt(((oldPoints!![i].x - detectedPoints[i].x).toDouble().pow(2) + (oldPoints!![i].y - detectedPoints[i].y).toDouble().pow(2))).toInt()
+                            dist += sqrt(
+                                ((oldPoints!![i].x - detectedPoints[i].x).toDouble()
+                                    .pow(2) + (oldPoints!![i].y - detectedPoints[i].y).toDouble()
+                                    .pow(2))
+                            ).toInt()
                         }
                     }
 
@@ -95,41 +111,80 @@ class AcuantMrzCameraFragment: AcuantBaseCameraFragment() {
                         resetWorkflow()
                     }
 
+                    if (capturedBytes == null &&
+                        !capturing &&
+                        state != MrzState.NoMrz &&
+                        PointsUtils.correctDirection(points, previewSize)
+                    ) {
+                        captureImage(object : IAcuantSavedImage {
+                            override fun onSaved(bytes: ByteArray) {
+                                capturing = false
+                                capturedBytes = bytes
+                                validMrzResult?.let {
+                                    cameraActivityListener.onCameraDone(bytes, it)
+                                }
+                            }
+
+                            override fun onError(error: AcuantError) {
+                                capturing = false
+                                validMrzResult?.let {
+                                    cameraActivityListener.onCameraDone(it)
+                                }
+                            }
+                        }, refocus = false)
+                    }
+
                     when {
-                        state == MrzState.NoMrz || !PointsUtils.correctDirection(points, previewSize) -> {
+                        state == MrzState.NoMrz || !PointsUtils.correctDirection(
+                            points,
+                            previewSize
+                        ) -> {
                             resetWorkflow()
                             setTextFromState(MrzCameraState.Align)
                             rectangleView?.setViewFromState(MrzCameraState.Align)
                         }
+
                         state == MrzState.TooFar -> {
                             resetWorkflow()
 
                             setTextFromState(MrzCameraState.MoveCloser)
                             rectangleView?.setViewFromState(MrzCameraState.MoveCloser)
                         }
+
                         else -> { //good mrz
                             when {
                                 result != null && result.allCheckSumsPassed -> {
-                                    capturing = true
+                                    validMrzResult = result
                                     setTextFromState(MrzCameraState.Capturing)
                                     rectangleView?.setViewFromState(MrzCameraState.Capturing)
-                                    val handler = handler
-                                    if (handler != null) {
-                                        handler.postDelayed({
-                                            this.handler?.removeCallbacksAndMessages(null)
-                                            cameraActivityListener.onCameraDone(result)
-                                        }, 750)
-                                    } else {
-                                        handler?.removeCallbacksAndMessages(null)
-                                        cameraActivityListener.onCameraDone(result)
+                                    if (!capturing) {
+                                        val handler = handler
+                                        if (handler != null) {
+                                            handler.postDelayed({
+                                                this.handler?.removeCallbacksAndMessages(null)
+                                                capturedBytes?.let {
+                                                    cameraActivityListener.onCameraDone(it, result)
+                                                } ?: kotlin.run {
+                                                    cameraActivityListener.onCameraDone(result)
+                                                }
+                                            }, 750)
+                                        } else {
+                                            capturedBytes?.let {
+                                                cameraActivityListener.onCameraDone(it, result)
+                                            } ?: kotlin.run {
+                                                cameraActivityListener.onCameraDone(result)
+                                            }
 
+                                        }
                                     }
                                 }
+
                                 tries < ALLOWED_ERRORS -> {
                                     ++tries
                                     setTextFromState(MrzCameraState.Trying)
                                     rectangleView?.setViewFromState(MrzCameraState.Trying)
                                 }
+
                                 else -> { //too many errors
                                     setTextFromState(MrzCameraState.Reposition)
                                     rectangleView?.setViewFromState(MrzCameraState.Reposition)

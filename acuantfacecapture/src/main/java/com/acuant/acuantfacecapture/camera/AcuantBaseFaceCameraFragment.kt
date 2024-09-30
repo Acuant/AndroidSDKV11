@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.os.Build
 import android.os.Bundle
 import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,7 +39,6 @@ import kotlin.math.min
 abstract class AcuantBaseFaceCameraFragment: Fragment() {
 
     private var displayId: Int = -1
-    private var lensFacing: Int = CameraSelector.LENS_FACING_FRONT
     private var imageCapture: ImageCapture? = null
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
@@ -102,7 +102,12 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
 
         cameraActivityListener = requireActivity() as IFaceCameraActivityFinish
 
-        val opts = requireArguments().getSerializable(INTERNAL_OPTIONS) as FaceCaptureOptions?
+        val opts = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requireArguments().getSerializable(INTERNAL_OPTIONS, FaceCaptureOptions::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            requireArguments().getSerializable(INTERNAL_OPTIONS) as FaceCaptureOptions?
+        }
 
         if (opts != null) {
             acuantOptions = opts
@@ -154,21 +159,17 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
             // CameraProvider
             cameraProvider = cameraProviderFuture.get()
 
-            // Select lensFacing depending on the available cameras
-            lensFacing = when {
-                hasBackCamera() -> CameraSelector.LENS_FACING_FRONT
-                else -> {
-                    cameraActivityListener.onError(AcuantError(ErrorCodes.ERROR_UnexpectedError, ErrorDescriptions.ERROR_DESC_UnexpectedError, "Phone does not have a camera/app can not see the camera"))
-                    return@addListener
-                }
+            if (!hasFrontCamera()) {
+                cameraActivityListener.onError(AcuantError(ErrorCodes.ERROR_UnexpectedError, ErrorDescriptions.ERROR_DESC_UnexpectedError, "Phone does not have a camera/app can not see the camera"))
+                return@addListener
             }
             // Build and bind the camera use cases
             bindCameraUseCases()
         }, ContextCompat.getMainExecutor(requireContext()))
     }
 
-    private fun hasBackCamera(): Boolean {
-        return cameraProvider?.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) ?: false
+    private fun hasFrontCamera(): Boolean {
+        return cameraProvider?.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) ?: false
     }
 
     /** Declare and bind preview, capture and analysis use cases */
@@ -190,7 +191,7 @@ abstract class AcuantBaseFaceCameraFragment: Fragment() {
         }
 
         // CameraSelector
-        val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+        val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
         // Preview
         preview = Preview.Builder()

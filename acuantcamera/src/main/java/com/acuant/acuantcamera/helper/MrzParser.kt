@@ -24,6 +24,7 @@ class MrzParser {
 
             result.threeLineMrz = false
         } else if (mrzLines.size == 3) {
+
             result = parseFirstLineOfThreeLine(mrzLines[0])
             if (result != null) {
                 result = parseSecondLineOfThreeLine(mrzLines[1], result)
@@ -33,7 +34,6 @@ class MrzParser {
             }
         }
         result?.cleanFields(FILLER)
-
         return result
     }
 
@@ -45,18 +45,33 @@ class MrzParser {
             val country = firstLine.substring(startPos, startPos+3)
             startPos+=3
 
-            val passportNumber = firstLine.substring(startPos, startPos+9)
+            var passportNumber = firstLine.substring(startPos, startPos+9)
             startPos+=9
 
-            val check1 = firstLine[startPos]
+            var check1 = firstLine[startPos]
             ++startPos
 
+            //this handles cases where the doc num is longer than 9 which can happen on 3 line
+            // documents. In that case the doc num will flow over into the extra data, along
+            // with a checksum char followed by a FILLER
+            if (check1 == FILLER) {
+                val nextFiller = firstLine.indexOf(FILLER, startPos)
+                if (nextFiller >= startPos + 2) {
+                    passportNumber += firstLine.substring(startPos, nextFiller - 1)
+                    check1 = firstLine[nextFiller - 1]
+                    startPos = nextFiller
+                }
+            }
             val subRes = trySubstitutions(passportNumber, check1)
-            val checkSumResult1 = checkSum(subRes.first, subRes.second)
 
-            val optional1 = firstLine.substring(startPos, startPos + 15)
+            passportNumber = subRes.first
+            check1 = subRes.second
 
-            return MrzResult(country = country, passportNumber = subRes.first, checkSumResult1 = checkSumResult1, checkChar1 = subRes.second, optionalField1 = optional1)
+            val checkSumResult1 = checkSum(passportNumber, check1)
+
+            val optional1 = firstLine.substring(startPos)
+
+            return MrzResult(country = country, passportNumber = passportNumber, checkSumResult1 = checkSumResult1, checkChar1 = check1, optionalField1 = optional1)
         }
         return null
     }
@@ -99,7 +114,13 @@ class MrzParser {
         val optional2 = line.substring(startPos, startPos+11)
         startPos += 11
 
-        val finalCheckString = result.passportNumber + result.checkChar1 + result.optionalField1 + result.dob + result.checkChar2 +
+        val firstLineForFourthChecksum = if (result.passportNumber.length > 9) {
+            result.passportNumber.substring(0, 9) + FILLER + result.passportNumber.substring(9)
+        } else {
+            result.passportNumber
+        } + result.checkChar1 + result.optionalField1
+
+        val finalCheckString = firstLineForFourthChecksum + result.dob + result.checkChar2 +
                 result.passportExpiration + result.checkChar3 + optional2
         result.checkChar4 = line[startPos]
         subRes = trySubstitutions(finalCheckString, result.checkChar4, true)

@@ -1355,6 +1355,8 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                             }
                         })
                         backgroundTasks.add(task)
+                    } else {
+                        getData()
                     }
                 }
 

@@ -1,6 +1,7 @@
 package com.acuant.sampleapp
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Typeface
 import android.nfc.NfcAdapter
 import android.os.Bundle
@@ -16,6 +17,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcommon.model.AcuantError
 import com.acuant.acuantechipreader.AcuantEchipReader
 import com.acuant.acuantechipreader.AcuantEchipReader.getPositionOfChip
@@ -33,6 +35,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
     private lateinit var nfcTitle: TextView
     private lateinit var nfcText: TextView
     private lateinit var nfcImage: ImageView
+    private lateinit var capturedImage: ImageView
     private lateinit var nfcTextLower: TextView
     private lateinit var locationText: TextView
     private lateinit var mrzDocNumber: EditText
@@ -98,6 +101,7 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         nfcTitle = findViewById(R.id.nfc_help_title)
         nfcText = findViewById(R.id.nfc_help_text)
         nfcTextLower = findViewById(R.id.nfc_help_text_2)
+        capturedImage = findViewById(R.id.mrzImagePreview)
 
         val str = SpannableStringBuilder(getString(R.string.verify_captured_data))
         val indexOfBold = str.indexOf(getString(R.string.start_echip))
@@ -107,6 +111,11 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         findViewById<TextView>(R.id.mrzInstruction).text = str
 
         nfcImage.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        val bytes = AcuantCameraActivity.getLatestCapturedBytes(clearBytesAfterRead = true)
+        bytes?.let {
+            val bitmap = BitmapFactory.decodeByteArray(it, 0, it.size)
+            capturedImage.setImageBitmap(bitmap)
+        }
 
         country = intent.getStringExtra("COUNTRY") ?: "UNKNOWN"
         position = try {

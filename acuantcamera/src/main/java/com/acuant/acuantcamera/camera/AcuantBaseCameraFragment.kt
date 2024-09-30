@@ -5,10 +5,12 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.graphics.Point
+import android.hardware.camera2.CameraCharacteristics
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.camera2.internal.Camera2CameraInfoImpl
 import androidx.camera.core.*
 import androidx.camera.core.impl.utils.Exif
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -30,10 +32,13 @@ import org.json.JSONObject
 import java.io.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.atan
 
 
 abstract class AcuantBaseCameraFragment: Fragment() {
 
+    //TODO we do not currently do anything with Optical Zoom, but if more devices start supporting it we might need to account for it
+    private var cameraSupportsOpticalZoom: Boolean? = null
     private var displayId: Int = -1
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
     private var camera: Camera? = null
@@ -106,13 +111,17 @@ abstract class AcuantBaseCameraFragment: Fragment() {
         super.onPause()
     }
 
-    @SuppressLint("MissingPermission")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         cameraActivityListener = requireActivity() as ICameraActivityFinish
 
-        val opts = requireArguments().getSerializable(INTERNAL_OPTIONS) as AcuantCameraOptions?
+        val opts = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requireArguments().getSerializable(INTERNAL_OPTIONS, AcuantCameraOptions::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            requireArguments().getSerializable(INTERNAL_OPTIONS) as AcuantCameraOptions?
+        }
 
         if (opts != null) {
             acuantOptions = opts
@@ -210,6 +219,11 @@ abstract class AcuantBaseCameraFragment: Fragment() {
     }
 
     /** Declare and bind preview, capture and analysis use cases */
+    @SuppressLint("RestrictedApi")
+    //This RestrictedApi annotation essentially means we are using code that was not exposed as an official public API.
+    // Its behaviour or existence might change between library releases, but the code is still expected to work.
+    // I have not found another way to get FOCAL_LENGTH other than through this API,
+    // and our code tries to account for cases where the API might not be implemented by having fallbacks.
     private fun bindCameraUseCases() {
 
         val screenAspectRatio = aspectRatio()
@@ -225,7 +239,41 @@ abstract class AcuantBaseCameraFragment: Fragment() {
         }
 
         // CameraSelector
-        val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+        val cameraSelector = CameraSelector.Builder()
+            .addCameraFilter { cameraInfos ->
+                // filter back cameras with minimum sensor pixel size
+                val backCameras = cameraInfos.filterIsInstance<Camera2CameraInfoImpl>()
+                    .filter {
+                        val pixelWidth = it.cameraCharacteristicsCompat.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE)?.width ?: 0
+                        it.lensFacing == CameraSelector.LENS_FACING_BACK && pixelWidth >= 2000 // arbitrary number resolved empirically
+                    }
+
+                var currentCamera: Camera2CameraInfoImpl? = null
+                var currentFocalLength = Float.NEGATIVE_INFINITY
+                for (backCamera in backCameras) {
+                    val focalLength = backCamera.cameraCharacteristicsCompat.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.minOrNull()
+                    val physicalSize = backCamera.cameraCharacteristicsCompat.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+                    //TODO Potentially we can use LENS_INFO_MINIMUM_FOCUS_DISTANCE here to further
+                    // enhance our camera selection, but I have concerns from past explorations that
+                    // some devices might not be reporting this metric accurately.
+                    if (focalLength != null && physicalSize != null) {
+                        val w: Float = physicalSize.width
+                        val horizontalFov = (2 * atan(w / (focalLength * 2)))
+                        if (focalLength > currentFocalLength && horizontalFov > MIN_FOV) {
+                            currentCamera = backCamera
+                            currentFocalLength = focalLength
+                        }
+                    }
+                }
+                if (currentCamera != null) {
+                    cameraSupportsOpticalZoom = (currentCamera.cameraCharacteristicsCompat.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.size ?: 0) > 1
+                    listOf(currentCamera)
+                } else {
+                    cameraSupportsOpticalZoom = null
+                    backCameras
+                }
+            }
+            .build()
 
         // Preview
         preview = Preview.Builder()
@@ -268,7 +316,7 @@ abstract class AcuantBaseCameraFragment: Fragment() {
             preview?.setSurfaceProvider(fragmentCameraBinding!!.viewFinder.surfaceProvider)
             observeCameraState(camera?.cameraInfo!!)
         } catch (exc: Exception) {
-            Log.e(TAG, "Use case binding failed", exc)
+            cameraActivityListener.onError(AcuantError(ErrorCodes.ERROR_UnexpectedError, ErrorDescriptions.ERROR_DESC_UnexpectedError, exc.stackTraceToString()))
         }
     }
 
@@ -276,10 +324,10 @@ abstract class AcuantBaseCameraFragment: Fragment() {
 
     abstract fun resetWorkflow()
 
-    fun captureImage (listener: IAcuantSavedImage, middle: Point? = null, captureType: String? = null) {
+    fun captureImage (listener: IAcuantSavedImage, middle: Point? = null, captureType: String? = null, refocus: Boolean = true) {
         if (!capturing) {
             capturing = true
-            if (!failedToFocus) {
+            if (!failedToFocus && refocus) {
                 val width = fragmentCameraBinding?.root?.width?.toFloat()
                 val height = fragmentCameraBinding?.root?.height?.toFloat()
                 val action: FocusMeteringAction =
@@ -460,8 +508,8 @@ abstract class AcuantBaseCameraFragment: Fragment() {
     }
 
     companion object {
-        private const val TAG = "Acuant Camera"
         internal const val INTERNAL_OPTIONS = "options_internal"
+        internal const val MIN_FOV = 0.523599 //30 degrees in radians
 
         private fun addExif(file: File, captureType: String, rotation: Int) {
             val exif = ExifInterface(file.absolutePath)
