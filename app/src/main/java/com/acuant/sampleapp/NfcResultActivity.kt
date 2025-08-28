@@ -7,11 +7,17 @@ import android.graphics.drawable.ShapeDrawable
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import com.acuant.acuantechipreader.model.NfcData
 
 class NfcResultActivity : AppCompatActivity() {
@@ -29,11 +35,27 @@ class NfcResultActivity : AppCompatActivity() {
     private var currentId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.AppTheme)
-
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY)
+        )
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_nfcresult)
+
+
+        val topLayout = findViewById<RelativeLayout>(R.id.resultRelativeLayout)
+
+        ViewCompat.setOnApplyWindowInsetsListener(topLayout) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+                        or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                topMargin = bars.top
+            }
+            WindowInsetsCompat.CONSUMED
+        }
 
         progressDialog = findViewById(R.id.nfc_res_progress_layout)
         progressText = findViewById(R.id.nfc_res_pbText)

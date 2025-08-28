@@ -1,5 +1,20 @@
 # Migration Details
 ----------
+## v11.6.2
+
+**August 2025**
+
+### New repository added to dependencies
+
+Amongst other dependency updates, this version of the SDK uses a more up to date and more secure version of tesseract. In order to correctly fetch this dependency implementations need to include the following maven repository in their `repositories` block:
+
+		maven { url 'https://jitpack.io' }
+		
+### Edge to edge mode
+
+Per the requirements of android API 35 all activities started by the SDK will be in edge to edge mode. There are no code changes required due to this, however as this change can impact UX it is being mentioned in this section. See [Display content edge-to-edge in views](https://developer.android.com/develop/ui/views/layout/edge-to-edge) for more details.
+
+----------
 ## v11.6.0
 
 **February 2023**

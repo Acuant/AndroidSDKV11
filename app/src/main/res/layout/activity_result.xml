@@ -11,7 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="10dp"
-        >
+        android:id="@+id/ResultHorizontalLayout">
+
         <ImageView
             android:id="@+id/frontSideCardImage"
             android:layout_width="160dp"

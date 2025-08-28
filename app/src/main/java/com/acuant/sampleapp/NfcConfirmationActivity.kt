@@ -2,6 +2,7 @@ package com.acuant.sampleapp
 
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.Typeface
 import android.nfc.NfcAdapter
 import android.os.Bundle
@@ -12,11 +13,18 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.StyleSpan
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcommon.model.AcuantError
 import com.acuant.acuantechipreader.AcuantEchipReader
@@ -91,6 +99,10 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY)
+        )
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_nfcconfirmation)
@@ -102,6 +114,46 @@ class NfcConfirmationActivity : AppCompatActivity(), NfcTagReadingListener {
         nfcText = findViewById(R.id.nfc_help_text)
         nfcTextLower = findViewById(R.id.nfc_help_text_2)
         capturedImage = findViewById(R.id.mrzImagePreview)
+
+        val bottomLayout = findViewById<LinearLayout>(R.id.buttonLayout)
+        val topLayout = findViewById<TextView>(R.id.mrz_read)
+
+        ViewCompat.setOnApplyWindowInsetsListener(bottomLayout) { v, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = insets.bottom
+            }
+            WindowInsetsCompat.CONSUMED
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(nfcHelpLayout) { v, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = insets.bottom
+            }
+            WindowInsetsCompat.CONSUMED
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(topLayout) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+                        or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                topMargin = bars.top
+            }
+            WindowInsetsCompat.CONSUMED
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(nfcHelpLayout) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+                        or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                topMargin = bars.top
+            }
+            WindowInsetsCompat.CONSUMED
+        }
 
         val str = SpannableStringBuilder(getString(R.string.verify_captured_data))
         val indexOfBold = str.indexOf(getString(R.string.start_echip))

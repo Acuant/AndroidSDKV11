@@ -10,9 +10,16 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.util.DisplayMetrics
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 
 
 class ConfirmationActivity : AppCompatActivity() {
@@ -26,8 +33,26 @@ class ConfirmationActivity : AppCompatActivity() {
     private var dpi = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY)
+        )
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_confirmation)
+
+        val topLayout = findViewById<RelativeLayout>(R.id.messageLayout)
+
+        ViewCompat.setOnApplyWindowInsetsListener(topLayout) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+                        or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                topMargin = bars.top
+            }
+            WindowInsetsCompat.CONSUMED
+        }
+
         isFrontImage = intent.getBooleanExtra("isFrontImage", true)
         isHealthCard = intent.getBooleanExtra("isHealthCard", false)
         barcodeString = intent.getStringExtra("barcode")

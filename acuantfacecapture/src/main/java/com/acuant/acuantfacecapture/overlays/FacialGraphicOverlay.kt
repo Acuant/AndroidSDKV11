@@ -139,18 +139,18 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
             val instText2 = instructionText.substring(instructionText.indexOf('\n'))
             textPaint!!.getTextBounds(instText1, 0, instText1.length, textRect)
             var x = (width - textRect.width()) / 2f
-            var y = height * 0.35f
+            var y = height * 0.5f
             textPaint!!.color = color
             canvas.drawText(instText1, x, y, textPaint!!)
             textPaint!!.getTextBounds(instText2, 0, instText2.length, textRect)
             x = (width - textRect.width()) / 2f
-            y = height * 0.65f
+            y = height * 0.8f
             textPaint!!.color = color
             canvas.drawText(instText2, x, y, textPaint!!)
         } else {
             textPaint!!.getTextBounds(instructionText, 0, instructionText.length, textRect)
             val x = (width - textRect.width()) / 2f
-            val y = height * 0.5f
+            val y = height * 0.65f
             textPaint!!.color = color
             canvas.drawText(instructionText, x, y, textPaint!!)
         }
@@ -198,6 +198,6 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
     }
 
     companion object {
-        const val heightDivisor = 7.5f
+        const val heightDivisor = 6f
     }
 }

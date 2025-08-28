@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.6.1
-**September 2024**
+# Acuant Android SDK v11.6.2
+**August 2025**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -16,13 +16,13 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ![](https://i.imgur.com/KR0J94S.png)
 
-**Note:** The acceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and matches an ID document.
+**Note:** The acceptable quality image is well-cropped, sharp and with no glare present, has a resolution of at least 300 dpi (for data capture) or 600 dpi (for authentication). The aspect ratio should be acceptable and match an ID document.
 
 ----------
 
 ## Updates
 
-**v11.6.0:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.6.0).
+**v11.6.2:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.6.2).
 
 ----------
 
@@ -36,7 +36,7 @@ Before 11.5.0, the SDK was not compiled with AndroidX. The SDK could still be us
 
 ## Prerequisites ##
 
-- Supports Android SDK versions 21-34 (compiled with 33)
+- Supports Android SDK versions 21-35 (compiled with 35)
 
 
 ## Modules ##
@@ -111,20 +111,21 @@ The SDK includes the following modules:
 	- Add the following Maven URLs
 
 			maven { url 'https://maven.google.com' }
+			maven { url 'https://jitpack.io' }
 			maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
 			maven { url 'https://raw.githubusercontent.com/iProov/android/master/maven/' }
         	
    - Add the following dependencies
 
-			implementation 'com.acuant:acuantcommon:11.6.0'
-			implementation 'com.acuant:acuantcamera:11.6.0'
-			implementation 'com.acuant:acuantimagepreparation:11.6.0'
-			implementation 'com.acuant:acuantdocumentprocessing:11.6.0'
-			implementation 'com.acuant:acuantechipreader:11.6.0'
-			implementation 'com.acuant:acuantipliveness:11.6.0'
-			implementation 'com.acuant:acuantfacematch:11.6.0'
-			implementation 'com.acuant:acuantfacecapture:11.6.0'
-			implementation 'com.acuant:acuantpassiveliveness:11.6.0'
+			implementation 'com.acuant:acuantcommon:11.6.2'
+			implementation 'com.acuant:acuantcamera:11.6.2'
+			implementation 'com.acuant:acuantimagepreparation:11.6.2'
+			implementation 'com.acuant:acuantdocumentprocessing:11.6.2'
+			implementation 'com.acuant:acuantechipreader:11.6.2'
+			implementation 'com.acuant:acuantipliveness:11.6.2'
+			implementation 'com.acuant:acuantfacematch:11.6.2'
+			implementation 'com.acuant:acuantfacecapture:11.6.2'
+			implementation 'com.acuant:acuantpassiveliveness:11.6.2'
 
 1. 	Create an .xml file with the following tags. (If you plan to use bearer tokens to initialize, include only the endpoints.):
 
@@ -1020,7 +1021,7 @@ In order to display texts in the corresponding language you need to add the foll
 
 #### Why is the SDK so large ####
 
-The SDK is large because there are several ml-kit models bundled into it. This bundling has pros and cons. Bundling models into the SDK enables it to work in areas and on devices that do not have access to Google Play services. If the size of the SDK is an issue, you can reduce the size by downloading the models from Google Play services the first time the application is launched. The download can occur in the background. To enable the download, use the open versions of the face capture and camera modules. Within the Gradles of those models, remove the following lines:
+The SDK is large because there are several ml-kit models bundled into it. This bundling has pros and cons. Bundling models into the SDK enables it to work in areas and on devices that do not have access to Google Play services. If the size of the SDK is an issue, you can reduce the size by downloading the models from Google Play services the first time the application is launched. The download can occur in the background. To enable the download, use the open versions of the face capture and camera modules. Within the gradle files of those models, remove the following lines:
 
 		implementation 'com.google.mlkit:face-detection:XXX'
 		implementation 'com.google.mlkit:barcode-scanning:XXX'

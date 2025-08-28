@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -16,9 +17,15 @@ import androidx.appcompat.app.AppCompatActivity
 import android.util.Base64
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.*
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import com.acuant.acuantcamera.camera.AcuantCameraActivity
 import com.acuant.acuantcamera.camera.AcuantCameraOptions
 import com.acuant.acuantcamera.constant.*
@@ -160,10 +167,29 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.GRAY)
+        )
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         livenessSpinner = findViewById(R.id.livenessSpinner)
+        ViewCompat.setOnApplyWindowInsetsListener(livenessSpinner) { v, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // Apply the insets as a margin to the view. This solution sets
+            // only the bottom, left, and right dimensions, but you can apply whichever
+            // insets are appropriate to your layout. You can also update the view padding
+            // if that's more appropriate.
+            v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = insets.bottom
+            }
+
+            // Return CONSUMED if you don't want the window insets to keep passing
+            // down to descendant views.
+            WindowInsetsCompat.CONSUMED
+        }
+
         val list = mutableListOf("No liveness test/face match", "tmp")
         livenessArrayAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, list)
         livenessArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -794,7 +820,9 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 dialog.dismiss()
             }
         }
-        alert.show()
+        runOnUiThread {
+            alert.show()
+        }
     }
 
     private fun showBarcodeCaptureCamera() {
@@ -1355,7 +1383,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                             }
                         })
                         backgroundTasks.add(task)
-                    } else {
+                    } else if (!barcodeExpected) {
+                        //if barcode is expected and not captured, get data will get called after
+                        // barcode camera. Otherwise it creates a race condition which can result
+                        // in a 409 error in the get data call
                         getData()
                     }
                 }

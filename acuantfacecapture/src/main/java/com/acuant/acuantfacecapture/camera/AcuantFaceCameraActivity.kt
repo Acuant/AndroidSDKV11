@@ -1,8 +1,11 @@
 package com.acuant.acuantfacecapture.camera
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -26,6 +29,10 @@ class AcuantFaceCameraActivity: AppCompatActivity(), IFaceCameraActivityFinish {
 
     //Camera Launch
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
         binding = ActivityFaceCameraBinding.inflate(layoutInflater)
         setContentView(binding.root)

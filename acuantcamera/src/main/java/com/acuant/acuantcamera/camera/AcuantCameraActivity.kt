@@ -1,9 +1,12 @@
 package com.acuant.acuantcamera.camera
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.acuant.acuantcamera.R
@@ -22,6 +25,10 @@ class AcuantCameraActivity: AppCompatActivity(), ICameraActivityFinish {
 
     //Camera Launch
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
         binding = ActivityCameraBinding.inflate(layoutInflater)
 
