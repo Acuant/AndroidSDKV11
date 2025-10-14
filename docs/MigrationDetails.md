@@ -1,4 +1,20 @@
 # Migration Details
+
+----------
+## v11.6.3
+
+**October 2025**
+
+### Minor modification to face camera behavior
+
+The Face camera will no longer capture if a user has their eyes closed. No code changes are required to support this behavior, however a new localization string has been added: 
+
+	<string name="acuant_face_camera_eyes_open">Eyes must be open</string>
+	
+### IPLiveness has been removed
+
+This module is no longer supported. Passive Liveness should be used for all liveness needs.
+
 ----------
 ## v11.6.2
 

@@ -162,6 +162,10 @@ internal class FacialGraphicOverlay(context: Context, attrs: AttributeSet) : Vie
                 instructionText = context.getString(R.string.acuant_face_camera_initial)
                 drawSimpleInst(canvas, 60f, options?.colorTextDefault ?: Color.WHITE)
             }
+            FaceCameraState.DontBlink -> {
+                instructionText = context.getString(R.string.acuant_face_camera_eyes_open)
+                drawSimpleInst(canvas, 60f, options?.colorTextError ?: Color.RED)
+            }
             FaceCameraState.MoveCloser -> {
                 instructionText = context.getString(R.string.acuant_face_too_far)
                 drawSimpleInst(canvas, 60f, options?.colorTextError ?: Color.RED)

@@ -1,5 +1,5 @@
-# Acuant Android SDK v11.6.2
-**August 2025**
+# Acuant Android SDK v11.6.3
+**October 2025**
 
 See [https://github.com/Acuant/AndroidSDKV11/releases](https://github.com/Acuant/AndroidSDKV11/releases) for release notes.
 
@@ -22,7 +22,7 @@ This document provides detailed information about the Acuant Android SDK. The Ac
 
 ## Updates
 
-**v11.6.2:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.6.2).
+**v11.6.3:** Please review [Migration Details](docs/MigrationDetails.md) for migration details (last updated for v11.6.3).
 
 ----------
 
@@ -69,11 +69,6 @@ The SDK includes the following modules:
 
 - Contains methods for e-Passport chip reading and authentication using Ozone.
 
-**Acuant IP Liveness Library (AcuantIPLiveness):**
-
-- Uses library for capturing a facial image and calculating liveness.
-- Enhanced Face Liveness.
-
 **Acuant Face Capture Library (AcuantFaceCapture):**
 
 - Contains two CameraX implementations for capturing a user's face image.
@@ -117,15 +112,14 @@ The SDK includes the following modules:
         	
    - Add the following dependencies
 
-			implementation 'com.acuant:acuantcommon:11.6.2'
-			implementation 'com.acuant:acuantcamera:11.6.2'
-			implementation 'com.acuant:acuantimagepreparation:11.6.2'
-			implementation 'com.acuant:acuantdocumentprocessing:11.6.2'
-			implementation 'com.acuant:acuantechipreader:11.6.2'
-			implementation 'com.acuant:acuantipliveness:11.6.2'
-			implementation 'com.acuant:acuantfacematch:11.6.2'
-			implementation 'com.acuant:acuantfacecapture:11.6.2'
-			implementation 'com.acuant:acuantpassiveliveness:11.6.2'
+			implementation 'com.acuant:acuantcommon:11.6.3'
+			implementation 'com.acuant:acuantcamera:11.6.3'
+			implementation 'com.acuant:acuantimagepreparation:11.6.3'
+			implementation 'com.acuant:acuantdocumentprocessing:11.6.3'
+			implementation 'com.acuant:acuantechipreader:11.6.3'
+			implementation 'com.acuant:acuantfacematch:11.6.3'
+			implementation 'com.acuant:acuantfacecapture:11.6.3'
+			implementation 'com.acuant:acuantpassiveliveness:11.6.3'
 
 1. 	Create an .xml file with the following tags. (If you plan to use bearer tokens to initialize, include only the endpoints.):
 
@@ -505,68 +499,6 @@ For most workflows, the steps resemble the following, with reuploads on error or
 
 -------------------------------------
 
-## AcuantIPLiveness ##
-
-1. Get the setup from the controller and begin Activity:
-
-		AcuantIPLiveness.getFacialSetup(object : FacialSetupListener {
-			override fun onDataReceived(result: FacialSetupResult) {
-				AcuantIPLiveness.runFacialCapture(this@MainActivity, result, object : IPLivenessListener {
-					override fun onConnecting() {
-						/...
-					}
-					
-					override fun onConnected() {
-						/...
-					}
-					
-					override fun onProgress(status: String, progress: Int) {
-						/...
-					}
-					
-					override fun onSuccess(userId: String, token: String, frame: Bitmap?) {
-						/...
-					}
-					
-					override fun onFail(error: AcuantError) {
-						/...
-					}
-					
-					override fun onCancel() {
-						/...
-					}
-					
-					override fun onError(error: AcuantError) {
-						/...
-					}
-				})
-			}
-			
-			override fun onError(error: AcuantError) {
-				/...
-			}
-		})
-
-1. Get the facial capture result (call after onSuccess in IPLivenessListener):
-		
-		AcuantIPLiveness.getFacialLiveness(
-			token,
-			userId,
-			object: FacialCaptureListener {
-				override fun onDataReceived(result: FacialCaptureResult {
-					//...
-				}
-		
-				override fun onError(error: AcuantError) {
-					//...
-				}
-			}
-		)
-
-1. (Optional) Add localized strings in app's string resources as indicated [here](#language-localization)
-
-----------
-
 ## AcuantFaceCapture ##
 
 This module is used to automate capturing an image of a face appropriate for use with passive liveness.
@@ -749,6 +681,7 @@ In order to display texts in the corresponding language you need to add the foll
 #### AcuantFaceCapture
 
 	<string name="acuant_face_camera_initial">Align face to start capture</string>
+	<string name="acuant_face_camera_eyes_open">Eyes must be open</string>
 	<string name="acuant_face_camera_face_too_close">Too close! Move away</string>
 	<string name="acuant_face_too_far">Move closer</string>
 	<string name="acuant_face_camera_face_has_angle">Face has angle. Do not tilt</string>
@@ -760,61 +693,6 @@ In order to display texts in the corresponding language you need to add the foll
 			<item quantity="one">Capturing\n%d…</item>
 			<item quantity="other">Capturing\n%d…</item>
 	</plurals>
-
-#### AcuantIPLiveness
-
-	<string name="iproov__language_file">en</string>
-	<string name="iproov__prompt_genuine_presence_align_face">Put your face in the oval</string>
-	<string name="iproov__prompt_liveness_align_face">Fill the oval with your face</string>
-	<string name="iproov__prompt_liveness_no_target">Put your face in the frame</string>
-	<string name="iproov__prompt_connecting">Connecting…</string>
-	<string name="iproov__prompt_tap_to_begin">Tap the screen to begin</string>
-	<string name="iproov__prompt_too_far">Move closer</string>
-	<string name="iproov__prompt_too_bright">Go somewhere shadier</string>
-	<string name="iproov__progress_streaming">Streaming…</string>
-	<string name="iproov__progress_streaming_slow">Streaming, network is slow…</string>
-	<string name="iproov__prompt_scanning">Scanning…</string>
-	<string name="iproov__progress_identifying_face">Identifying face…</string>
-	<string name="iproov__progress_confirming_identity">Confirming identity…</string>
-	<string name="iproov__progress_assessing_genuine_presence">Assessing genuine presence…</string>
-	<string name="iproov__progress_assessing_liveness">Assessing liveness…</string>
-	<string name="iproov__progress_loading">Loading…</string>
-	<string name="iproov__progress_creating_identity">Creating identity…</string>
-	<string name="iproov__progress_finding_face">Finding face…</string>
-	<string name="iproov__authenticate">Authenticate</string>
-	<string name="iproov__enrol">Enrol</string>
-	<string name="iproov__message_format">%1$s to %2$s</string>
-	<string name="iproov__prompt_too_close">Too close</string>
-	<string name="iproov__failure_ambiguous_outcome">Ambiguous outcome</string>
-	<string name="iproov__failure_motion_too_much_movement">Please do not move while iProoving</string>
-	<string name="iproov__failure_lighting_flash_reflection_too_low">Ambient light too strong or screen brightness too low</string>
-	<string name="iproov__failure_lighting_backlit">Strong light source detected behind you</string>
-	<string name="iproov__failure_lighting_too_dark">Your environment appears too dark</string>
-	<string name="iproov__failure_lighting_face_too_bright">Too much light detected on your face</string>
-	<string name="iproov__failure_motion_too_much_mouth_movement">Please do not talk while iProoving</string>
-	<string name="iproov__failure_user_timeout">Your session has expired</string>
-	<string name="iproov__message_format_with_username">%1$s as %2$s to %3$s</string>
-	<string name="iproov__prompt_roll_too_high">Avoid tilting your head</string>
-	<string name="iproov__prompt_roll_too_low">Avoid tilting your head</string>
-	<string name="iproov__prompt_yaw_too_low">Turn slightly to your right</string>
-	<string name="iproov__prompt_yaw_too_high">Turn slightly to your left</string>
-	<string name="iproov__prompt_pitch_too_high">Hold the device at eye level</string>
-	<string name="iproov__prompt_pitch_too_low">Hold the device at eye level</string>
-	<string name="iproov__prompt_liveness_scan_completed">Scan completed</string>
-	<string name="iproov__prompt_get_ready">Get ready…</string>
-	<string name="iproov__debug_text_default">Loading…</string>
-	<string name="iproov__error_network">Network error</string>
-	<string name="iproov__error_device_not_supported">Device is not supported</string>
-	<string name="iproov__error_camera">Camera error</string>
-	<string name="iproov__error_camera_permission_denied">Camera permission denied</string>
-	<string name="iproov__error_camera_permission_denied_message">Please allow camera access for this app in Android Settings</string>
-	<string name="iproov__error_server">Server error</string>
-	<string name="iproov__error_multi_window_mode_unsupported">Application is in multi-window mode</string>
-	<string name="iproov__error_face_detector">Face detector error</string>
-	<string name="iproov__error_capture_already_active">An existing capture is already in progress</string>
-	<string name="iproov__error_listener_not_registered">Before calling IProov.launch(), you should register a listener with IProov.registerListener()</string>
-	<string name="iproov__error_invalid_options">Invalid iProov options</string>
-	<string name="iproov__error_unexpected_error">Unexpected error</string>
 
 ----------
 

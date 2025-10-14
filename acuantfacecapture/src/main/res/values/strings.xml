@@ -6,6 +6,7 @@
     <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
     <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
     <string name="acuant_face_camera_initial">Align face to start capture</string>
+    <string name="acuant_face_camera_eyes_open">Eyes must be open</string>
     <string name="acuant_face_camera_face_too_close">Too close! Move away</string>
     <string name="acuant_face_too_far">Move closer</string>
     <string name="acuant_face_camera_face_has_angle">Face has angle. Do not tilt</string>

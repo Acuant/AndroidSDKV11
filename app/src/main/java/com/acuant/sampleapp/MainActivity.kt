@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.os.Looper
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -58,12 +57,6 @@ import com.acuant.acuantimagepreparation.AcuantImagePreparation
 import com.acuant.acuantimagepreparation.background.EvaluateImageListener
 import com.acuant.acuantimagepreparation.model.AcuantImage
 import com.acuant.acuantimagepreparation.model.CroppingData
-import com.acuant.acuantipliveness.AcuantIPLiveness
-import com.acuant.acuantipliveness.IPLivenessListener
-import com.acuant.acuantipliveness.facialcapture.model.FacialCaptureResult
-import com.acuant.acuantipliveness.facialcapture.model.FacialSetupResult
-import com.acuant.acuantipliveness.facialcapture.service.FacialCaptureListener
-import com.acuant.acuantipliveness.facialcapture.service.FacialSetupListener
 import com.acuant.acuantpassiveliveness.AcuantPassiveLiveness
 import com.acuant.acuantpassiveliveness.model.PassiveLivenessData
 import com.acuant.acuantpassiveliveness.model.PassiveLivenessResult
@@ -98,7 +91,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     private var isKeyless = false
     private var processingFacialLiveness = false
     private var processingFacialMatch: Boolean = false
-    private var usingPassive = true
     private var recentImage: AcuantImage? = null
     private val useTokenInit = true
     private val backgroundTasks = mutableListOf<AcuantAsync>()
@@ -267,12 +259,10 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                         }
 
                         runOnUiThread {
-                            if (Credential.get().secureAuthorizations.ipLiveness) {
-                                livenessArrayAdapter.insert("Liveness: Enhanced Liveness",1)
-                                usingPassive = false
-                            } else {
-                                livenessArrayAdapter.insert("Liveness: Passive Liveness",1)
-                            }
+                            //this is a carry over from when there were more than one option for
+                            // liveness possible on a single set of creds. This could be refactored
+                            // to be improved.
+                            livenessArrayAdapter.insert("Liveness: Passive Liveness",1)
                             livenessArrayAdapter.remove("tmp")
                             loadLastLiveness()
                         }
@@ -308,7 +298,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             * generating these tokens on one of your secure servers, passing it to the app,
             * and then calling initializeWithToken passing the config and token.
             */
-            @Suppress("ConstantConditionIf")
             if (useTokenInit) {
                 Toast.makeText(this@MainActivity, "Using Token Init", Toast.LENGTH_SHORT).show()
                 Credential.initFromXml("acuant.config.xml", this)
@@ -485,28 +474,6 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             capturingSelfieImage = false
             facialLivelinessResultString = "Facial Liveliness Failed"
         })
-    }
-
-    private fun startFacialLivelinessRequest(token: String, userId: String) {
-        setProgress(true, "Getting Data...")
-        AcuantIPLiveness.getFacialLiveness(
-                token,
-                userId,
-                object: FacialCaptureListener {
-                    override fun onDataReceived(result: FacialCaptureResult) {
-                        facialLivelinessResultString = "Facial Liveliness: " + result.isPassed
-                        val decodedString = Base64.decode(result.frame, Base64.NO_WRAP)
-                        capturedSelfieImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-                        setProgress(false)
-                        processFacialMatch()
-                    }
-
-                    override fun onError(error: AcuantError) {
-                        facialLivelinessResultString = "Facial Liveliness Failed"
-                        showAcuDialog(error, "Error Retrieving Facial Data")
-                    }
-                }
-        )
     }
 
     private fun hasInternetConnection(): Boolean {
@@ -1089,90 +1056,21 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
 
     //Show Front Camera to Capture Live Selfie
     fun showFaceCamera() {
-        when (livenessSelected) {
-            1 -> {
-                capturingSelfieImage = true
-                processingFacialMatch = true
-                processingFacialLiveness = true
-                if (usingPassive) {
-                    if (!isKeyless) {
-                        showFaceCapture()
-                    } else {
-                        showHGLiveness()
-                    }
-                } else {
-                    showIPLiveness()
-                }
+        if (livenessSelected == 1) {
+            capturingSelfieImage = true
+            processingFacialMatch = true
+            processingFacialLiveness = true
+            if (!isKeyless) {
+                showFaceCapture()
+            } else {
+                showHGLiveness()
             }
-            else -> {
-                capturingSelfieImage = false
-                processingFacialMatch = false
-                processingFacialLiveness = false
-                //just go to results
-            }
-        }
-    }
-
-    private fun showIPLiveness() {
-        setProgress(true, "Loading...")
-        val task = AcuantIPLiveness.getFacialSetup(object : FacialSetupListener {
-
-            override fun onDataReceived(result: FacialSetupResult) {
-                setProgress(false)
-                result.allowScreenshots = true
-                AcuantIPLiveness.runFacialCapture(this@MainActivity, result, object : IPLivenessListener {
-                    override fun onConnecting() {
-                        setProgress(true, "Connecting...")
-                    }
-
-                    override fun onConnected() {
-                        setProgress(false)
-                    }
-
-                    override fun onProgress(status: String, progress: Int) {
-                        setProgress(true, "$progress%\n$status")
-                    }
-
-                    override fun onSuccess(userId: String, token: String, frame: Bitmap?) {
-                        capturingSelfieImage = false
-                        startFacialLivelinessRequest(token, userId)
-                    }
-
-                    override fun onFail(error: AcuantError) {
-                        capturingSelfieImage = false
-                        showFaceCaptureError()
-                    }
-
-                    override fun onCancel() {
-                        setProgress(true, "Getting Data...")
-                        capturingSelfieImage = false
-                        facialLivelinessResultString = "Facial Liveliness Failed"
-                    }
-
-                    override fun onError(error: AcuantError) {
-                        capturingSelfieImage = false
-                        showAcuDialog(error)
-                    }
-                })
-            }
-
-            override fun onError(error: AcuantError) {
-                setProgress(false)
-                handleInternalError()
-            }
-        })
-        backgroundTasks.add(task)
-    }
-
-    fun handleInternalError() {
-        showAcuDialog("Would you like to retry?", "Internal Error", { dialog, _ ->
-            dialog.dismiss()
-            showFaceCamera()
-        }, { dialog, _ ->
-            dialog.dismiss()
+        } else {
             capturingSelfieImage = false
-            facialLivelinessResultString = "Facial Liveliness Failed"
-        })
+            processingFacialMatch = false
+            processingFacialLiveness = false
+            //just go to results
+        }
     }
 
     //process health card images

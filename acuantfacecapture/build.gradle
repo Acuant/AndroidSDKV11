@@ -58,8 +58,8 @@ dependencies {
 
     //acuant specific stuff
     implementation 'com.google.mlkit:face-detection:16.1.7'
-    implementation 'com.acuant:acuantcommon:11.6.2'
-    implementation 'com.acuant:acuantimagepreparation:11.6.2'
+    implementation 'com.acuant:acuantcommon:11.6.3'
+    implementation 'com.acuant:acuantimagepreparation:11.6.3'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

@@ -39,9 +39,9 @@ allprojects {
         maven { url 'https://raw.githubusercontent.com/Acuant/AndroidSdkMaven/main/maven/' }
     }
 
-    project.ext.set("versionCode", 11602)
-    project.ext.set("versionName", '11.6.2')
-    version = '11.6.2'
+    project.ext.set("versionCode", 11603)
+    project.ext.set("versionName", '11.6.3')
+    version = '11.6.3'
     group = 'com.acuant' // Maven Group ID for the artifact
 }
 

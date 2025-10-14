@@ -63,6 +63,7 @@ internal class FacialGraphic(overlay: FacialGraphicOverlay) : FacialGraphicOverl
             FaceCameraState.MoveCloser,
             FaceCameraState.MoveBack,
             FaceCameraState.FixRotation,
+            FaceCameraState.DontBlink,
             FaceCameraState.KeepSteady -> mFaceRectPaint.color = options?.colorError ?: Color.RED
             else -> mFaceRectPaint.color = options?.colorGood ?: Color.GREEN
         }

@@ -21,7 +21,7 @@ import com.acuant.acuantfacecapture.overlays.FacialGraphicOverlay
 import kotlin.math.ceil
 
 enum class FaceCameraState {
-    Align, MoveCloser, MoveBack, FixRotation, KeepSteady, Hold, Blink, Capturing
+    Align, MoveCloser, MoveBack, FixRotation, KeepSteady, Hold, Blink, Capturing, DontBlink
 }
 
 class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
@@ -164,6 +164,11 @@ class AcuantFaceCaptureFragment: AcuantBaseFaceCameraFragment() {
                             mFacialGraphicOverlay?.setState(FaceCameraState.Blink)
                             mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.Blink)
                             resetTimer(resetBlinkState = false)
+                        }
+                        !requireBlink && lastState == FaceState.EyesClosed -> {
+                            mFacialGraphicOverlay?.setState(FaceCameraState.DontBlink)
+                            mFacialGraphic?.updateLiveFaceDetails(boundingBox, FaceCameraState.DontBlink)
+                            resetTimer()
                         }
                         System.currentTimeMillis() - startTime < acuantOptions.totalCaptureTime * 1000 -> {
                             mFacialGraphicOverlay?.setState(FaceCameraState.Hold, acuantOptions.totalCaptureTime - ceil(((System.currentTimeMillis() - startTime) / 1000).toDouble()).toInt())
